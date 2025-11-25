@@ -150,7 +150,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-6">
         {[
           { id: 'DETAIL' as EstimationSubTab, label: '상세 견적', icon: Icons.File },
-          { id: 'SCHEDULE' as EstimationSubTab, label: '예상/파트너', icon: Icons.Calendar }
+          { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정', icon: Icons.Calendar }
         ].map((tab) => (
           <button
             key={tab.id}
