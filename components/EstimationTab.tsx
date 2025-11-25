@@ -169,50 +169,96 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     );
   };
 
-  // Render module list for detail tab
+  // Render module list for detail tab (with dropdown like SCOPE step)
   const renderModuleList = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
         <Icons.Briefcase size={20} />
         선택된 기능 명세
       </h3>
-      {modules.filter(m => m.isSelected).map((module) => (
-        <div 
-          key={module.id} 
-          className="group border rounded-xl shadow-sm bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
-        >
-          <div className="p-6 flex items-start gap-5">
-            <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-md bg-indigo-600 border-indigo-600 text-white flex items-center justify-center">
-              <Icons.CheckMark size={14} strokeWidth={3} />
-            </div>
-            <div className="flex-1 pt-0.5">
-              <div className="flex items-center gap-3 mb-1">
-                <h5 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                  {module.name}
-                </h5>
-                {module.required && (
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-                    필수 (CORE)
-                  </span>
-                )}
+      {modules.filter(m => m.isSelected).map((module) => {
+        const isExpanded = expandedIds.includes(module.id);
+        const selectedSubs = module.subFeatures.filter(s => s.isSelected);
+        const moduleTotalCost = module.baseCost + selectedSubs.reduce((sum, s) => sum + s.price, 0);
+        
+        return (
+          <div 
+            key={module.id} 
+            className="group border rounded-xl shadow-sm transition-all duration-300 overflow-hidden bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
+          >
+            {/* Header Row */}
+            <div 
+              className="p-6 flex items-start gap-5 cursor-pointer select-none" 
+              onClick={() => toggleExpand(module.id)}
+            >
+              <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-md bg-indigo-600 border-indigo-600 text-white flex items-center justify-center">
+                <Icons.CheckMark size={14} strokeWidth={3} />
               </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium max-w-xl leading-relaxed">{module.description}</p>
-              {module.subFeatures.filter(s => s.isSelected).length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {module.subFeatures.filter(s => s.isSelected).map(sub => (
-                    <span key={sub.id} className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded">
-                      {sub.name}
+
+              <div className="flex-1 pt-0.5">
+                <div className="flex items-center gap-3 mb-1">
+                  <h5 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                    {module.name}
+                  </h5>
+                  {module.required && (
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                      필수 (CORE)
                     </span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium max-w-xl leading-relaxed">{module.description}</p>
+              </div>
+
+              {/* Right Side Info */}
+              <div className="flex flex-col items-end gap-2">
+                <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                  {(moduleTotalCost/10000).toLocaleString()}만원
+                </p>
+                <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                  <Icons.Down size={20} className="text-slate-300 dark:text-slate-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Expanded Area */}
+            <div 
+              className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+              <div className="px-6 pb-6 pt-2 border-t border-slate-50 dark:border-slate-800/50">
+                <div className="grid gap-2 pl-11">
+                  {module.subFeatures.map((sub) => (
+                    <div 
+                      key={sub.id} 
+                      className={`flex items-center justify-between py-3 px-4 rounded-lg transition-all duration-200 border ${
+                        sub.isSelected 
+                          ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900/30' 
+                          : 'bg-white dark:bg-slate-900 border-transparent opacity-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                          sub.isSelected 
+                            ? 'bg-indigo-500 border-indigo-500 text-white' 
+                            : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
+                        }`}>
+                          {sub.isSelected && <Icons.CheckMark size={12} strokeWidth={3} />}
+                        </div>
+                        <span className={`text-sm font-medium ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
+                          {sub.name}
+                        </span>
+                      </div>
+                      
+                      <span className={`text-sm font-bold w-20 text-right ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'}`}>
+                        +{(sub.price / 10000).toLocaleString()}만
+                      </span>
+                    </div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
-            <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-              {((module.baseCost + module.subFeatures.filter(s => s.isSelected).reduce((sum, s) => sum + s.price, 0))/10000).toLocaleString()}만원
-            </p>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
