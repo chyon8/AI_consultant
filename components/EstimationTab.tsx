@@ -137,8 +137,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
            </div>
         </div>
         
-        {/* Schedule Section Integration */}
-        <ScheduleSection modules={modules} currentPartnerType={currentPartnerType} />
       </div>
     );
   };
@@ -149,27 +147,74 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   const renderSubTabs = () => {
     if (isBlind) return null;
     return (
-      <div className="flex gap-0 mb-6">
+      <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-6">
         {[
-          { id: 'DETAIL' as EstimationSubTab, label: '상세견적', icon: Icons.File },
-          { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정', icon: Icons.Calendar }
-        ].map((tab, idx) => (
+          { id: 'DETAIL' as EstimationSubTab, label: '상세 견적', icon: Icons.File },
+          { id: 'SCHEDULE' as EstimationSubTab, label: '예상/파트너', icon: Icons.Calendar }
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setSubTab(tab.id)}
-            className={`flex-1 py-4 px-6 font-medium transition-all flex items-center justify-center gap-2 border-b-2 ${
+            className={`flex-1 py-3 px-4 text-sm font-medium transition-all flex items-center justify-center gap-2 rounded-md ${
               subTab === tab.id
-                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400'
-                : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
             }`}
           >
-            <tab.icon size={18} />
+            <tab.icon size={16} />
             <span>{tab.label}</span>
           </button>
         ))}
       </div>
     );
   };
+
+  // Render module list for detail tab
+  const renderModuleList = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <Icons.Briefcase size={20} />
+        선택된 기능 명세
+      </h3>
+      {modules.filter(m => m.isSelected).map((module) => (
+        <div 
+          key={module.id} 
+          className="group border rounded-xl shadow-sm bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
+        >
+          <div className="p-6 flex items-start gap-5">
+            <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-md bg-indigo-600 border-indigo-600 text-white flex items-center justify-center">
+              <Icons.CheckMark size={14} strokeWidth={3} />
+            </div>
+            <div className="flex-1 pt-0.5">
+              <div className="flex items-center gap-3 mb-1">
+                <h5 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                  {module.name}
+                </h5>
+                {module.required && (
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                    필수 (CORE)
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium max-w-xl leading-relaxed">{module.description}</p>
+              {module.subFeatures.filter(s => s.isSelected).length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {module.subFeatures.filter(s => s.isSelected).map(sub => (
+                    <span key={sub.id} className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded">
+                      {sub.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+              {((module.baseCost + module.subFeatures.filter(s => s.isSelected).reduce((sum, s) => sum + s.price, 0))/10000).toLocaleString()}만원
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   // Sub-tab content renderers
   const renderDetailTab = () => (
@@ -181,6 +226,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       />
       {/* Analysis Report */}
       {renderAnalysisGraph()}
+      {/* Module List */}
+      {renderModuleList()}
     </div>
   );
 
