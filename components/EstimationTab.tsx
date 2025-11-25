@@ -149,22 +149,22 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   const renderSubTabs = () => {
     if (isBlind) return null;
     return (
-      <div className="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex gap-0 mb-6">
         {[
-          { id: 'DETAIL' as EstimationSubTab, label: '상세견적' },
-          { id: 'PARTNER' as EstimationSubTab, label: '예상/파트너' },
-          { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정' }
-        ].map(tab => (
+          { id: 'DETAIL' as EstimationSubTab, label: '상세견적', icon: Icons.FileText },
+          { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정', icon: Icons.Calendar }
+        ].map((tab, idx) => (
           <button
             key={tab.id}
             onClick={() => setSubTab(tab.id)}
-            className={`px-6 py-3 text-sm font-medium transition-all border-b-2 ${
+            className={`flex-1 py-4 px-6 font-medium transition-all flex items-center justify-center gap-2 border-b-2 ${
               subTab === tab.id
-                ? 'text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400'
-                : 'text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400'
+                : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            {tab.label}
+            <tab.icon size={18} />
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -180,12 +180,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
         onSelect={onSelectPartnerType} 
       />
       {/* Analysis Report */}
-      {renderAnalysisGraph()}
-    </div>
-  );
-
-  const renderPartnerTab = () => (
-    <div className="space-y-6">
       {renderAnalysisGraph()}
     </div>
   );
@@ -307,11 +301,10 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
       {/* Sub-tab Content */}
       {!isBlind && subTab === 'DETAIL' && renderDetailTab()}
-      {!isBlind && subTab === 'PARTNER' && renderPartnerTab()}
       {!isBlind && subTab === 'SCHEDULE' && renderScheduleTab()}
 
-      {/* Module List */}
-      <div className="space-y-6">
+      {/* Module List - Only visible in SCOPE step */}
+      {isBlind && <div className="space-y-6">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
            <Icons.Briefcase size={20} />
            {isBlind ? '기능 범위 설계 (Scope)' : '선택된 기능 명세'}
@@ -446,6 +439,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
         {/* Reverse Auction Widget - Visible in all steps except Register */}
         {estimationStep !== 'REGISTER' && <ReverseAuctionWidget totalCost={totalCost} />}
       </div>
+      </div>}
     </div>
   );
 };
