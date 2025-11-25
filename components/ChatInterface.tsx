@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Message, ModuleItem } from '../types';
 import { Icons } from './Icons';
 import { streamGeminiResponse } from '../services/geminiService';
@@ -103,7 +104,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   ? 'bg-slate-900 dark:bg-indigo-600 text-white rounded-br-sm' 
                   : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-bl-sm'
                 }`}>
-                    {msg.text}
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2">
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    </div>
                     {msg.isStreaming && (
                         <span className="inline-block w-1.5 h-1.5 ml-1 bg-indigo-500 dark:bg-white rounded-full animate-ping"/>
                     )}
