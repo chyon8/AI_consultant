@@ -6,7 +6,6 @@ import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
 import { ReverseAuctionWidget } from './ReverseAuctionWidget';
 import { ScheduleSection } from './ScheduleSection';
-import { ProjectScaleSelector } from './ProjectScaleSelector';
 
 interface EstimationTabProps {
   modules: ModuleItem[];
@@ -381,13 +380,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   return (
     <div className="space-y-8 animate-fade-in pb-20">
       
-      {/* Scale Selector: Visible ONLY in SCOPE step, replaced by PartnerType in RESULT */}
-      {isBlind && (
-        <ProjectScaleSelector 
-          currentScale={currentScale} 
-          onSelect={onScaleChange} 
-        />
-      )}
 
       {/* Sub-tabs Navigation */}
       {!isBlind && renderSubTabs()}
