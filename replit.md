@@ -1,0 +1,91 @@
+# Wishket AI Smart Estimation
+
+## Overview
+This is a React + Vite + TypeScript application that provides an AI-powered project estimation chatbot for IT projects. The app uses Google's Gemini AI to help users optimize project scope and budget by providing insights on modules, features, and cost drivers.
+
+## Project Architecture
+
+### Tech Stack
+- **Frontend Framework**: React 19.2.0
+- **Build Tool**: Vite 6.2.0
+- **Language**: TypeScript 5.8.2
+- **AI Service**: Google Gemini AI (@google/genai)
+- **UI Icons**: Lucide React
+
+### Project Structure
+```
+├── components/          # React components
+│   ├── ArchitectureTab.tsx
+│   ├── BudgetOptimizer.tsx
+│   ├── ChatInterface.tsx
+│   ├── Dashboard.tsx
+│   ├── EstimationTab.tsx
+│   └── ... (other UI components)
+├── services/
+│   └── geminiService.ts # Gemini AI integration
+├── App.tsx             # Main application component
+├── constants.ts        # Application constants
+├── types.ts           # TypeScript type definitions
+├── index.tsx          # Application entry point
+└── vite.config.ts     # Vite configuration
+
+```
+
+### Key Features
+- Interactive chat interface with Gemini AI consultant
+- Project module and feature selection
+- Budget optimization suggestions
+- Partner type presets (STUDIO, STARTUP, ENTERPRISE, etc.)
+- Project scale selector
+- Architecture, Schedule, and Estimation tabs
+- Dark mode support
+- Resizable sidebar interface
+
+## Configuration
+
+### Environment Variables
+The application requires a Gemini API key to function:
+- `GEMINI_API_KEY`: Your Google Gemini API key (set in `.env.local`)
+
+### Vite Configuration
+- **Port**: 5000 (required for Replit webview)
+- **Host**: 0.0.0.0 (allows external connections)
+- **Allowed Hosts**: true (required for Replit proxy)
+
+## Development
+
+### Running Locally
+1. Ensure dependencies are installed: `npm install`
+2. Set your Gemini API key in `.env.local`
+3. Run development server: `npm run dev`
+4. Access at: http://localhost:5000
+
+### Workflow
+The "Start application" workflow runs `npm run dev` and serves the app on port 5000.
+
+## API Integration
+
+### Gemini AI Service
+The app uses Gemini 2.5 Flash model for:
+- Project cost analysis
+- Feature trade-off recommendations
+- Budget optimization suggestions
+- Architecture and scheduling advice
+
+The AI consultant is context-aware of:
+- Selected modules and sub-features
+- Current project cost
+- Partner type multipliers
+- Project scale settings
+
+## Recent Changes (November 25, 2024)
+- Imported from GitHub to Replit
+- Configured Vite to run on port 5000 with allowedHosts enabled
+- Set up workflow for automatic app startup
+- Created environment variable template (.env.local)
+- Documented project structure and setup
+
+## Notes
+- The app uses Tailwind CSS via CDN (warning in console is expected for dev)
+- All components are in Korean language
+- Budget calculations are in Korean Won (KRW)
