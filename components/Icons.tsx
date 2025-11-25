@@ -42,7 +42,8 @@ import {
   HelpCircle,
   ExternalLink,
   Building2,
-  MoreHorizontal
+  MoreHorizontal,
+  Paperclip
 } from 'lucide-react';
 
 export const Icons = {
@@ -88,5 +89,6 @@ export const Icons = {
   Right: ChevronRight,
   External: ExternalLink,
   Building: Building2,
-  More: MoreHorizontal
+  More: MoreHorizontal,
+  Attach: Paperclip
 };

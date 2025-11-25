@@ -118,6 +118,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Minimal Input Area */}
       <div className="p-6 bg-white dark:bg-slate-950 border-t border-transparent dark:border-slate-800 transition-colors">
         <div className="relative flex items-center gap-3">
+          <button
+            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            title="첨부파일"
+          >
+            <Icons.Attach size={20} />
+          </button>
           <input
             type="text"
             value={input}

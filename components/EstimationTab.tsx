@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { ModuleItem, PartnerType, EstimationStep, ProjectScale, EstimationSubTab } from '../types';
 import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
-import { ReverseAuctionWidget } from './ReverseAuctionWidget';
 import { ScheduleSection } from './ScheduleSection';
 
 interface EstimationTabProps {
@@ -521,8 +520,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
            )
         })}
         
-        {/* Reverse Auction Widget - Visible in all steps except Register */}
-        {estimationStep !== 'REGISTER' && <ReverseAuctionWidget totalCost={totalCost} />}
       </div>}
     </div>
   );
