@@ -1,7 +1,7 @@
 
 
 import React, { useState } from 'react';
-import { ModuleItem, PartnerType, EstimationStep, ProjectScale } from '../types';
+import { ModuleItem, PartnerType, EstimationStep, ProjectScale, EstimationSubTab } from '../types';
 import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
 import { ReverseAuctionWidget } from './ReverseAuctionWidget';
@@ -31,6 +31,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   onScaleChange
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
+  const [subTab, setSubTab] = useState<EstimationSubTab>('DETAIL');
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => 
@@ -144,6 +145,127 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
   const isBlind = estimationStep === 'SCOPE';
 
+  // Sub-tabs UI (visible only in RESULT step)
+  const renderSubTabs = () => {
+    if (isBlind) return null;
+    return (
+      <div className="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-800">
+        {[
+          { id: 'DETAIL' as EstimationSubTab, label: '상세견적' },
+          { id: 'PARTNER' as EstimationSubTab, label: '예상/파트너' },
+          { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setSubTab(tab.id)}
+            className={`px-6 py-3 text-sm font-medium transition-all border-b-2 ${
+              subTab === tab.id
+                ? 'text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400'
+                : 'text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  // Sub-tab content renderers
+  const renderDetailTab = () => (
+    <div className="space-y-6">
+      {/* Partner Type Selector */}
+      <PartnerTypeSelector 
+        currentType={currentPartnerType} 
+        onSelect={onSelectPartnerType} 
+      />
+      {/* Analysis Report */}
+      {renderAnalysisGraph()}
+    </div>
+  );
+
+  const renderPartnerTab = () => (
+    <div className="space-y-6">
+      {renderAnalysisGraph()}
+    </div>
+  );
+
+  const renderScheduleTab = () => (
+    <div className="space-y-6">
+      <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+          <Icons.Calendar size={20} className="text-indigo-500" />
+          프로젝트 WBS (작업분해도)
+        </h3>
+        
+        {/* WBS Tree */}
+        <div className="space-y-4">
+          {modules.filter(m => m.isSelected).map((module, idx) => {
+            const baseDays = module.baseManMonths * 20;
+            const subDays = module.subFeatures.filter(s => s.isSelected).reduce((sum, s) => sum + (s.manWeeks * 5), 0);
+            const totalDays = baseDays + subDays;
+            return (
+              <div key={module.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">
+                      {idx + 1}
+                    </div>
+                    <span className="font-semibold text-slate-900 dark:text-white">{module.name}</span>
+                  </div>
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{totalDays}일</span>
+                </div>
+                
+                {/* Sub-features */}
+                {module.subFeatures.filter(s => s.isSelected).length > 0 && (
+                  <div className="ml-9 space-y-2">
+                    {module.subFeatures.filter(s => s.isSelected).map(sub => (
+                      <div key={sub.id} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+                          <span className="text-slate-600 dark:text-slate-400">{sub.name}</span>
+                        </div>
+                        <span className="text-slate-500 dark:text-slate-500 text-xs">{sub.manWeeks * 5}일</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Summary */}
+        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">총 작업량</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">
+                {modules.filter(m => m.isSelected).reduce((sum, m) => {
+                  const base = m.baseManMonths * 20;
+                  const subs = m.subFeatures.filter(s => s.isSelected).reduce((s, sub) => s + (sub.manWeeks * 5), 0);
+                  return sum + base + subs;
+                }, 0)}일
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">모듈 수</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">
+                {modules.filter(m => m.isSelected).length}개
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">기능 수</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">
+                {modules.filter(m => m.isSelected).reduce((sum, m) => sum + m.subFeatures.filter(s => s.isSelected).length, 0)}개
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (estimationStep === 'REGISTER') {
     return (
        <div className="h-full flex flex-col items-center justify-center animate-fade-in pb-20">
@@ -180,16 +302,13 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
         />
       )}
 
-      {/* PARTNER TYPE SELECTOR: Visible ONLY in RESULT step */}
-      {!isBlind && (
-        <PartnerTypeSelector 
-          currentType={currentPartnerType} 
-          onSelect={onSelectPartnerType} 
-        />
-      )}
+      {/* Sub-tabs Navigation */}
+      {!isBlind && renderSubTabs()}
 
-      {/* STEP 2: Result Analysis Graph */}
-      {!isBlind && renderAnalysisGraph()}
+      {/* Sub-tab Content */}
+      {!isBlind && subTab === 'DETAIL' && renderDetailTab()}
+      {!isBlind && subTab === 'PARTNER' && renderPartnerTab()}
+      {!isBlind && subTab === 'SCHEDULE' && renderScheduleTab()}
 
       {/* Module List */}
       <div className="space-y-6">
