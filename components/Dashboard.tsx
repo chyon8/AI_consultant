@@ -7,7 +7,6 @@ import { EstimationTab } from './EstimationTab';
 import { SimilarCasesTab } from './SimilarCasesTab';
 import { PresetSelectionTab } from './PresetSelectionTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
-import { CollapsibleSidebar } from './CollapsibleSidebar';
 
 interface DashboardProps {
   modules: ModuleItem[];
@@ -38,7 +37,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const tabs = [
     { id: TabView.ESTIMATION, label: '견적/예산' },
@@ -126,17 +124,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="flex h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
-      {/* Collapsible Sidebar */}
-      <CollapsibleSidebar 
-        isCollapsed={isSidebarCollapsed} 
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Top Bar: Minimal Tabs & Stats */}
-        <div className="px-6 lg:px-10 pt-6 pb-2 flex flex-wrap gap-4 justify-between items-end border-b border-transparent">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
+      {/* Top Bar: Minimal Tabs & Stats */}
+      <div className="px-6 lg:px-10 pt-6 pb-2 flex flex-wrap gap-4 justify-between items-end border-b border-transparent">
          {/* Minimal Tabs */}
          <div className="flex gap-6 overflow-x-auto no-scrollbar">
             {tabs.map(tab => {
@@ -218,13 +208,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-        <ReportBuilderModal 
-           isOpen={isReportOpen} 
-           onClose={() => setIsReportOpen(false)} 
-           projectName="기업형 LMS 플랫폼"
-           totalCost={baseTotalCost * multipliers.costMultiplier}
-        />
-      </div>
+      <ReportBuilderModal 
+         isOpen={isReportOpen} 
+         onClose={() => setIsReportOpen(false)} 
+         projectName="기업형 LMS 플랫폼"
+         totalCost={baseTotalCost * multipliers.costMultiplier}
+      />
     </div>
   );
 };

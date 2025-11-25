@@ -6,6 +6,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
 import { StepIndicator } from './components/StepIndicator';
+import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -21,6 +22,9 @@ const App: React.FC = () => {
 
   // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Collapsible Sidebar State
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Resizing State
   const [sidebarWidth, setSidebarWidth] = useState(450);
@@ -174,6 +178,12 @@ const App: React.FC = () => {
 
       {/* Main Layout */}
       <main className="flex-1 flex overflow-hidden">
+        {/* Collapsible Sidebar - Left of Chat */}
+        <CollapsibleSidebar 
+          isCollapsed={isSidebarCollapsed} 
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+        />
+
         <div 
           className="h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative transition-colors duration-300"
           style={{ width: sidebarWidth }}
