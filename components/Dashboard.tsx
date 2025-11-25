@@ -123,7 +123,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button 
                 onClick={handleGenerateEstimate}
-                className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-black/20 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
+                className="flex-1 h-14 bg-slate-900 dark:bg-indigo-500 hover:bg-black dark:hover:bg-indigo-600 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-indigo-900/30 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
             >
                 <Icons.PieChart size={18} />
                 <span>견적 산출하기 (Generate Estimate)</span>
