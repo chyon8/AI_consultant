@@ -18,6 +18,8 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Zap,
   Target,
   TrendingUp,
@@ -37,7 +39,10 @@ import {
   Unlock,
   PieChart,
   BarChart3,
-  HelpCircle
+  HelpCircle,
+  ExternalLink,
+  Building2,
+  MoreHorizontal
 } from 'lucide-react';
 
 export const Icons = {
@@ -78,5 +83,10 @@ export const Icons = {
   Unlock: Unlock,
   PieChart: PieChart,
   BarChart: BarChart3,
-  Help: HelpCircle
+  Help: HelpCircle,
+  Left: ChevronLeft,
+  Right: ChevronRight,
+  External: ExternalLink,
+  Building: Building2,
+  More: MoreHorizontal
 };
