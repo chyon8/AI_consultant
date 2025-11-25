@@ -1,6 +1,6 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale } from '../types';
 import { Icons } from './Icons';
 import { EstimationTab } from './EstimationTab';
@@ -37,6 +37,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleGenerateEstimate = () => {
+    onStepChange('RESULT');
+    setActiveTab(TabView.ESTIMATION);
+    setTimeout(() => {
+      contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
 
   const tabs = [
     { id: TabView.ESTIMATION, label: '견적/예산' },
@@ -113,7 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
 
             <button 
-                onClick={() => onStepChange('RESULT')}
+                onClick={handleGenerateEstimate}
                 className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-black/20 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
             >
                 <Icons.PieChart size={18} />
@@ -168,7 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Content Area with Animation */}
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 pb-40 scroll-smooth"> 
+      <div ref={contentRef} className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 pb-40 scroll-smooth"> 
         <div className="max-w-4xl mx-auto">
           <div key={activeTab} className="animate-fade-in-up">
             {activeTab === TabView.ESTIMATION && (
@@ -177,7 +186,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onToggleModule={onToggleModule} 
                 onToggleSubFeature={onToggleSubFeature}
                 setModules={setModules}
-                multipliers={multipliers}
                 currentPartnerType={currentPartnerType}
                 onSelectPartnerType={onSelectPartnerType}
                 estimationStep={estimationStep}
