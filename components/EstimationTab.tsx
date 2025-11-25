@@ -151,7 +151,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     return (
       <div className="flex gap-0 mb-6">
         {[
-          { id: 'DETAIL' as EstimationSubTab, label: '상세견적', icon: Icons.FileText },
+          { id: 'DETAIL' as EstimationSubTab, label: '상세견적', icon: Icons.File },
           { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정', icon: Icons.Calendar }
         ].map((tab, idx) => (
           <button
@@ -438,7 +438,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
         
         {/* Reverse Auction Widget - Visible in all steps except Register */}
         {estimationStep !== 'REGISTER' && <ReverseAuctionWidget totalCost={totalCost} />}
-      </div>
       </div>}
     </div>
   );
