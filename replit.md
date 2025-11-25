@@ -80,12 +80,17 @@ The AI consultant is context-aware of:
 
 ## Recent Changes (November 25, 2024)
 - Imported from GitHub to Replit
-- Configured Vite to run on port 5000 with allowedHosts enabled
+- Configured Vite to run on port 5000 with allowedHosts enabled for Replit proxy
+- Removed CDN import maps and configured to use npm packages from node_modules
+- Added script tag to index.html to load the React app
 - Set up workflow for automatic app startup
-- Created environment variable template (.env.local)
+- Configured GEMINI_API_KEY as a Replit secret
+- Set up deployment configuration for static build
 - Documented project structure and setup
 
 ## Notes
 - The app uses Tailwind CSS via CDN (warning in console is expected for dev)
 - All components are in Korean language
 - Budget calculations are in Korean Won (KRW)
+- Gemini API key is required and stored as a Replit secret
+- The app runs on port 5000 and is accessible via Replit's webview proxy
