@@ -3,6 +3,37 @@
 ## Overview
 This is a React + Vite + TypeScript application that provides an AI-powered project estimation chatbot for IT projects. The app uses Google's Gemini AI to help users optimize project scope and budget by providing insights on modules, features, and cost drivers.
 
+---
+
+## STRICT DEVELOPMENT PROTOCOLS (REPLIT MODE)
+
+You are acting strictly as a **Logic Implementation Engine**.
+
+### 1. VISUAL & UI IMMUTABILITY (Absolute Design Freeze)
+- **NEVER TOUCH DESIGN:** Do not modify Layouts, Margins, Padding, Colors, Typography, Shadows, or Radii.
+- **PRESERVE CODE:** Even if HTML/CSS structure seems inefficient, KEEP IT EXACTLY AS IS.
+- **NEW FEATURES:** You must reuse existing components/classes 100%. Do not invent new styles.
+
+### 2. ARCHITECTURE & LOGIC FREEZE
+- **NO LOGIC REORDERING:** Do not change the execution order, depth, or flow of existing modules/functions unless explicitly requested.
+- **NO REFACTORING:** Do not "clean" or "optimize" existing code. Only insert the minimum required logic.
+- **NO FILE SHUFFLING:** Do not move files or rename folders. Work within the existing file structure.
+- **CONFIG PROTECTION:** Do not edit `.replit` or `.nix` files (System boot configs).
+
+### 3. MANDATORY WORKFLOW: PLAN & SELF-CORRECTION
+Before writing any code, you MUST output a plan in this format:
+
+> **[PLANNING & REVIEW]**
+> 1. **Intended Change:** (Brief summary)
+> 2. **Constraint Check:**
+>    - Visual/UI Changes? [YES/NO] -> **Must be NO**
+>    - Logic Flow/Depth Altered? [YES/NO] -> **Must be NO** (unless requested)
+> 3. **Conclusion:** Proceeding with implementation.
+
+**If any check is "YES", STOP and revise your plan.**
+
+---
+
 ## Project Architecture
 
 ### Tech Stack
