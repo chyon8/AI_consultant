@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ProjectSnapshot } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -9,6 +9,7 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
+import { useProjectHistory } from './hooks/useProjectHistory';
 
 type AppView = 'landing' | 'detail';
 
@@ -24,6 +25,10 @@ const App: React.FC = () => {
   // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
   const multipliers = PARTNER_PRESETS[currentPartnerType];
+
+  // Project History Hook
+  const { history: projectHistory, addProject, getProject, deleteProject } = useProjectHistory();
+  const [lastUserInput, setLastUserInput] = useState<string>('');
 
   // Estimation Step Flow State
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
@@ -131,7 +136,7 @@ const App: React.FC = () => {
   };
 
   // Handle parsed analysis result
-  const handleAnalysisComplete = (result: ParsedAnalysisResult | null) => {
+  const handleAnalysisComplete = (result: ParsedAnalysisResult | null, userInput: string) => {
     console.log('[App] handleAnalysisComplete called with:', result ? {
       projectTitle: result.projectTitle,
       modulesCount: result.modules?.length || 0,
@@ -160,6 +165,34 @@ const App: React.FC = () => {
       setModules(convertedModules);
     } else {
       console.warn('[App] No valid modules in result');
+    }
+  };
+
+  const handleSelectHistoryProject = (projectId: string) => {
+    const project = getProject(projectId);
+    if (project) {
+      setModules(project.modules);
+      
+      const restoredMessages = project.messages.length > 0 
+        ? project.messages.map(msg => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+        : [
+            ...INITIAL_MESSAGES,
+            {
+              id: Date.now().toString(),
+              role: 'model' as const,
+              text: `"${project.title}" 프로젝트를 불러왔습니다.\n\n저장된 모듈 구조와 견적 정보를 확인하실 수 있습니다.`,
+              timestamp: new Date(),
+            }
+          ];
+      
+      setMessages(restoredMessages);
+      setCurrentPartnerType(project.partnerType);
+      setCurrentScale(project.currentScale);
+      setEstimationStep('SCOPE');
+      setCurrentView('detail');
     }
   };
 
@@ -206,14 +239,44 @@ const App: React.FC = () => {
       );
       
       // Analysis complete - now switch to detail view
-      setMessages([
+      const finalMessages: Message[] = [
         ...INITIAL_MESSAGES, 
         userMsg, 
         { 
           ...aiMsg, 
           text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.' 
         }
-      ]);
+      ];
+      setMessages(finalMessages);
+      
+      if (parsedResult && parsedResult.modules) {
+        addProject({
+          title: parsedResult.projectTitle || text.slice(0, 30) + '...',
+          userInput: text,
+          modules: parsedResult.modules.map(mod => ({
+            id: mod.id,
+            name: mod.name,
+            description: mod.description,
+            baseCost: mod.baseCost,
+            baseManMonths: mod.baseManMonths,
+            category: mod.category,
+            isSelected: mod.isSelected,
+            required: mod.required,
+            subFeatures: mod.subFeatures.map(feat => ({
+              id: feat.id,
+              name: feat.name,
+              price: feat.price,
+              manWeeks: feat.manWeeks,
+              isSelected: feat.isSelected
+            }))
+          })),
+          estimates: parsedResult.estimates,
+          messages: finalMessages,
+          partnerType: currentPartnerType,
+          currentScale: currentScale,
+        });
+      }
+      
       setCurrentView('detail');
       
     } catch (error) {
@@ -324,7 +387,10 @@ const App: React.FC = () => {
         {/* Collapsible Sidebar - Always visible */}
         <CollapsibleSidebar 
           isCollapsed={isSidebarCollapsed} 
-          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          projectHistory={projectHistory}
+          onSelectProject={handleSelectHistoryProject}
+          onDeleteProject={deleteProject}
         />
 
         {/* Conditional View Rendering */}

@@ -67,7 +67,7 @@ export async function analyzeProject(
   text: string,
   fileContents: string[],
   onChunk: (chunk: string) => void,
-  onComplete?: (result: ParsedAnalysisResult | null) => void,
+  onComplete?: (result: ParsedAnalysisResult | null, userInput: string) => void,
   onError?: (error: string) => void
 ): Promise<ParsedAnalysisResult | null> {
   const response = await fetch('/api/analyze', {
@@ -120,7 +120,7 @@ export async function analyzeProject(
           });
           parsedResult = data.parsed;
           if (onComplete) {
-            onComplete(parsedResult);
+            onComplete(parsedResult, text);
           }
         }
         
@@ -150,7 +150,7 @@ export async function analyzeProject(
         });
         parsedResult = data.parsed;
         if (onComplete) {
-          onComplete(parsedResult);
+          onComplete(parsedResult, text);
         }
       }
     } catch (e) {
