@@ -49,6 +49,11 @@ const PART1_PROMPT = `# PROMPT METADATA
 ## STEP 4. 구조화된 모듈 데이터 (JSON)
 응답 마지막에 반드시 아래 형식으로 JSON 블록을 출력하세요:
 
+**비용 구조 규칙:**
+- baseCost: 모듈의 기본 구축비 (Core Framework 비용). 해당 모듈 개발 시 필수적으로 발생하는 기본 인프라/설계 비용
+- subFeatures.price: 각 세부 기능 추가 시 발생하는 추가 비용
+- 모듈 총 비용 = baseCost + Σ(선택된 subFeatures.price)
+
 \`\`\`json:modules
 {
   "projectTitle": "프로젝트 제목",
