@@ -1,21 +1,33 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, ModuleItem } from '../types';
+import { Message, ModuleItem, PartnerType, ProjectScale, DashboardAction } from '../types';
 import { Icons } from './Icons';
-import { streamGeminiResponse } from '../services/geminiService';
+import { sendChatMessage, ChatContext, ChatResult } from '../services/apiService';
 
 interface ChatInterfaceProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   modules: ModuleItem[];
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
+  partnerType: PartnerType;
+  currentScale: ProjectScale;
+  estimates?: {
+    typeA?: { minCost: number; maxCost: number; duration: string };
+    typeB?: { minCost: number; maxCost: number; duration: string };
+    typeC?: { minCost: number; maxCost: number; duration: string };
+  };
+  onDashboardAction?: (action: DashboardAction) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   setMessages, 
   modules, 
-  setModules 
+  setModules,
+  partnerType,
+  currentScale,
+  estimates,
+  onDashboardAction
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -53,21 +65,50 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
     setMessages(prev => [...prev, aiMsg]);
 
-    await streamGeminiResponse(
-      [...messages, userMsg],
+    const context: ChatContext = {
       modules,
-      (chunk) => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMsgId 
-            ? { ...msg, text: msg.text + chunk } 
-            : msg
-        ));
-      }
-    );
+      partnerType,
+      currentScale,
+      estimates
+    };
 
-    setMessages(prev => prev.map(msg => 
-      msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
-    ));
+    const conversationHistory = messages.slice(-10).map(msg => ({
+      role: msg.role,
+      text: msg.text
+    }));
+
+    try {
+      const result = await sendChatMessage(
+        input,
+        conversationHistory,
+        context,
+        (chunk) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMsgId 
+              ? { ...msg, text: msg.text + chunk } 
+              : msg
+          ));
+        },
+        (chatResult: ChatResult) => {
+          if (chatResult.action && chatResult.action.type !== 'no_action' && onDashboardAction) {
+            onDashboardAction(chatResult.action as DashboardAction);
+          }
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMsgId 
+              ? { ...msg, text: chatResult.chatMessage, isStreaming: false } 
+              : msg
+          ));
+        }
+      );
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId 
+          ? { ...msg, text: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.', isStreaming: false } 
+          : msg
+      ));
+    }
+
     setIsLoading(false);
   };
 

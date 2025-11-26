@@ -5,6 +5,7 @@ import path from 'path';
 import { analyzeProject } from './services/geminiService';
 import { generateRFP } from './services/rfpService';
 import { parseAnalysisResponse } from './services/responseParser';
+import { processChat } from './services/chatService';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -107,6 +108,43 @@ app.post('/api/rfp', async (req, res) => {
   } catch (error) {
     console.error('RFP generation error:', error);
     res.write(`data: ${JSON.stringify({ error: 'RFP generation failed' })}\n\n`);
+  } finally {
+    res.end();
+  }
+});
+
+app.post('/api/chat', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    const { message, conversationHistory, context } = req.body;
+
+    console.log('[Chat] Processing message:', message?.substring(0, 100));
+
+    const result = await processChat(
+      message,
+      conversationHistory || [],
+      context,
+      (chunk: string) => {
+        res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      }
+    );
+
+    console.log('[Chat] Response parsed:', {
+      chatMessageLength: result.chatMessage.length,
+      actionType: result.action?.type
+    });
+
+    res.write(`data: ${JSON.stringify({ 
+      done: true, 
+      chatMessage: result.chatMessage,
+      action: result.action 
+    })}\n\n`);
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.write(`data: ${JSON.stringify({ error: 'Chat processing failed' })}\n\n`);
   } finally {
     res.end();
   }

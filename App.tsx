@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ProjectSnapshot } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ProjectSnapshot, DashboardAction } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -33,6 +33,13 @@ const App: React.FC = () => {
   // Estimation Step Flow State
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
   const [currentScale, setCurrentScale] = useState<ProjectScale>('STANDARD');
+
+  // Estimates from AI analysis
+  const [estimates, setEstimates] = useState<{
+    typeA?: { minCost: number; maxCost: number; duration: string };
+    typeB?: { minCost: number; maxCost: number; duration: string };
+    typeC?: { minCost: number; maxCost: number; duration: string };
+  } | undefined>(undefined);
 
   // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -135,6 +142,65 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDashboardAction = (action: DashboardAction) => {
+    console.log('[App] Dashboard action received:', action);
+    
+    switch (action.type) {
+      case 'toggle_module':
+        const { moduleId } = action.payload;
+        setModules(prev => prev.map(m => 
+          m.id === moduleId ? { ...m, isSelected: !m.isSelected } : m
+        ));
+        break;
+        
+      case 'toggle_feature':
+        const { moduleId: modId, featureId } = action.payload;
+        setModules(prev => prev.map(m => {
+          if (m.id === modId) {
+            return {
+              ...m,
+              subFeatures: m.subFeatures.map(f => 
+                f.id === featureId ? { ...f, isSelected: !f.isSelected } : f
+              )
+            };
+          }
+          return m;
+        }));
+        break;
+        
+      case 'update_partner_type':
+        const { partnerType } = action.payload;
+        if (['AGENCY', 'STUDIO', 'AI_NATIVE'].includes(partnerType)) {
+          applyPartnerType(partnerType as PartnerType);
+        }
+        break;
+        
+      case 'update_scale':
+        const { scale } = action.payload;
+        if (['MVP', 'STANDARD', 'HIGH_END'].includes(scale)) {
+          if (scale === 'MVP') {
+            setModules(prev => prev.map(m => ({
+              ...m,
+              isSelected: m.required ? true : false,
+              subFeatures: m.subFeatures.map((s, idx) => ({ ...s, isSelected: idx === 0 }))
+            })));
+          } else if (scale === 'HIGH_END') {
+            setModules(prev => prev.map(m => ({
+              ...m,
+              isSelected: true,
+              subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true }))
+            })));
+          }
+          setCurrentScale(scale as ProjectScale);
+        }
+        break;
+        
+      case 'no_action':
+      default:
+        break;
+    }
+  };
+
   // Handle parsed analysis result
   const handleAnalysisComplete = (result: ParsedAnalysisResult | null, userInput: string) => {
     console.log('[App] handleAnalysisComplete called with:', result ? {
@@ -163,6 +229,10 @@ const App: React.FC = () => {
       }));
       console.log('[App] Setting modules:', convertedModules.length, 'items');
       setModules(convertedModules);
+      
+      if (result.estimates) {
+        setEstimates(result.estimates);
+      }
     } else {
       console.warn('[App] No valid modules in result');
     }
@@ -191,6 +261,7 @@ const App: React.FC = () => {
       setMessages(restoredMessages);
       setCurrentPartnerType(project.partnerType);
       setCurrentScale(project.currentScale);
+      setEstimates(project.estimates);
       setEstimationStep('SCOPE');
       setCurrentView('detail');
     }
@@ -412,6 +483,10 @@ const App: React.FC = () => {
                 setMessages={setMessages}
                 modules={modules}
                 setModules={setModules}
+                partnerType={currentPartnerType}
+                currentScale={currentScale}
+                estimates={estimates}
+                onDashboardAction={handleDashboardAction}
               />
             </div>
 

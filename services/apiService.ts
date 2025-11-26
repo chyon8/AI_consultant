@@ -225,3 +225,121 @@ export async function readFileContent(file: File): Promise<string> {
     reader.readAsText(file);
   });
 }
+
+export interface ChatContext {
+  modules: ParsedModule[];
+  partnerType: string;
+  currentScale: string;
+  estimates?: {
+    typeA?: { minCost: number; maxCost: number; duration: string };
+    typeB?: { minCost: number; maxCost: number; duration: string };
+    typeC?: { minCost: number; maxCost: number; duration: string };
+  };
+}
+
+export interface ChatAction {
+  type: string;
+  payload: Record<string, any>;
+}
+
+export interface ChatResult {
+  chatMessage: string;
+  action?: ChatAction;
+}
+
+export async function sendChatMessage(
+  message: string,
+  conversationHistory: { role: 'user' | 'model'; text: string }[],
+  context: ChatContext,
+  onChunk: (chunk: string) => void,
+  onComplete?: (result: ChatResult) => void,
+  onError?: (error: string) => void
+): Promise<ChatResult> {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message, conversationHistory, context }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Chat request failed');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('No response body');
+  }
+
+  const decoder = new TextDecoder();
+  let result: ChatResult = { chatMessage: '' };
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      
+      try {
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr) continue;
+        
+        const data = JSON.parse(jsonStr);
+        
+        if (data.chunk) {
+          onChunk(data.chunk);
+        }
+        
+        if (data.done) {
+          result = {
+            chatMessage: data.chatMessage,
+            action: data.action
+          };
+          if (onComplete) {
+            onComplete(result);
+          }
+        }
+        
+        if (data.error) {
+          console.error('[Chat] SSE error:', data.error);
+          if (onError) {
+            onError(data.error);
+          }
+          throw new Error(data.error);
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('Chat')) {
+          throw e;
+        }
+        console.warn('[Chat] JSON parse warning:', e);
+      }
+    }
+  }
+
+  if (buffer.trim() && buffer.startsWith('data: ')) {
+    try {
+      const data = JSON.parse(buffer.slice(6).trim());
+      if (data.done) {
+        result = {
+          chatMessage: data.chatMessage,
+          action: data.action
+        };
+        if (onComplete) {
+          onComplete(result);
+        }
+      }
+    } catch (e) {
+      console.warn('[Chat] Final buffer parse failed:', e);
+    }
+  }
+
+  return result;
+}

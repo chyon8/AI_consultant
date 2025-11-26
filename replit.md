@@ -100,6 +100,7 @@ The application requires a Gemini API key to function:
 ### API Endpoints
 - `POST /api/analyze` - Analyze project (PART 1 - SSE streaming)
 - `POST /api/rfp` - Generate RFP (PART 2 - SSE streaming)
+- `POST /api/chat` - Chat-driven UI control (SSE streaming)
 - `POST /api/upload` - File upload
 - `GET /api/health` - Health check
 
@@ -136,6 +137,10 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (November 26, 2024)
+- **Chat-driven UI Control**: 채팅으로 대시보드 제어 기능 추가
+  - 사용자가 채팅창에서 모듈/기능 토글, 파트너 유형/규모 변경 요청 가능
+  - Gemini가 자연어 답변 + JSON 액션 동시 반환
+  - 지원 액션: toggle_module, toggle_feature, update_partner_type, update_scale
 - Upgraded AI model from Gemini 2.5 Flash to Gemini 3 Pro Preview
 - Added thinkingBudget parameter (8000 tokens) for enhanced reasoning
 - Implemented project history feature with localStorage persistence
@@ -145,7 +150,7 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
 - Fixed SSE buffering bug for incomplete JSON chunk handling
 - Added LandingView component (ChatGPT/Gemini style main page)
 - Implemented Express backend server with SSE streaming
-- Created API routes for /api/analyze, /api/rfp, /api/upload
+- Created API routes for /api/analyze, /api/rfp, /api/upload, /api/chat
 - Implemented view transition (landing → detail)
 - Fixed security: removed API key from frontend bundle
 

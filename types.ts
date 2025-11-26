@@ -98,3 +98,24 @@ export interface ProjectSnapshot {
   partnerType: PartnerType;
   currentScale: ProjectScale;
 }
+
+// Chat-driven UI Action Types
+export type DashboardActionType = 
+  | 'toggle_module'
+  | 'toggle_feature'
+  | 'update_partner_type'
+  | 'update_scale'
+  | 'add_module'
+  | 'remove_module'
+  | 'update_estimate'
+  | 'no_action';
+
+export interface DashboardAction {
+  type: DashboardActionType;
+  payload: Record<string, any>;
+}
+
+export interface ChatResponse {
+  chatMessage: string;
+  action?: DashboardAction;
+}
