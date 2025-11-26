@@ -98,7 +98,7 @@ export async function analyzeProject(
   ].join('');
 
   const response = await ai.models.generateContentStream({
-    model: 'gemini-2.5-flash-preview-05-20',
+    model: 'gemini-2.5-flash',
     contents: [
       { role: 'user', parts: [{ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + combinedInput }] }
     ],
