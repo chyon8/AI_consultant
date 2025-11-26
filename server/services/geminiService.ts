@@ -98,10 +98,16 @@ export async function analyzeProject(
   ].join('');
 
   const response = await ai.models.generateContentStream({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-pro-preview',
     contents: [
       { role: 'user', parts: [{ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + combinedInput }] }
     ],
+    config: {
+      temperature: 1.0,
+      thinkingConfig: {
+        thinkingBudget: 8000
+      }
+    }
   });
 
   for await (const chunk of response) {
