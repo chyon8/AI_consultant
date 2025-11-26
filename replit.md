@@ -94,8 +94,16 @@ The application requires a Gemini API key to function:
 - `GEMINI_API_KEY`: Your Google Gemini API key (stored as Replit secret)
 
 ### Ports
-- **Frontend (Vite)**: 5000 (required for Replit webview)
-- **Backend (Express)**: 3001
+- **Development**:
+  - Frontend (Vite): 5000
+  - Backend (Express): 3001
+- **Production**:
+  - Express: 5000 (정적 파일 + API 함께 서빙)
+
+### Deployment
+- **Target**: autoscale
+- **Build**: `npm run build` (Vite 프로덕션 빌드)
+- **Run**: `npm run start` (Express 서버가 dist + API 서빙)
 
 ### API Endpoints
 - `POST /api/analyze` - Analyze project (PART 1 - SSE streaming)
