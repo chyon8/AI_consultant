@@ -7,6 +7,7 @@ import { EstimationTab } from './EstimationTab';
 import { SimilarCasesTab } from './SimilarCasesTab';
 import { PresetSelectionTab } from './PresetSelectionTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
+import { RFPModal } from './RFPModal';
 
 interface DashboardProps {
   modules: ModuleItem[];
@@ -37,6 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isRFPOpen, setIsRFPOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleGenerateEstimate = () => {
@@ -79,13 +81,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const renderFooter = () => {
     if (estimationStep === 'REGISTER') {
         return (
-            <button 
-                className="w-full max-w-md h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-                disabled
-            >
-                <Icons.CheckMark size={18} strokeWidth={3} />
-                <span>등록이 완료되었습니다</span>
-            </button>
+            <div className="flex gap-4 w-full">
+              <button 
+                  onClick={() => setIsRFPOpen(true)}
+                  className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+              >
+                  <Icons.File size={18} />
+                  <span>공고문 생성하기</span>
+              </button>
+              <button 
+                  className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+              >
+                  <Icons.CheckMark size={18} strokeWidth={3} />
+                  <span>등록 완료</span>
+              </button>
+            </div>
         );
     }
 
@@ -221,6 +231,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
          onClose={() => setIsReportOpen(false)} 
          projectName="기업형 LMS 플랫폼"
          totalCost={baseTotalCost * multipliers.costMultiplier}
+      />
+      
+      <RFPModal
+         isOpen={isRFPOpen}
+         onClose={() => setIsRFPOpen(false)}
+         modules={modules}
+         projectSummary={`총 ${selectedModules.length}개 모듈, 예상 비용 ${(baseTotalCost / 10000).toLocaleString()}만원`}
       />
     </div>
   );
