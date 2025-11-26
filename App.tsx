@@ -19,6 +19,7 @@ const App: React.FC = () => {
   // App View State (landing or detail)
   const [currentView, setCurrentView] = useState<AppView>('landing');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
@@ -156,6 +157,7 @@ const App: React.FC = () => {
   // Handle initial analysis from landing page
   const handleAnalyze = async (text: string, files: File[]) => {
     setIsAnalyzing(true);
+    setAnalysisError(null);
     
     // Add user message
     const userMsg: Message = {
@@ -197,7 +199,10 @@ const App: React.FC = () => {
               : msg
           ));
         },
-        handleAnalysisComplete
+        handleAnalysisComplete,
+        (error) => {
+          setAnalysisError(error);
+        }
       );
       
       // Mark streaming as complete
@@ -206,6 +211,8 @@ const App: React.FC = () => {
       ));
     } catch (error) {
       console.error('Analysis error:', error);
+      const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
+      setAnalysisError(errorMessage);
       setMessages(prev => prev.map(msg => 
         msg.id === aiMsgId 
           ? { ...msg, text: '분석 중 오류가 발생했습니다. 다시 시도해주세요.', isStreaming: false } 
@@ -216,9 +223,30 @@ const App: React.FC = () => {
     setIsAnalyzing(false);
   };
 
+  // Dismiss error notification
+  const dismissError = () => {
+    setAnalysisError(null);
+  };
+
   return (
     <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
       
+      {/* Error Notification */}
+      {analysisError && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="flex items-center gap-3 px-5 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl shadow-lg">
+            <Icons.Alert size={18} className="text-red-500 flex-shrink-0" />
+            <span className="text-sm text-red-700 dark:text-red-300">{analysisError}</span>
+            <button 
+              onClick={dismissError}
+              className="ml-2 p-1 text-red-400 hover:text-red-600 dark:hover:text-red-200 transition-colors"
+            >
+              <Icons.Close size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Resizing Overlay */}
       {isResizing && (
         <div 
