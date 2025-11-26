@@ -34,6 +34,29 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-300 px-6">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-8 shadow-xl shadow-indigo-500/20 animate-pulse">
+            <Icons.Bot size={40} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
+            프로젝트를 분석하고 있습니다
+          </h2>
+          <p className="text-base text-slate-500 dark:text-slate-400 mb-8">
+            AI가 모듈 구조, 견적, 일정을 분석 중입니다...
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-300 px-6">
       <div className="w-full max-w-3xl mx-auto">

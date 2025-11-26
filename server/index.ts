@@ -60,13 +60,25 @@ app.post('/api/analyze', async (req, res) => {
     const { text, fileContents } = req.body;
     let fullResponse = '';
 
+    console.log('[Analyze] Starting analysis for:', text?.substring(0, 100));
+
     await analyzeProject(text, fileContents, (chunk: string) => {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
     });
 
+    console.log('[Analyze] Full response length:', fullResponse.length);
+    console.log('[Analyze] Response contains json:modules?', fullResponse.includes('```json:modules'));
+    console.log('[Analyze] Response contains ```json?', fullResponse.includes('```json'));
+
     const parsedData = parseAnalysisResponse(fullResponse);
     
+    console.log('[Analyze] Parsed data:', parsedData ? {
+      projectTitle: parsedData.projectTitle,
+      modulesCount: parsedData.modules?.length || 0,
+      hasEstimates: !!parsedData.estimates
+    } : 'null');
+
     res.write(`data: ${JSON.stringify({ 
       done: true, 
       parsed: parsedData 

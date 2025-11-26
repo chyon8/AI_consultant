@@ -167,33 +167,28 @@ const App: React.FC = () => {
       timestamp: new Date(),
     };
     
-    // Create AI message placeholder - shows loading status only
+    // Create AI message for chat (will show after view switch)
     const aiMsgId = (Date.now() + 1).toString();
     const aiMsg: Message = {
       id: aiMsgId,
       role: 'model',
-      text: '프로젝트를 분석하고 있습니다...',
+      text: '',
       timestamp: new Date(),
-      isStreaming: true,
+      isStreaming: false,
     };
     
     try {
-      // Read file contents first (before switching view)
+      // Read file contents first (stay on landing page during analysis)
       const fileContents = await Promise.all(
         files.map(file => readFileContent(file))
       );
       
-      // Only switch view after successful file reading
-      setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
-      setCurrentView('detail');
-      
-      // Call analyze API - collect response internally, don't show in chat
+      // Call analyze API - stay on landing page, show loading there
       const parsedResult = await analyzeProject(
         text, 
         fileContents, 
         (chunk) => {
-          // Don't update chat with streaming content
-          // Response is collected internally for parsing
+          // Don't update chat - response collected internally
         },
         handleAnalysisComplete,
         (error) => {
@@ -201,32 +196,22 @@ const App: React.FC = () => {
         }
       );
       
-      // Update chat with completion message
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMsgId 
-          ? { 
-              ...msg, 
-              text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.', 
-              isStreaming: false 
-            } 
-          : msg
-      ));
+      // Analysis complete - now switch to detail view
+      setMessages([
+        ...INITIAL_MESSAGES, 
+        userMsg, 
+        { 
+          ...aiMsg, 
+          text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.' 
+        }
+      ]);
+      setCurrentView('detail');
+      
     } catch (error) {
       console.error('Analysis error:', error);
       const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
       setAnalysisError(errorMessage);
-      
-      // If we switched to detail view, update the message
-      if (currentView === 'detail') {
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMsgId 
-            ? { ...msg, text: '분석 중 오류가 발생했습니다. 상단 리셋 버튼을 눌러 다시 시도해주세요.', isStreaming: false } 
-            : msg
-        ));
-      } else {
-        // Stay on landing page if we haven't switched yet
-        setMessages(INITIAL_MESSAGES);
-      }
+      // Stay on landing page on error
     }
     
     setIsAnalyzing(false);
