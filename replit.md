@@ -51,8 +51,10 @@ Before writing any code, you MUST output a plan in this format:
 │   ├── ChatInterface.tsx    # Chat interface with AI
 │   ├── Dashboard.tsx        # Main dashboard with tabs
 │   ├── EstimationTab.tsx    # Estimation/budget tab
-│   ├── CollapsibleSidebar.tsx # Left sidebar (외주/상주/나머지)
+│   ├── CollapsibleSidebar.tsx # Left sidebar (외주 + 프로젝트 히스토리)
 │   └── ... (other UI components)
+├── hooks/
+│   └── useProjectHistory.ts # 프로젝트 히스토리 로컬스토리지 관리
 ├── services/
 │   ├── geminiService.ts     # Frontend Gemini service (legacy)
 │   └── apiService.ts        # Frontend API service
@@ -117,7 +119,9 @@ The "Start application" workflow runs `npm run dev` which uses concurrently to r
 ## AI Integration
 
 ### Gemini AI Service
-The app uses Gemini 2.5 Flash model for:
+The app uses Gemini 3 Pro Preview model with thinking capabilities:
+- Model: `gemini-3-pro-preview`
+- Config: temperature=1.0, thinkingBudget=8000
 - PART 1: Project planning, estimation, WBS generation
 - PART 2: RFP (입찰 공고문) generation
 
@@ -132,13 +136,18 @@ The app uses Gemini 2.5 Flash model for:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (November 26, 2024)
+- Upgraded AI model from Gemini 2.5 Flash to Gemini 3 Pro Preview
+- Added thinkingBudget parameter (8000 tokens) for enhanced reasoning
+- Implemented project history feature with localStorage persistence
+- Refactored sidebar: removed '상주/나머지', kept only '외주' with history submenu
+- Added useProjectHistory custom hook for CRUD operations
+- Implemented state rehydration when loading history projects
+- Fixed SSE buffering bug for incomplete JSON chunk handling
 - Added LandingView component (ChatGPT/Gemini style main page)
 - Implemented Express backend server with SSE streaming
 - Created API routes for /api/analyze, /api/rfp, /api/upload
-- Added prompt builders for PART 1 and PART 2
 - Implemented view transition (landing → detail)
 - Fixed security: removed API key from frontend bundle
-- Fixed SSE error handling with proper try/catch/finally
 
 ## Notes
 - The app uses Tailwind CSS via CDN (warning in console is expected for dev)
