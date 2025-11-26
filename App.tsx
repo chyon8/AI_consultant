@@ -177,16 +177,15 @@ const App: React.FC = () => {
       isStreaming: true,
     };
     
-    setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
-    
-    // Transition to detail view
-    setCurrentView('detail');
-    
     try {
-      // Read file contents
+      // Read file contents first (before switching view)
       const fileContents = await Promise.all(
         files.map(file => readFileContent(file))
       );
+      
+      // Only switch view after successful file reading
+      setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
+      setCurrentView('detail');
       
       // Call analyze API with streaming
       const parsedResult = await analyzeProject(
@@ -213,19 +212,35 @@ const App: React.FC = () => {
       console.error('Analysis error:', error);
       const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
       setAnalysisError(errorMessage);
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMsgId 
-          ? { ...msg, text: '분석 중 오류가 발생했습니다. 다시 시도해주세요.', isStreaming: false } 
-          : msg
-      ));
+      
+      // If we switched to detail view, update the message
+      if (currentView === 'detail') {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, text: '분석 중 오류가 발생했습니다. 상단 리셋 버튼을 눌러 다시 시도해주세요.', isStreaming: false } 
+            : msg
+        ));
+      } else {
+        // Stay on landing page if we haven't switched yet
+        setMessages(INITIAL_MESSAGES);
+      }
     }
     
     setIsAnalyzing(false);
   };
 
-  // Dismiss error notification
+  // Dismiss error notification and reset state
   const dismissError = () => {
     setAnalysisError(null);
+  };
+
+  // Handle retry from error state
+  const handleRetry = () => {
+    setAnalysisError(null);
+    setCurrentView('landing');
+    setMessages(INITIAL_MESSAGES);
+    setModules(INITIAL_MODULES);
+    setEstimationStep('SCOPE');
   };
 
   return (
@@ -238,8 +253,14 @@ const App: React.FC = () => {
             <Icons.Alert size={18} className="text-red-500 flex-shrink-0" />
             <span className="text-sm text-red-700 dark:text-red-300">{analysisError}</span>
             <button 
+              onClick={handleRetry}
+              className="ml-2 px-3 py-1 text-xs font-medium text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800/50 rounded-lg transition-colors"
+            >
+              다시 시도
+            </button>
+            <button 
               onClick={dismissError}
-              className="ml-2 p-1 text-red-400 hover:text-red-600 dark:hover:text-red-200 transition-colors"
+              className="p-1 text-red-400 hover:text-red-600 dark:hover:text-red-200 transition-colors"
             >
               <Icons.Close size={16} />
             </button>
