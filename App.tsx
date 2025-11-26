@@ -167,12 +167,12 @@ const App: React.FC = () => {
       timestamp: new Date(),
     };
     
-    // Create AI message placeholder
+    // Create AI message placeholder - shows loading status only
     const aiMsgId = (Date.now() + 1).toString();
     const aiMsg: Message = {
       id: aiMsgId,
       role: 'model',
-      text: '',
+      text: '프로젝트를 분석하고 있습니다...',
       timestamp: new Date(),
       isStreaming: true,
     };
@@ -187,16 +187,13 @@ const App: React.FC = () => {
       setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
       setCurrentView('detail');
       
-      // Call analyze API with streaming
+      // Call analyze API - collect response internally, don't show in chat
       const parsedResult = await analyzeProject(
         text, 
         fileContents, 
         (chunk) => {
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMsgId 
-              ? { ...msg, text: msg.text + chunk } 
-              : msg
-          ));
+          // Don't update chat with streaming content
+          // Response is collected internally for parsing
         },
         handleAnalysisComplete,
         (error) => {
@@ -204,9 +201,15 @@ const App: React.FC = () => {
         }
       );
       
-      // Mark streaming as complete
+      // Update chat with completion message
       setMessages(prev => prev.map(msg => 
-        msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
+        msg.id === aiMsgId 
+          ? { 
+              ...msg, 
+              text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.', 
+              isStreaming: false 
+            } 
+          : msg
       ));
     } catch (error) {
       console.error('Analysis error:', error);
