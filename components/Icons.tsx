@@ -43,7 +43,8 @@ import {
   ExternalLink,
   Building2,
   MoreHorizontal,
-  Paperclip
+  Paperclip,
+  X
 } from 'lucide-react';
 
 export const Icons = {
@@ -90,5 +91,7 @@ export const Icons = {
   External: ExternalLink,
   Building: Building2,
   More: MoreHorizontal,
-  Attach: Paperclip
+  Attach: Paperclip,
+  Close: X,
+  FileText: FileText
 };

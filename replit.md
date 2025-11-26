@@ -40,88 +40,110 @@ Before writing any code, you MUST output a plan in this format:
 - **Frontend Framework**: React 19.2.0
 - **Build Tool**: Vite 6.2.0
 - **Language**: TypeScript 5.8.2
+- **Backend**: Express.js
 - **AI Service**: Google Gemini AI (@google/genai)
 - **UI Icons**: Lucide React
 
 ### Project Structure
 ```
-├── components/          # React components
-│   ├── ArchitectureTab.tsx
-│   ├── BudgetOptimizer.tsx
-│   ├── ChatInterface.tsx
-│   ├── Dashboard.tsx
-│   ├── EstimationTab.tsx
+├── components/              # React components
+│   ├── LandingView.tsx      # Main landing page (ChatGPT/Gemini style)
+│   ├── ChatInterface.tsx    # Chat interface with AI
+│   ├── Dashboard.tsx        # Main dashboard with tabs
+│   ├── EstimationTab.tsx    # Estimation/budget tab
+│   ├── CollapsibleSidebar.tsx # Left sidebar (외주/상주/나머지)
 │   └── ... (other UI components)
 ├── services/
-│   └── geminiService.ts # Gemini AI integration
-├── App.tsx             # Main application component
-├── constants.ts        # Application constants
-├── types.ts           # TypeScript type definitions
-├── index.tsx          # Application entry point
-└── vite.config.ts     # Vite configuration
-
+│   ├── geminiService.ts     # Frontend Gemini service (legacy)
+│   └── apiService.ts        # Frontend API service
+├── server/
+│   ├── index.ts             # Express server entry
+│   └── services/
+│       ├── geminiService.ts # Backend Gemini PART 1 (분석)
+│       └── rfpService.ts    # Backend Gemini PART 2 (공고문)
+├── App.tsx                  # Main application component
+├── constants.ts             # Application constants
+├── types.ts                 # TypeScript type definitions
+├── index.tsx                # Application entry point
+└── vite.config.ts           # Vite configuration
 ```
 
+### User Flow
+1. **Landing Page** - User enters project requirements or attaches files
+2. **Analysis** - Gemini AI analyzes and generates PART 1 (기획/견적/WBS)
+3. **Detail View** - User reviews and adjusts modules/features
+4. **RFP Generation** - Gemini AI generates PART 2 (입찰 공고문)
+
 ### Key Features
+- ChatGPT/Gemini style landing page with file attachment
 - Interactive chat interface with Gemini AI consultant
 - Project module and feature selection
 - Budget optimization suggestions
-- Partner type presets (STUDIO, STARTUP, ENTERPRISE, etc.)
-- Project scale selector
-- Architecture, Schedule, and Estimation tabs
+- Partner type presets (AGENCY, STUDIO, AI_NATIVE)
+- Estimation, Partner Type, Similar Cases tabs
 - Dark mode support
 - Resizable sidebar interface
+- SSE streaming for AI responses
 
 ## Configuration
 
 ### Environment Variables
 The application requires a Gemini API key to function:
-- `GEMINI_API_KEY`: Your Google Gemini API key (set in `.env.local`)
+- `GEMINI_API_KEY`: Your Google Gemini API key (stored as Replit secret)
 
-### Vite Configuration
-- **Port**: 5000 (required for Replit webview)
-- **Host**: 0.0.0.0 (allows external connections)
-- **Allowed Hosts**: true (required for Replit proxy)
+### Ports
+- **Frontend (Vite)**: 5000 (required for Replit webview)
+- **Backend (Express)**: 3001
+
+### API Endpoints
+- `POST /api/analyze` - Analyze project (PART 1 - SSE streaming)
+- `POST /api/rfp` - Generate RFP (PART 2 - SSE streaming)
+- `POST /api/upload` - File upload
+- `GET /api/health` - Health check
 
 ## Development
 
 ### Running Locally
 1. Ensure dependencies are installed: `npm install`
-2. Set your Gemini API key in `.env.local`
+2. Set your Gemini API key as a Replit secret
 3. Run development server: `npm run dev`
 4. Access at: http://localhost:5000
 
 ### Workflow
-The "Start application" workflow runs `npm run dev` and serves the app on port 5000.
+The "Start application" workflow runs `npm run dev` which uses concurrently to run both:
+- Frontend: `npm run client` (Vite on port 5000)
+- Backend: `npm run server` (Express on port 3001)
 
-## API Integration
+## AI Integration
 
 ### Gemini AI Service
 The app uses Gemini 2.5 Flash model for:
-- Project cost analysis
-- Feature trade-off recommendations
-- Budget optimization suggestions
-- Architecture and scheduling advice
+- PART 1: Project planning, estimation, WBS generation
+- PART 2: RFP (입찰 공고문) generation
 
-The AI consultant is context-aware of:
-- Selected modules and sub-features
-- Current project cost
-- Partner type multipliers
-- Project scale settings
+### Prompt Structure
+- **PART 1** (기획/견적/WBS):
+  - STEP 1: 프로젝트 상세 기획 (모듈 구조)
+  - STEP 2: 유형별 비교 견적 (TYPE A/B/C)
+  - STEP 3: 실행 계획 (WBS)
+  
+- **PART 2** (입찰 공고문):
+  - Clean text format (no markdown)
+  - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (November 25, 2024)
-- Imported from GitHub to Replit
-- Configured Vite to run on port 5000 with allowedHosts enabled for Replit proxy
-- Removed CDN import maps and configured to use npm packages from node_modules
-- Added script tag to index.html to load the React app
-- Set up workflow for automatic app startup
-- Configured GEMINI_API_KEY as a Replit secret
-- Set up deployment configuration for static build
-- Documented project structure and setup
+## Recent Changes (November 26, 2024)
+- Added LandingView component (ChatGPT/Gemini style main page)
+- Implemented Express backend server with SSE streaming
+- Created API routes for /api/analyze, /api/rfp, /api/upload
+- Added prompt builders for PART 1 and PART 2
+- Implemented view transition (landing → detail)
+- Fixed security: removed API key from frontend bundle
+- Fixed SSE error handling with proper try/catch/finally
 
 ## Notes
 - The app uses Tailwind CSS via CDN (warning in console is expected for dev)
 - All components are in Korean language
 - Budget calculations are in Korean Won (KRW)
 - Gemini API key is required and stored as a Replit secret
-- The app runs on port 5000 and is accessible via Replit's webview proxy
+- API key is only accessed server-side for security
+- The frontend proxies /api requests to the backend server

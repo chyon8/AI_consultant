@@ -4,16 +4,26 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "client": "vite",
+    "server": "tsx watch server/index.ts",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/multer": "^2.0.0",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "lucide-react": "^0.554.0",
+    "multer": "^2.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "tsx": "^4.20.6"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -7,11 +7,19 @@ import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
 import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
+import { LandingView } from './components/LandingView';
+import { analyzeProject, readFileContent } from './services/apiService';
+
+type AppView = 'landing' | 'detail';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [modules, setModules] = useState<ModuleItem[]>(INITIAL_MODULES);
   
+  // App View State (landing or detail)
+  const [currentView, setCurrentView] = useState<AppView>('landing');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
   const multipliers = PARTNER_PRESETS[currentPartnerType];
@@ -121,6 +129,64 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle initial analysis from landing page
+  const handleAnalyze = async (text: string, files: File[]) => {
+    setIsAnalyzing(true);
+    
+    // Add user message
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      text: text || `[${files.map(f => f.name).join(', ')}] 파일을 첨부했습니다.`,
+      timestamp: new Date(),
+    };
+    
+    // Create AI message placeholder
+    const aiMsgId = (Date.now() + 1).toString();
+    const aiMsg: Message = {
+      id: aiMsgId,
+      role: 'model',
+      text: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+    
+    setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
+    
+    // Transition to detail view
+    setCurrentView('detail');
+    
+    try {
+      // Read file contents
+      const fileContents = await Promise.all(
+        files.map(file => readFileContent(file))
+      );
+      
+      // Call analyze API with streaming
+      await analyzeProject(text, fileContents, (chunk) => {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, text: msg.text + chunk } 
+            : msg
+        ));
+      });
+      
+      // Mark streaming as complete
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
+      ));
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId 
+          ? { ...msg, text: '분석 중 오류가 발생했습니다. 다시 시도해주세요.', isStreaming: false } 
+          : msg
+      ));
+    }
+    
+    setIsAnalyzing(false);
+  };
+
   return (
     <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
       
@@ -163,7 +229,9 @@ const App: React.FC = () => {
                 onClick={() => { 
                     setModules(INITIAL_MODULES); 
                     setCurrentPartnerType('STUDIO'); 
-                    setEstimationStep('SCOPE'); // Reset flow
+                    setEstimationStep('SCOPE');
+                    setCurrentView('landing');
+                    setMessages(INITIAL_MESSAGES);
                 }}
                 className="p-2 text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                 title="Reset"
@@ -178,46 +246,58 @@ const App: React.FC = () => {
 
       {/* Main Layout */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Collapsible Sidebar - Left of Chat */}
+        {/* Collapsible Sidebar - Always visible */}
         <CollapsibleSidebar 
           isCollapsed={isSidebarCollapsed} 
           onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
         />
 
-        <div 
-          className="h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative transition-colors duration-300"
-          style={{ width: sidebarWidth }}
-        >
-          <ChatInterface 
-            messages={messages} 
-            setMessages={setMessages}
-            modules={modules}
-            setModules={setModules}
+        {/* Conditional View Rendering */}
+        {currentView === 'landing' ? (
+          /* Landing View - Full width (minus sidebar) */
+          <LandingView 
+            onAnalyze={handleAnalyze}
+            isLoading={isAnalyzing}
           />
-        </div>
+        ) : (
+          /* Detail View - Chat + Dashboard */
+          <>
+            <div 
+              className="h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative transition-all duration-500 animate-slide-in-left"
+              style={{ width: sidebarWidth }}
+            >
+              <ChatInterface 
+                messages={messages} 
+                setMessages={setMessages}
+                modules={modules}
+                setModules={setModules}
+              />
+            </div>
 
-        <div
-          className={`w-1 hover:w-1.5 cursor-col-resize hover:bg-indigo-500 transition-all z-40 flex-shrink-0 relative group flex items-center justify-center -ml-[1px] ${isResizing ? 'bg-indigo-500 w-1.5' : 'bg-transparent'}`}
-          onMouseDown={startResizing}
-        >
-           <div className={`w-0.5 h-8 rounded-full transition-colors ${isResizing ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-white'}`} />
-        </div>
+            <div
+              className={`w-1 hover:w-1.5 cursor-col-resize hover:bg-indigo-500 transition-all z-40 flex-shrink-0 relative group flex items-center justify-center -ml-[1px] ${isResizing ? 'bg-indigo-500 w-1.5' : 'bg-transparent'}`}
+              onMouseDown={startResizing}
+            >
+               <div className={`w-0.5 h-8 rounded-full transition-colors ${isResizing ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-white'}`} />
+            </div>
 
-        <div className="flex-1 h-full bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
-          <Dashboard 
-            modules={modules} 
-            setModules={setModules}
-            onToggleModule={handleToggleModule}
-            onToggleSubFeature={handleToggleSubFeature}
-            currentPartnerType={currentPartnerType}
-            onSelectPartnerType={applyPartnerType}
-            multipliers={multipliers}
-            estimationStep={estimationStep}
-            onStepChange={setEstimationStep}
-            currentScale={currentScale}
-            onScaleChange={handleScaleChange}
-          />
-        </div>
+            <div className="flex-1 h-full bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 animate-fade-in">
+              <Dashboard 
+                modules={modules} 
+                setModules={setModules}
+                onToggleModule={handleToggleModule}
+                onToggleSubFeature={handleToggleSubFeature}
+                currentPartnerType={currentPartnerType}
+                onSelectPartnerType={applyPartnerType}
+                multipliers={multipliers}
+                estimationStep={estimationStep}
+                onStepChange={setEstimationStep}
+                currentScale={currentScale}
+                onScaleChange={handleScaleChange}
+              />
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
