@@ -132,6 +132,12 @@ const App: React.FC = () => {
 
   // Handle parsed analysis result
   const handleAnalysisComplete = (result: ParsedAnalysisResult | null) => {
+    console.log('[App] handleAnalysisComplete called with:', result ? {
+      projectTitle: result.projectTitle,
+      modulesCount: result.modules?.length || 0,
+      hasEstimates: !!result.estimates
+    } : 'null');
+    
     if (result && result.modules && result.modules.length > 0) {
       const convertedModules: ModuleItem[] = result.modules.map(mod => ({
         id: mod.id,
@@ -150,7 +156,10 @@ const App: React.FC = () => {
           isSelected: feat.isSelected
         }))
       }));
+      console.log('[App] Setting modules:', convertedModules.length, 'items');
       setModules(convertedModules);
+    } else {
+      console.warn('[App] No valid modules in result');
     }
   };
 
