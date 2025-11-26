@@ -3,8 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const PART1_PROMPT = `# PROMPT METADATA
-# Version: v1.1.2-Integrated-StrictRFP-ModuleDepth
-# Description: IT 컨설팅(기획/견적/WBS) 생성
+# Version: v1.2.0-JSON-Module-Output
+# Description: IT 컨설팅(기획/견적/WBS) 생성 + JSON 모듈 데이터
 
 # Role & Objective
 당신은 20년 경력의 수석 IT 컨설턴트입니다.
@@ -46,8 +46,44 @@ const PART1_PROMPT = `# PROMPT METADATA
 *   통합 WBS: ■(진행), □(대기) 문자를 사용한 시각적 표
 *   파트너 선정 어드바이스
 
+## STEP 4. 구조화된 모듈 데이터 (JSON)
+응답 마지막에 반드시 아래 형식으로 JSON 블록을 출력하세요:
+
+\`\`\`json:modules
+{
+  "projectTitle": "프로젝트 제목",
+  "modules": [
+    {
+      "id": "mod_1",
+      "name": "모듈명",
+      "description": "모듈 설명",
+      "category": "frontend|backend|database|infra|etc",
+      "baseCost": 5000000,
+      "baseManMonths": 1.5,
+      "isSelected": true,
+      "required": true,
+      "subFeatures": [
+        {
+          "id": "feat_1_1",
+          "name": "세부기능명",
+          "price": 1000000,
+          "manWeeks": 1,
+          "isSelected": true
+        }
+      ]
+    }
+  ],
+  "estimates": {
+    "typeA": { "minCost": 50000000, "maxCost": 80000000, "duration": "4개월" },
+    "typeB": { "minCost": 30000000, "maxCost": 50000000, "duration": "5개월" },
+    "typeC": { "minCost": 20000000, "maxCost": 35000000, "duration": "6개월" }
+  }
+}
+\`\`\`
+
 ---
-응답은 한국어로 작성하고, 마크다운 형식으로 구조화해주세요.`;
+응답은 한국어로 작성하고, 마크다운 형식으로 구조화해주세요.
+JSON 블록은 반드시 응답 마지막에 포함하세요.`;
 
 export async function analyzeProject(
   userInput: string,

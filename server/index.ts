@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { analyzeProject } from './services/geminiService';
 import { generateRFP } from './services/rfpService';
+import { parseAnalysisResponse } from './services/responseParser';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -57,12 +58,19 @@ app.post('/api/analyze', async (req, res) => {
 
   try {
     const { text, fileContents } = req.body;
+    let fullResponse = '';
 
     await analyzeProject(text, fileContents, (chunk: string) => {
+      fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
     });
 
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    const parsedData = parseAnalysisResponse(fullResponse);
+    
+    res.write(`data: ${JSON.stringify({ 
+      done: true, 
+      parsed: parsedData 
+    })}\n\n`);
   } catch (error) {
     console.error('Analyze error:', error);
     res.write(`data: ${JSON.stringify({ error: 'Analysis failed' })}\n\n`);

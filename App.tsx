@@ -8,7 +8,7 @@ import { Icons } from './components/Icons';
 import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
-import { analyzeProject, readFileContent } from './services/apiService';
+import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 
 type AppView = 'landing' | 'detail';
 
@@ -129,6 +129,30 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle parsed analysis result
+  const handleAnalysisComplete = (result: ParsedAnalysisResult | null) => {
+    if (result && result.modules && result.modules.length > 0) {
+      const convertedModules: ModuleItem[] = result.modules.map(mod => ({
+        id: mod.id,
+        name: mod.name,
+        description: mod.description,
+        baseCost: mod.baseCost,
+        baseManMonths: mod.baseManMonths,
+        category: mod.category,
+        isSelected: mod.isSelected,
+        required: mod.required,
+        subFeatures: mod.subFeatures.map(feat => ({
+          id: feat.id,
+          name: feat.name,
+          price: feat.price,
+          manWeeks: feat.manWeeks,
+          isSelected: feat.isSelected
+        }))
+      }));
+      setModules(convertedModules);
+    }
+  };
+
   // Handle initial analysis from landing page
   const handleAnalyze = async (text: string, files: File[]) => {
     setIsAnalyzing(true);
@@ -163,13 +187,18 @@ const App: React.FC = () => {
       );
       
       // Call analyze API with streaming
-      await analyzeProject(text, fileContents, (chunk) => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMsgId 
-            ? { ...msg, text: msg.text + chunk } 
-            : msg
-        ));
-      });
+      const parsedResult = await analyzeProject(
+        text, 
+        fileContents, 
+        (chunk) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMsgId 
+              ? { ...msg, text: msg.text + chunk } 
+              : msg
+          ));
+        },
+        handleAnalysisComplete
+      );
       
       // Mark streaming as complete
       setMessages(prev => prev.map(msg => 

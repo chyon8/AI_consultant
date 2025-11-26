@@ -1,6 +1,41 @@
+export interface ParsedSubFeature {
+  id: string;
+  name: string;
+  price: number;
+  manWeeks: number;
+  isSelected: boolean;
+}
+
+export interface ParsedModule {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  baseCost: number;
+  baseManMonths: number;
+  isSelected: boolean;
+  required?: boolean;
+  subFeatures: ParsedSubFeature[];
+}
+
+export interface ParsedEstimates {
+  typeA: { minCost: number; maxCost: number; duration: string };
+  typeB: { minCost: number; maxCost: number; duration: string };
+  typeC: { minCost: number; maxCost: number; duration: string };
+}
+
+export interface ParsedAnalysisResult {
+  projectTitle: string;
+  modules: ParsedModule[];
+  estimates: ParsedEstimates;
+  rawMarkdown: string;
+}
+
 export interface AnalyzeResponse {
   chunk?: string;
   done?: boolean;
+  parsed?: ParsedAnalysisResult | null;
+  error?: string;
 }
 
 export interface UploadResponse {
@@ -32,8 +67,9 @@ export async function analyzeProject(
   text: string,
   fileContents: string[],
   onChunk: (chunk: string) => void,
+  onComplete?: (result: ParsedAnalysisResult | null) => void,
   onError?: (error: string) => void
-): Promise<void> {
+): Promise<ParsedAnalysisResult | null> {
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: {
@@ -52,6 +88,7 @@ export async function analyzeProject(
   }
 
   const decoder = new TextDecoder();
+  let parsedResult: ParsedAnalysisResult | null = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -62,9 +99,15 @@ export async function analyzeProject(
 
     for (const line of lines) {
       try {
-        const data = JSON.parse(line.slice(6));
+        const data: AnalyzeResponse = JSON.parse(line.slice(6));
         if (data.chunk) {
           onChunk(data.chunk);
+        }
+        if (data.done && data.parsed) {
+          parsedResult = data.parsed;
+          if (onComplete) {
+            onComplete(parsedResult);
+          }
         }
         if (data.error) {
           if (onError) {
@@ -74,14 +117,13 @@ export async function analyzeProject(
         }
       } catch (e) {
         if (e instanceof Error && e.message !== 'Analysis failed') {
-          // Re-throw actual errors, ignore parse errors
-          if (onError) {
-            throw e;
-          }
+          continue;
         }
       }
     }
   }
+
+  return parsedResult;
 }
 
 export async function generateRFP(
