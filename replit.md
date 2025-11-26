@@ -137,6 +137,10 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (November 26, 2024)
+- **baseCost(기본 구축비) UI 표시**: 모듈 비용 불일치 문제 해결
+  - 모듈 확장 영역에 "기본 구축비 (Core Framework)" 라인 아이템 추가
+  - 사용자가 모듈 총 비용 = 기본 구축비 + 하위 기능 합계임을 명확히 인지 가능
+  - AI 프롬프트에도 비용 구조 규칙 명시 추가
 - **Chat-driven UI Control**: 채팅으로 대시보드 제어 기능 추가
   - 사용자가 채팅창에서 모듈/기능 토글, 파트너 유형/규모 변경 요청 가능
   - Gemini가 자연어 답변 + JSON 액션 동시 반환
