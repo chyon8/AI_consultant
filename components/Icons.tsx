@@ -45,7 +45,14 @@ import {
   MoreHorizontal,
   Paperclip,
   X,
-  Copy
+  Copy,
+  Monitor,
+  Server,
+  Database,
+  Cloud,
+  Layers,
+  Settings,
+  Lightbulb
 } from 'lucide-react';
 
 export const Icons = {
@@ -67,6 +74,7 @@ export const Icons = {
   Refresh: RefreshCw,
   Down: ChevronDown,
   Up: ChevronUp,
+  ChevronDown: ChevronDown,
   Zap: Zap,
   Target: Target,
   TrendingUp: TrendingUp,
@@ -95,5 +103,12 @@ export const Icons = {
   Attach: Paperclip,
   Close: X,
   FileText: FileText,
-  Copy: Copy
+  Copy: Copy,
+  Monitor: Monitor,
+  Server: Server,
+  Database: Database,
+  Cloud: Cloud,
+  Layers: Layers,
+  Settings: Settings,
+  Lightbulb: Lightbulb
 };

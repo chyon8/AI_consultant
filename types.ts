@@ -48,9 +48,18 @@ export interface SimilarProject {
 }
 
 export enum TabView {
-  ESTIMATION = 'ESTIMATION',
-  SIMILAR_CASES = 'SIMILAR_CASES',
-  PRESET_COMPARISON = 'PRESET_COMPARISON',
+  STEP1_PLANNING = 'STEP1_PLANNING',
+  STEP2_ESTIMATION = 'STEP2_ESTIMATION',
+  STEP3_WBS = 'STEP3_WBS',
+  STEP4_RFP = 'STEP4_RFP',
+}
+
+export interface StepTabConfig {
+  id: TabView;
+  stepNumber: number;
+  label: string;
+  shortLabel: string;
+  description: string;
 }
 
 // Changed from MVP/STANDARD/ENTERPRISE to Partner Types

@@ -1,13 +1,11 @@
-
-
-import React, { useState, useRef } from 'react';
-import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { ModuleItem, TabView, PartnerType, EstimationStep, ProjectScale, StepTabConfig } from '../types';
 import { Icons } from './Icons';
-import { EstimationTab } from './EstimationTab';
-import { SimilarCasesTab } from './SimilarCasesTab';
-import { PresetSelectionTab } from './PresetSelectionTab';
+import { Step1PlanningTab } from './Step1PlanningTab';
+import { Step2EstimationTab } from './Step2EstimationTab';
+import { Step3WBSTab } from './Step3WBSTab';
+import { Step4RFPTab } from './Step4RFPTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
-import { RFPModal } from './RFPModal';
 
 interface DashboardProps {
   modules: ModuleItem[];
@@ -36,23 +34,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
   currentScale,
   onScaleChange
 }) => {
-  const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
+  const [activeTab, setActiveTab] = useState<TabView>(TabView.STEP1_PLANNING);
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isRFPOpen, setIsRFPOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleGenerateEstimate = () => {
-    onStepChange('RESULT');
-    setActiveTab(TabView.ESTIMATION);
+  // Map TabView to EstimationStep
+  const getEstimationStepForTab = (tab: TabView): 'SCOPE' | 'RESULT' | 'REGISTER' => {
+    switch (tab) {
+      case TabView.STEP1_PLANNING:
+      case TabView.STEP2_ESTIMATION:
+        return 'SCOPE';
+      case TabView.STEP3_WBS:
+        return 'RESULT';
+      case TabView.STEP4_RFP:
+        return 'REGISTER';
+      default:
+        return 'SCOPE';
+    }
+  };
+
+  // Map EstimationStep to TabView (inverse mapping for external updates)
+  const getTabForEstimationStep = (step: EstimationStep): TabView => {
+    switch (step) {
+      case 'SCOPE':
+        return TabView.STEP1_PLANNING;
+      case 'RESULT':
+        return TabView.STEP3_WBS;
+      case 'REGISTER':
+        return TabView.STEP4_RFP;
+      default:
+        return TabView.STEP1_PLANNING;
+    }
+  };
+
+  // Sync activeTab when estimationStep changes externally (e.g., chat-driven)
+  useEffect(() => {
+    const expectedTab = getTabForEstimationStep(estimationStep);
+    const currentEstimationStep = getEstimationStepForTab(activeTab);
+    
+    // Only update if the estimationStep changed externally (not from our own tab change)
+    if (currentEstimationStep !== estimationStep) {
+      setActiveTab(expectedTab);
+    }
+  }, [estimationStep]);
+
+  const handleTabChange = (tab: TabView) => {
+    setActiveTab(tab);
+    onStepChange(getEstimationStepForTab(tab));
     setTimeout(() => {
       contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
   };
 
-  const tabs = [
-    { id: TabView.ESTIMATION, label: '견적/예산' },
-    { id: TabView.PRESET_COMPARISON, label: '파트너 유형' },
-    { id: TabView.SIMILAR_CASES, label: '유사 사례' },
+  const tabs: StepTabConfig[] = [
+    { id: TabView.STEP1_PLANNING, stepNumber: 1, label: '프로젝트 기획', shortLabel: 'STEP 1', description: 'Project Planning' },
+    { id: TabView.STEP2_ESTIMATION, stepNumber: 2, label: '비교 견적', shortLabel: 'STEP 2', description: 'Estimation' },
+    { id: TabView.STEP3_WBS, stepNumber: 3, label: '실행 계획', shortLabel: 'STEP 3', description: 'WBS' },
+    { id: TabView.STEP4_RFP, stepNumber: 4, label: '공고문', shortLabel: 'STEP 4', description: 'RFP' },
   ];
 
   // Logic for Project DNA Analysis
@@ -77,111 +115,122 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const risk = getRiskLabel();
 
-  // Footer Button Logic
+  // Navigate to next/previous step (uses handleTabChange which syncs estimationStep)
+  const handleNextStep = () => {
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex < tabs.length - 1) {
+      handleTabChange(tabs[currentIndex + 1].id);
+    }
+  };
+
+  const handlePrevStep = () => {
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex > 0) {
+      handleTabChange(tabs[currentIndex - 1].id);
+    }
+  };
+
+  // Footer Button Logic - Navigate through steps with workflow sync
   const renderFooter = () => {
-    if (estimationStep === 'REGISTER') {
-        return (
-            <div className="flex gap-4 w-full">
-              <button 
-                  onClick={() => setIsRFPOpen(true)}
-                  className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-              >
-                  <Icons.File size={18} />
-                  <span>공고문 생성하기</span>
-              </button>
-              <button 
-                  className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-              >
-                  <Icons.CheckMark size={18} strokeWidth={3} />
-                  <span>등록 완료</span>
-              </button>
-            </div>
-        );
-    }
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    const isFirstStep = currentIndex === 0;
+    const isLastStep = currentIndex === tabs.length - 1;
 
-    if (estimationStep === 'RESULT') {
-        return (
-           <div className="flex gap-4 w-full">
-              <button 
-                  onClick={() => onStepChange('SCOPE')}
-                  className="flex-1 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
-              >
-                  <Icons.Refresh size={18} />
-                  <span>기능/옵션 수정하기</span>
-              </button>
-              <button 
-                  onClick={() => onStepChange('REGISTER')}
-                  className="flex-[2] h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-              >
-                  <span>이 내용으로 공고 등록</span>
-                  <Icons.CheckMark size={18} strokeWidth={3} />
-              </button>
-           </div>
-        );
-    }
-
-    // Default: SCOPE Step
     return (
-        <div className="flex items-center gap-3 w-full">
-            <button
-                onClick={() => setIsReportOpen(true)}
-                className="w-14 h-14 flex items-center justify-center bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 shadow-float hover:scale-105 active:scale-95 backdrop-blur-md"
-                title="리포트 다운로드"
-            >
-                <Icons.Download size={22} />
-            </button>
+      <div className="flex items-center gap-3 w-full">
+        {!isFirstStep && (
+          <button
+            onClick={handlePrevStep}
+            className="h-14 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+          >
+            <Icons.Left size={18} />
+            <span>이전</span>
+          </button>
+        )}
 
-            <button 
-                onClick={handleGenerateEstimate}
-                className="flex-1 h-14 bg-slate-900 dark:bg-indigo-500 hover:bg-black dark:hover:bg-indigo-600 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-indigo-900/30 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
-            >
-                <Icons.PieChart size={18} />
-                <span>견적 산출하기 (Generate Estimate)</span>
-            </button>
-        </div>
+        <button
+          onClick={() => setIsReportOpen(true)}
+          className="w-14 h-14 flex items-center justify-center bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 shadow-float hover:scale-105 active:scale-95 backdrop-blur-md"
+          title="리포트 다운로드"
+        >
+          <Icons.Download size={22} />
+        </button>
+
+        {!isLastStep ? (
+          <button 
+            onClick={handleNextStep}
+            className="flex-1 h-14 bg-slate-900 dark:bg-indigo-500 hover:bg-black dark:hover:bg-indigo-600 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-indigo-900/30 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
+          >
+            <span>다음 단계로</span>
+            <Icons.Right size={18} />
+          </button>
+        ) : (
+          <button 
+            className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+          >
+            <Icons.CheckMark size={18} />
+            <span>프로젝트 등록 완료</span>
+          </button>
+        )}
+      </div>
     );
   };
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
-      {/* Top Bar: Minimal Tabs & Stats */}
-      <div className="px-6 lg:px-10 pt-6 pb-2 flex flex-wrap gap-4 justify-between items-end border-b border-transparent">
-         {/* Minimal Tabs */}
-         <div className="flex gap-6 overflow-x-auto no-scrollbar">
-            {tabs.map(tab => {
+      {/* Top Bar: Step-based Tabs */}
+      <div className="px-6 lg:px-10 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+         {/* Step Tabs */}
+         <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {tabs.map((tab, index) => {
               const isActive = activeTab === tab.id;
+              const stepColors = [
+                'bg-indigo-500',
+                'bg-emerald-500',
+                'bg-purple-500',
+                'bg-amber-500'
+              ];
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative pb-2 text-sm whitespace-nowrap transition-all duration-300 ${
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`relative flex items-center gap-3 px-4 py-3 rounded-xl whitespace-nowrap transition-all duration-300 ${
                     isActive
-                      ? 'font-bold text-slate-900 dark:text-white' 
-                      : 'font-medium text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  {tab.label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-500 rounded-full"></span>
-                  )}
+                  <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${
+                    isActive ? 'bg-white/20 dark:bg-slate-900/20 text-white dark:text-slate-900' : `${stepColors[index]} text-white`
+                  }`}>
+                    {tab.stepNumber}
+                  </span>
+                  <div className="text-left">
+                    <p className={`text-sm font-bold ${isActive ? '' : ''}`}>{tab.label}</p>
+                    <p className={`text-[10px] ${isActive ? 'text-white/70 dark:text-slate-900/70' : 'text-slate-400 dark:text-slate-500'}`}>{tab.description}</p>
+                  </div>
                 </button>
               )
             })}
          </div>
 
          {/* Minimal Stats Widget */}
-         <div className="hidden lg:flex items-center gap-6">
-             <div className="flex flex-col items-end">
-                <span className="text-[10px] font-semibold text-slate-300 dark:text-slate-600 uppercase tracking-widest">Complexity</span>
+         <div className="hidden lg:flex items-center gap-6 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+             <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Complexity</span>
                 <div className="flex gap-1 mt-1">
                    {[1,2,3,4].map(i => (
-                     <div key={i} className={`w-1 h-1 rounded-full ${i <= complexityScore ? 'bg-slate-800 dark:bg-slate-200' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
+                     <div key={i} className={`w-2 h-2 rounded-full ${i <= complexityScore ? 'bg-slate-800 dark:bg-slate-200' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
                    ))}
                 </div>
              </div>
-             <div className="flex flex-col items-end">
-                <span className="text-[10px] font-semibold text-slate-300 dark:text-slate-600 uppercase tracking-widest">Risk</span>
+             <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Risk</span>
                 <span className={`text-xs font-bold mt-0.5 ${risk.color}`}>{risk.text}</span>
+             </div>
+             <div className="flex flex-col ml-auto">
+                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Modules</span>
+                <span className="text-xs font-bold mt-0.5 text-slate-900 dark:text-white">{selectedModules.length}개 선택</span>
              </div>
          </div>
       </div>
@@ -190,27 +239,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div ref={contentRef} className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 pb-40 scroll-smooth"> 
         <div className="max-w-4xl mx-auto">
           <div key={activeTab} className="animate-fade-in-up">
-            {activeTab === TabView.ESTIMATION && (
-              <EstimationTab 
+            {activeTab === TabView.STEP1_PLANNING && (
+              <Step1PlanningTab 
+                modules={modules} 
+              />
+            )}
+            {activeTab === TabView.STEP2_ESTIMATION && (
+              <Step2EstimationTab 
                 modules={modules} 
                 onToggleModule={onToggleModule} 
                 onToggleSubFeature={onToggleSubFeature}
-                setModules={setModules}
                 currentPartnerType={currentPartnerType}
                 onSelectPartnerType={onSelectPartnerType}
-                estimationStep={estimationStep}
                 currentScale={currentScale}
                 onScaleChange={onScaleChange}
               />
             )}
-            {activeTab === TabView.PRESET_COMPARISON && (
-              <PresetSelectionTab
+            {activeTab === TabView.STEP3_WBS && (
+              <Step3WBSTab
+                modules={modules}
                 currentPartnerType={currentPartnerType}
-                onSelect={onSelectPartnerType}
               />
             )}
-            {activeTab === TabView.SIMILAR_CASES && (
-              <SimilarCasesTab />
+            {activeTab === TabView.STEP4_RFP && (
+              <Step4RFPTab
+                modules={modules}
+                projectSummary={`총 ${selectedModules.length}개 모듈, 예상 비용 ${(baseTotalCost / 10000).toLocaleString()}만원`}
+              />
             )}
           </div>
         </div>
@@ -231,13 +286,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
          onClose={() => setIsReportOpen(false)} 
          projectName="기업형 LMS 플랫폼"
          totalCost={baseTotalCost * multipliers.costMultiplier}
-      />
-      
-      <RFPModal
-         isOpen={isRFPOpen}
-         onClose={() => setIsRFPOpen(false)}
-         modules={modules}
-         projectSummary={`총 ${selectedModules.length}개 모듈, 예상 비용 ${(baseTotalCost / 10000).toLocaleString()}만원`}
       />
     </div>
   );
