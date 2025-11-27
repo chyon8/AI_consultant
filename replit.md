@@ -144,7 +144,16 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (November 26, 2024)
+## Recent Changes (November 27, 2024)
+- **StepIndicator 동적 반응 구현**: 프로그램 진행도에 따라 상단 스텝 표시기가 자동으로 변경
+  - 랜딩 페이지: Step 1 활성화 (분석 중일 때)
+  - 상세 뷰 + SCOPE: Step 1 완료, Step 2 활성화
+  - 상세 뷰 + RESULT: Step 1,2 완료, Step 3 활성화
+  - REGISTER: 모든 스텝 완료
+- **사이드바 텍스트 변경**: "프로젝트 히스토리" → "프로젝트"
+- **Express 5 호환성 수정**: 와일드카드 라우트 패턴을 미들웨어 방식으로 변경
+
+## Previous Changes (November 26, 2024)
 - **baseCost(기본 구축비) UI 표시**: 모듈 비용 불일치 문제 해결
   - 모듈 확장 영역에 "기본 구축비 (Core Framework)" 라인 아이템 추가
   - 사용자가 모듈 총 비용 = 기본 구축비 + 하위 기능 합계임을 명확히 인지 가능
