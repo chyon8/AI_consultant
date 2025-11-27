@@ -144,7 +144,26 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (November 27, 2024)
+## Recent Changes (November 27, 2024 - Update 2)
+- **시각화 파이프라인 구축**: AI 원본 데이터 무결성 유지 + 자동 시각화 시스템
+  - `raw_content`: 완전한 AI 원본 응답 보존 (trimming 전 전체 스트림)
+  - `visualization_hints`: Step별 시각화 힌트 자동 생성 (layout, components, source 매핑)
+  - `format_type`: 콘텐츠 포맷 분류 (markdown, json, mixed)
+- **시각화 컴포넌트 라이브러리** (components/visualization/):
+  - `MetricCard.tsx`: 메트릭 카드 + 반응형 그리드
+  - `Charts.tsx`: BarChart, LineChart, PieChart, ComparisonBarChart (Recharts 기반)
+  - `DataTable.tsx`: 정렬/검색 지원 데이터 테이블
+  - `Timeline.tsx`: 타임라인 + Gantt 차트
+  - `MarkdownRenderer.tsx`: 스타일드 마크다운 렌더러
+  - `TabContentRenderer.tsx`: format_type별 자동 컴포넌트 매핑
+- **타입 시스템 확장** (types.ts):
+  - `ContentFormatType`, `VisualizationComponentType` 추가
+  - `VisualizationHints`, `VisualizationComponent` 인터페이스
+  - `AIResponse<T>` 제네릭 타입
+  - `MetricCardData`, `ChartDataPoint` 시각화 데이터 타입
+- **Recharts 라이브러리 설치**: React 친화적 차트 라이브러리
+
+## Previous Changes (November 27, 2024)
 - **STEP 기반 탭 구조 재설계**: Dashboard 탭을 AI 프롬프트 구조와 일치하도록 전면 재설계
   - STEP 1: 프로젝트 기획 (Step1PlanningTab) - 아키텍처/모듈 구조 개요
   - STEP 2: 비교 견적 (Step2EstimationTab) - TYPE A/B/C 견적, 모듈 토글
