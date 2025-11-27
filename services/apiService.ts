@@ -18,10 +18,29 @@ export interface ParsedModule {
   subFeatures: ParsedSubFeature[];
 }
 
+export interface ParsedTypeEstimate {
+  minCost: number;
+  maxCost: number;
+  duration: string;
+  totalManMonths?: number;
+  teamSize?: number;
+}
+
 export interface ParsedEstimates {
-  typeA: { minCost: number; maxCost: number; duration: string };
-  typeB: { minCost: number; maxCost: number; duration: string };
-  typeC: { minCost: number; maxCost: number; duration: string };
+  typeA: ParsedTypeEstimate;
+  typeB: ParsedTypeEstimate;
+  typeC: ParsedTypeEstimate;
+}
+
+export interface VisualizationHints {
+  layout: 'single' | 'two-column' | 'grid';
+  primaryComponent: string;
+  components: {
+    type: string;
+    title?: string;
+    source: string;
+    config?: Record<string, any>;
+  }[];
 }
 
 export interface ParsedAnalysisResult {
@@ -29,6 +48,9 @@ export interface ParsedAnalysisResult {
   modules: ParsedModule[];
   estimates: ParsedEstimates;
   rawMarkdown: string;
+  raw_content?: string;
+  format_type?: 'markdown' | 'json' | 'mixed';
+  visualization_hints?: VisualizationHints;
 }
 
 export interface AnalyzeResponse {
