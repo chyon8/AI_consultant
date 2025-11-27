@@ -3,15 +3,15 @@ import { GoogleGenAI } from '@google/genai';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const PART1_PROMPT = `# PROMPT METADATA
-# Version: v1.2.0-JSON-Module-Output
-# Description: IT 컨설팅(기획/견적/WBS) 생성 + JSON 모듈 데이터
+# Version: v2.0.0-MM-Parallel-Estimation
+# Description: IT 컨설팅(기획/견적/WBS) 생성 + M/M 기반 병렬 작업 견적
 
 # Role & Objective
 당신은 20년 경력의 수석 IT 컨설턴트입니다.
 입력 데이터를 분석하여 다음을 제공합니다:
 1. 프로젝트 상세 기획 (모듈 구조)
-2. 유형별 비교 견적 (TYPE A/B/C)
-3. 실행 계획 (WBS)
+2. 유형별 비교 견적 (M/M 기반 병렬 작업 고려)
+3. 실행 계획 (WBS - 병렬화된 일정)
 
 ## STEP 1. 프로젝트 상세 기획 (Project Planning)
 *   [Mode: Technical & Logical]
@@ -26,26 +26,69 @@ const PART1_PROMPT = `# PROMPT METADATA
     - 예시: [결제 모듈]: PG사 연동(토스페이먼츠), 카드 결제, 간편결제(카카오페이), 간편결제(네이버페이), 결제 이력 조회, 결제 상세 조회, 환불 요청, 환불 처리, 정기결제 등록, 정기결제 해지
 
 ## STEP 2. 유형별 비교 견적 및 상세 산출 근거
-[Mode: Strict Analytical]
+[Mode: Strict Analytical - M/M 기반 병렬 작업 산정]
 
-### TYPE A: 대형 에이전시 / 전문 개발사 (Stability)
-*   분석: 적합성 및 리스크 분석
-*   투입 인력 및 M/M 상세
-*   예상 견적 범위
+**⚠️ 중요: M/M(Man-Month) 기반 병렬 작업 산정 규칙**
+- 현실에서는 여러 역할이 **동시에** 작업합니다 (순차적 X)
+- 총 공수(M/M)와 실제 프로젝트 기간은 **별개**입니다
+- 프로젝트 기간 = 가장 긴 크리티컬 패스 기준 (병렬 작업 고려)
+- 예: 총 공수 35 M/M이지만, 7명이 동시 투입되면 실제 기간은 약 5개월
 
-### TYPE B: 소규모 스튜디오 / 프리랜서 팀 (Cost-Effective)
-*   분석: 가성비 및 리스크 분석
-*   투입 인력 및 M/M 상세
-*   예상 견적 범위
+### TYPE A: 중견 SI 에이전시 / 플랫폼 전문 기업 (Stability)
+*   분석: 대규모 트래픽 처리 경험, PM/PL/DBA/AA 등 전문 인력 보유. 안정적인 마이그레이션과 고품질 산출물 보장.
+*   **[상세 산출 근거]**
+    - **투입 인력 (예상 기간):**
+      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M |
+      |------|------|----------|----------|-----|
+      | PM | 특급 | 1.0명 | X개월 | X.X M/M |
+      | PL/AA | 특급 | 1.0명 | X개월 | X.X M/M |
+      | UI/UX 디자이너 | 고급 | 1.0명 | X개월 | X.X M/M |
+      | 퍼블리셔 | 중급 | 1.0명 | X개월 | X.X M/M |
+      | BE 개발자 | 고급 | X.X명 | X개월 | X.X M/M |
+      | FE/App 개발자 | 고급 | X.X명 | X개월 | X.X M/M |
+      | QA/Tester | 중급 | 0.5명 | X개월 | X.X M/M |
+    - **총 공수:** 약 XX~XX M/M
+    - **단가:** SW기술자 평균 노임단가 + 제경비/이윤 포함
+*   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
+
+### TYPE B: 기술 중심 부티크 / 스타트업 개발사 (Efficiency)
+*   분석: 최신 기술 스택(Next.js, Flutter)에 강점이 있는 젊은 조직. 기민한 개발이 가능하나, 대규모 트래픽 인프라 설계 경험 검증 필요.
+*   **[상세 산출 근거]**
+    - **투입 인력 (예상 기간):**
+      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M |
+      |------|------|----------|----------|-----|
+      | PM 겸 PL | 특급 | 1.0명 | X개월 | X.X M/M |
+      | 디자이너 | 중급 | 1.0명 | X개월 | X.X M/M |
+      | 풀스택 개발팀 | 고급/중급 혼합 | X.X명 | X개월 | X.X M/M |
+    - **총 공수:** 약 XX~XX M/M
+    - **단가:** 효율적 인력 구성으로 단가 절감
+*   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
 
 ### TYPE C: AI 네이티브 시니어 개발자 (AI Productivity)
-*   분석: AI 도구 활용 생산성 분석
-*   투입 인력 및 M/M 상세
-*   예상 견적 범위
+*   분석: Cursor, Copilot, Claude 등 AI 도구 활용으로 생산성 극대화. 소수 정예로 빠른 MVP 구축 가능. 복잡한 레거시 통합이나 대규모 인프라 설계에는 제약.
+*   **[상세 산출 근거]**
+    - **투입 인력 (예상 기간):**
+      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M |
+      |------|------|----------|----------|-----|
+      | Tech Lead (PM 겸임) | 특급 | 1.0명 | X개월 | X.X M/M |
+      | AI-Native 풀스택 | 특급 | X.X명 | X개월 | X.X M/M |
+      | UI/UX (외주 또는 AI 생성) | - | 0.5명 | X개월 | X.X M/M |
+    - **총 공수:** 약 XX~XX M/M
+    - **단가:** AI 도구 비용 포함, 고급 인력 위주로 단가 높지만 공수 절감
+*   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
 
-## STEP 3. 실행 계획 (WBS)
-*   [Mode: Visual]
-*   통합 WBS: ■(진행), □(대기) 문자를 사용한 시각적 표
+## STEP 3. 실행 계획 (WBS - 병렬화된 일정)
+*   [Mode: Visual - 병렬 작업 반영]
+*   **⚠️ 중요:** WBS 기간은 STEP 2에서 산정한 병렬화된 프로젝트 기간과 일치해야 함
+*   동시 진행 가능한 단계는 같은 기간에 표시 (예: FE/BE 개발 동시 진행)
+*   통합 WBS 예시:
+    | 단계 | 기간 | 1월 | 2월 | 3월 | 4월 | 5월 |
+    |------|------|-----|-----|-----|-----|-----|
+    | 기획/설계 | 1개월 | ■■ | | | | |
+    | 디자인 | 1.5개월 | ■ | ■■ | | | |
+    | FE 개발 | 3개월 | | ■■ | ■■ | ■■ | |
+    | BE 개발 | 3개월 | | ■■ | ■■ | ■■ | |
+    | 통합/QA | 1개월 | | | | ■ | ■■ |
 *   파트너 선정 어드바이스
 
 ## STEP 4. 구조화된 모듈 데이터 (JSON)
@@ -55,6 +98,11 @@ const PART1_PROMPT = `# PROMPT METADATA
 - baseCost: 모듈의 기본 구축비 (Core Framework 비용). 해당 모듈 개발 시 필수적으로 발생하는 기본 인프라/설계 비용
 - subFeatures.price: 각 세부 기능 추가 시 발생하는 추가 비용
 - 모듈 총 비용 = baseCost + Σ(선택된 subFeatures.price)
+
+**기간 산정 규칙:**
+- totalManMonths: 총 투입 공수 (M/M 합계)
+- parallelDuration: 병렬 작업 고려한 실제 프로젝트 기간
+- duration 필드에는 parallelDuration 값을 사용
 
 \`\`\`json:modules
 {
@@ -81,9 +129,27 @@ const PART1_PROMPT = `# PROMPT METADATA
     }
   ],
   "estimates": {
-    "typeA": { "minCost": 50000000, "maxCost": 80000000, "duration": "4개월" },
-    "typeB": { "minCost": 30000000, "maxCost": 50000000, "duration": "5개월" },
-    "typeC": { "minCost": 20000000, "maxCost": 35000000, "duration": "6개월" }
+    "typeA": { 
+      "minCost": 250000000, 
+      "maxCost": 350000000, 
+      "duration": "5개월",
+      "totalManMonths": 38,
+      "teamSize": 7
+    },
+    "typeB": { 
+      "minCost": 150000000, 
+      "maxCost": 220000000, 
+      "duration": "4개월",
+      "totalManMonths": 28,
+      "teamSize": 5
+    },
+    "typeC": { 
+      "minCost": 80000000, 
+      "maxCost": 150000000, 
+      "duration": "3개월",
+      "totalManMonths": 15,
+      "teamSize": 3
+    }
   }
 }
 \`\`\`
