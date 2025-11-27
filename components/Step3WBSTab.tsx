@@ -51,7 +51,12 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
     const sumExceptLast = allocated.slice(0, lastIdx).reduce((a, b) => a + b, 0);
     allocated[lastIdx] = total - sumExceptLast;
     
-    return allocated.map(v => parseFloat(v.toFixed(1)));
+    return allocated;
+  };
+  
+  const formatMonths = (v: number): string => {
+    if (Number.isInteger(v)) return `${v}개월`;
+    return `${v.toFixed(1)}개월`;
   };
 
   const phaseRatios = [0.2, 0.15, 0.45, 0.1, 0.1];
@@ -101,8 +106,8 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
     }
   ];
 
-  const totalPhaseDuration = parseFloat(phases.reduce((sum, p) => sum + p.duration, 0).toFixed(1));
-  const durationMismatch = Math.abs(totalPhaseDuration - aiDuration.value) > 0.15;
+  const totalPhaseDuration = phases.reduce((sum, p) => sum + p.duration, 0);
+  const durationMismatch = Math.abs(totalPhaseDuration - aiDuration.value) > 0.01;
   const config = PARTNER_PRESETS[currentPartnerType];
 
   return (
@@ -145,7 +150,7 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
                 key={phase.id}
                 className={`${colors[index]} transition-all`}
                 style={{ width: `${width}%` }}
-                title={`${phase.name}: ${phase.duration}개월`}
+                title={`${phase.name}: ${formatMonths(phase.duration)}`}
               />
             );
           })}
@@ -176,7 +181,7 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
                       <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">동시 진행</span>
                     )}
                   </span>
-                  <span className="font-medium text-slate-900 dark:text-white">{phase.duration}개월</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{formatMonths(phase.duration)}</span>
                 </div>
                 <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 
@@ -227,7 +232,7 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
                       )}
                     </h5>
                     <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                      {phase.duration}개월
+                      {formatMonths(phase.duration)}
                     </span>
                   </div>
                   
