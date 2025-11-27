@@ -145,6 +145,15 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (November 27, 2024)
+- **STEP 기반 탭 구조 재설계**: Dashboard 탭을 AI 프롬프트 구조와 일치하도록 전면 재설계
+  - STEP 1: 프로젝트 기획 (Step1PlanningTab) - 아키텍처/모듈 구조 개요
+  - STEP 2: 비교 견적 (Step2EstimationTab) - TYPE A/B/C 견적, 모듈 토글
+  - STEP 3: 실행 계획 (Step3WBSTab) - WBS 일정표, 마일스톤
+  - STEP 4: 공고문 (Step4RFPTab) - RFP 생성 (RFPModal 통합)
+- **양방향 워크플로우 동기화**: 탭 전환과 estimationStep 상태 동기화
+  - handleTabChange → onStepChange: 탭 클릭 시 워크플로우 상태 업데이트
+  - useEffect: 외부 워크플로우 변경 시 탭 자동 전환 (chat-driven 지원)
+- **Footer 네비게이션 개선**: 이전/다음 스텝 버튼으로 순차적 진행 지원
 - **StepIndicator 동적 반응 구현**: 프로그램 진행도에 따라 상단 스텝 표시기가 자동으로 변경
   - 랜딩 페이지: Step 1 활성화 (분석 중일 때)
   - 상세 뷰 + SCOPE: Step 1 완료, Step 2 활성화
