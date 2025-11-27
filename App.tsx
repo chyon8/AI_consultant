@@ -561,6 +561,7 @@ const App: React.FC = () => {
                 onStepChange={setEstimationStep}
                 currentScale={currentScale}
                 onScaleChange={handleScaleChange}
+                estimates={estimates}
               />
             </div>
           </>

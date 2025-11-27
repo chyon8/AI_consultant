@@ -92,17 +92,27 @@ export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
 export type EstimationSubTab = 'DETAIL' | 'PARTNER' | 'SCHEDULE';
 
+export interface TypeEstimate {
+  minCost: number;
+  maxCost: number;
+  duration: string;
+  totalManMonths?: number;
+  teamSize?: number;
+}
+
+export interface ProjectEstimates {
+  typeA?: TypeEstimate;
+  typeB?: TypeEstimate;
+  typeC?: TypeEstimate;
+}
+
 export interface ProjectSnapshot {
   id: string;
   title: string;
   createdAt: string;
   userInput: string;
   modules: ModuleItem[];
-  estimates?: {
-    typeA?: { minCost: number; maxCost: number; duration: string };
-    typeB?: { minCost: number; maxCost: number; duration: string };
-    typeC?: { minCost: number; maxCost: number; duration: string };
-  };
+  estimates?: ProjectEstimates;
   messages: Message[];
   partnerType: PartnerType;
   currentScale: ProjectScale;

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ModuleItem, PartnerType, ProjectScale } from '../types';
+import React, { useState, useMemo } from 'react';
+import { ModuleItem, PartnerType, ProjectScale, ProjectEstimates } from '../types';
 import { Icons } from './Icons';
 import { PARTNER_PRESETS } from '../constants';
 
@@ -11,7 +11,14 @@ interface Step2EstimationTabProps {
   onSelectPartnerType: (type: PartnerType) => void;
   currentScale: ProjectScale;
   onScaleChange: (scale: ProjectScale) => void;
+  estimates?: ProjectEstimates;
 }
+
+const DEFAULT_TEAM_SIZE: Record<PartnerType, number> = {
+  AGENCY: 7,
+  STUDIO: 5,
+  AI_NATIVE: 3
+};
 
 export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({ 
   modules, 
@@ -20,7 +27,8 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
   currentPartnerType,
   onSelectPartnerType,
   currentScale,
-  onScaleChange
+  onScaleChange,
+  estimates
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
 
@@ -32,31 +40,60 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
     );
   };
 
+  const totalManMonths = useMemo(() => {
+    return modules.filter(m => m.isSelected).reduce((sum, m) => {
+      return sum + m.baseManMonths + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + (s.manWeeks / 4), 0);
+    }, 0);
+  }, [modules]);
+
+  const totalPossibleManMonths = useMemo(() => {
+    return modules.reduce((sum, m) => {
+      return sum + m.baseManMonths + m.subFeatures.reduce((sa, s) => sa + (s.manWeeks / 4), 0);
+    }, 0);
+  }, [modules]);
+
+  const selectionRatio = totalPossibleManMonths > 0 ? totalManMonths / totalPossibleManMonths : 1;
+
   const baseDevCost = modules.filter(m => m.isSelected).reduce((acc, m) => 
     acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
   , 0);
 
   const getTypeEstimate = (type: PartnerType) => {
-    let cost = baseDevCost;
-    let duration = modules.filter(m => m.isSelected).reduce((sum, m) => {
-      return sum + m.baseManMonths + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + (s.manWeeks / 4), 0);
-    }, 0);
-
-    if (type === 'AGENCY') {
-      cost = baseDevCost * 1.3;
-      duration = duration * 1.2;
-    } else if (type === 'STUDIO') {
-      cost = baseDevCost * 1.1;
-      duration = duration * 1.0;
-    } else {
-      cost = baseDevCost * 0.6;
-      duration = duration * 0.5;
+    const aiEstimate = type === 'AGENCY' ? estimates?.typeA : 
+                       type === 'STUDIO' ? estimates?.typeB : estimates?.typeC;
+    
+    if (aiEstimate) {
+      const teamSize = aiEstimate.teamSize || DEFAULT_TEAM_SIZE[type];
+      const aiTotalMM = aiEstimate.totalManMonths || totalManMonths;
+      
+      const adjustedMM = aiTotalMM * selectionRatio;
+      const parallelDuration = Math.ceil(adjustedMM / teamSize);
+      
+      const costRatio = selectionRatio;
+      const adjustedMinCost = Math.round(aiEstimate.minCost * costRatio);
+      const adjustedMaxCost = Math.round(aiEstimate.maxCost * costRatio);
+      
+      return {
+        minCost: adjustedMinCost,
+        maxCost: adjustedMaxCost,
+        duration: `${parallelDuration}개월`,
+        totalManMonths: Math.round(adjustedMM * 10) / 10,
+        teamSize: teamSize
+      };
     }
-
+    
+    const teamSize = DEFAULT_TEAM_SIZE[type];
+    let costMultiplier = type === 'AGENCY' ? 1.3 : type === 'STUDIO' ? 1.1 : 0.6;
+    
+    const cost = baseDevCost * costMultiplier;
+    const parallelDuration = Math.ceil(totalManMonths / teamSize);
+    
     return {
       minCost: Math.round(cost * 0.9),
       maxCost: Math.round(cost * 1.1),
-      duration: `${Math.ceil(duration)}개월`
+      duration: `${Math.max(1, parallelDuration)}개월`,
+      totalManMonths: Math.round(totalManMonths * 10) / 10,
+      teamSize: teamSize
     };
   };
 
@@ -122,8 +159,15 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-400">예상 기간</span>
-                  <span className="font-medium text-slate-700 dark:text-slate-300">{estimate.duration}</span>
+                  <span className="text-xs text-slate-400">총 공수</span>
+                  <span className="font-medium text-slate-500 dark:text-slate-400">{estimate.totalManMonths} M/M</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400">프로젝트 기간</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{estimate.duration}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right">
+                  {estimate.teamSize}명 병렬 투입 기준
                 </div>
               </div>
             </button>

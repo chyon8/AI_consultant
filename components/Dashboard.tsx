@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ModuleItem, TabView, PartnerType, EstimationStep, ProjectScale, StepTabConfig } from '../types';
+import { ModuleItem, TabView, PartnerType, EstimationStep, ProjectScale, StepTabConfig, ProjectEstimates } from '../types';
 import { Icons } from './Icons';
 import { Step1PlanningTab } from './Step1PlanningTab';
 import { Step2EstimationTab } from './Step2EstimationTab';
@@ -19,6 +19,7 @@ interface DashboardProps {
   onStepChange: (step: EstimationStep) => void;
   currentScale: ProjectScale;
   onScaleChange: (scale: ProjectScale) => void;
+  estimates?: ProjectEstimates;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -32,7 +33,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   estimationStep,
   onStepChange,
   currentScale,
-  onScaleChange
+  onScaleChange,
+  estimates
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.STEP1_PLANNING);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -253,6 +255,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onSelectPartnerType={onSelectPartnerType}
                 currentScale={currentScale}
                 onScaleChange={onScaleChange}
+                estimates={estimates}
               />
             )}
             {activeTab === TabView.STEP3_WBS && (
