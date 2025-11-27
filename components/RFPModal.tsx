@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ModuleItem } from '../types';
 import { Icons } from './Icons';
 import { generateRFP } from '../services/apiService';
+import { useAsyncState } from '../contexts/AsyncStateContext';
 
 interface RFPModalProps {
   isOpen: boolean;
@@ -19,11 +20,13 @@ export const RFPModal: React.FC<RFPModalProps> = ({
   const [rfpContent, setRfpContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setRfpStatus, addToast } = useAsyncState();
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
     setRfpContent('');
+    setRfpStatus('loading', '공고문을 생성하고 있습니다...');
 
     try {
       await generateRFP(
@@ -34,10 +37,16 @@ export const RFPModal: React.FC<RFPModalProps> = ({
         },
         (err) => {
           setError(err);
+          setRfpStatus('error', err);
+          addToast({ type: 'error', message: err });
         }
       );
+      setRfpStatus('success');
+      addToast({ type: 'success', message: '공고문이 생성되었습니다.' });
     } catch (err) {
       setError('공고문 생성 중 오류가 발생했습니다.');
+      setRfpStatus('error');
+      addToast({ type: 'error', message: '공고문 생성 중 오류가 발생했습니다.' });
     } finally {
       setIsGenerating(false);
     }

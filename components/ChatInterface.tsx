@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Message, ModuleItem, PartnerType, ProjectScale, DashboardAction } from '../types';
 import { Icons } from './Icons';
 import { sendChatMessage, ChatContext, ChatResult } from '../services/apiService';
+import { useAsyncState } from '../contexts/AsyncStateContext';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -32,6 +33,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { setChatStatus, addToast } = useAsyncState();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,6 +79,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       text: msg.text
     }));
 
+    setChatStatus('loading');
+    
     try {
       const result = await sendChatMessage(
         input,
@@ -92,12 +96,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         (chatResult: ChatResult) => {
           if (chatResult.action && chatResult.action.type !== 'no_action' && onDashboardAction) {
             onDashboardAction(chatResult.action as DashboardAction);
+            addToast({ type: 'info', message: '대시보드가 업데이트되었습니다.' });
           }
           setMessages(prev => prev.map(msg => 
             msg.id === aiMsgId 
               ? { ...msg, text: chatResult.chatMessage, isStreaming: false } 
               : msg
           ));
+          setChatStatus('success');
         }
       );
     } catch (error) {
@@ -107,6 +113,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           ? { ...msg, text: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.', isStreaming: false } 
           : msg
       ));
+      setChatStatus('error');
+      addToast({ type: 'error', message: '채팅 처리 중 오류가 발생했습니다.' });
     }
 
     setIsLoading(false);

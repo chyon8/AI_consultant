@@ -10,6 +10,8 @@ import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 import { useProjectHistory } from './hooks/useProjectHistory';
+import { useAsyncState } from './contexts/AsyncStateContext';
+import { ToastContainer } from './components/ToastContainer';
 
 type AppView = 'landing' | 'detail';
 
@@ -17,9 +19,12 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [modules, setModules] = useState<ModuleItem[]>(INITIAL_MODULES);
   
+  // Global async state
+  const { setAnalysisStatus, addToast, state: asyncState } = useAsyncState();
+  const isAnalyzing = asyncState.analysis.status === 'loading';
+  
   // App View State (landing or detail)
   const [currentView, setCurrentView] = useState<AppView>('landing');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Partner Type State
@@ -269,7 +274,7 @@ const App: React.FC = () => {
 
   // Handle initial analysis from landing page
   const handleAnalyze = async (text: string, files: File[]) => {
-    setIsAnalyzing(true);
+    setAnalysisStatus('loading', '프로젝트를 분석하고 있습니다...');
     setAnalysisError(null);
     
     // Add user message
@@ -349,15 +354,16 @@ const App: React.FC = () => {
       }
       
       setCurrentView('detail');
+      setAnalysisStatus('success');
+      addToast({ type: 'success', message: '프로젝트 분석이 완료되었습니다.' });
       
     } catch (error) {
       console.error('Analysis error:', error);
       const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
       setAnalysisError(errorMessage);
-      // Stay on landing page on error
+      setAnalysisStatus('error', errorMessage);
+      addToast({ type: 'error', message: errorMessage });
     }
-    
-    setIsAnalyzing(false);
   };
 
   // Dismiss error notification and reset state
@@ -368,6 +374,7 @@ const App: React.FC = () => {
   // Handle retry from error state
   const handleRetry = () => {
     setAnalysisError(null);
+    setAnalysisStatus('idle');
     setCurrentView('landing');
     setMessages(INITIAL_MESSAGES);
     setModules(INITIAL_MODULES);
@@ -413,6 +420,9 @@ const App: React.FC = () => {
 
   return (
     <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
+      
+      {/* Global Toast Container */}
+      <ToastContainer />
       
       {/* Error Notification */}
       {analysisError && (
