@@ -5,7 +5,7 @@ import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, Project
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
-import { StepIndicator } from './components/StepIndicator';
+import { StepIndicator, StepStatus } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
@@ -374,6 +374,43 @@ const App: React.FC = () => {
     setEstimationStep('SCOPE');
   };
 
+  // Calculate step statuses based on current view and estimation step
+  const getStepStatuses = (): { step1: StepStatus; step2: StepStatus; step3: StepStatus } => {
+    if (currentView === 'landing') {
+      return {
+        step1: isAnalyzing ? 'active' : 'pending',
+        step2: 'pending',
+        step3: 'pending',
+      };
+    }
+
+    // currentView === 'detail'
+    if (estimationStep === 'SCOPE') {
+      return {
+        step1: 'completed',
+        step2: 'active',
+        step3: 'pending',
+      };
+    }
+
+    if (estimationStep === 'RESULT') {
+      return {
+        step1: 'completed',
+        step2: 'completed',
+        step3: 'active',
+      };
+    }
+
+    // estimationStep === 'REGISTER'
+    return {
+      step1: 'completed',
+      step2: 'completed',
+      step3: 'completed',
+    };
+  };
+
+  const stepStatuses = getStepStatuses();
+
   return (
     <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
       
@@ -421,7 +458,11 @@ const App: React.FC = () => {
 
         {/* Center: Step Indicator */}
         <div className="absolute left-1/2 -translate-x-1/2 hidden md:block">
-          <StepIndicator />
+          <StepIndicator 
+            step1Status={stepStatuses.step1}
+            step2Status={stepStatuses.step2}
+            step3Status={stepStatuses.step3}
+          />
         </div>
 
         {/* Right Section */}
