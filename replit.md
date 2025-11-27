@@ -144,7 +144,22 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (November 27, 2024 - Update 2)
+## Recent Changes (November 27, 2024 - Update 3)
+- **AI 원본 데이터 직접 표시**: 프론트엔드 재계산 로직 제거
+  - Step2EstimationTab: AI estimates (minCost, maxCost, duration, teamSize) 그대로 표시
+  - Step3WBSTab: AI duration 원본 값 표시 + 정밀도 유지 WBS 분배
+  - `hasData` 플래그로 데이터 유무 명확히 구분, 없으면 "데이터 준비 중" 표시
+- **WBS 분배 알고리즘 개선**:
+  - `distributeMonths()`: 전체 정밀도 유지, 마지막 phase에서 잔여 보정
+  - `formatMonths()`: 표시 전용 포맷팅 함수 분리
+  - 부동소수점 허용 오차 (±0.01) 적용으로 불필요한 불일치 메시지 방지
+- **CSS 기반 시각화** (Recharts 대체):
+  - React 19 호환성 문제로 Recharts 대신 CSS 가로 막대 차트 사용
+  - Step1: 카테고리별 모듈 분포 바 차트
+  - Step2: TYPE A/B/C 비용 비교 바 차트
+  - Step3: 단계별 기간 분포 바 차트, 1개월 미만 phase에 "동시 진행" 배지
+
+## Previous Changes (November 27, 2024 - Update 2)
 - **시각화 파이프라인 구축**: AI 원본 데이터 무결성 유지 + 자동 시각화 시스템
   - `raw_content`: 완전한 AI 원본 응답 보존 (trimming 전 전체 스트림)
   - `visualization_hints`: Step별 시각화 힌트 자동 생성 (layout, components, source 매핑)
