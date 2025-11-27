@@ -72,7 +72,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
               >
                 <Icons.Clock size={14} className="text-slate-400 flex-shrink-0" />
                 <span className="flex-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-                  프로젝트 히스토리
+                  프로젝트
                 </span>
                 <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full mr-1">
                   {projectHistory?.length || 0}
