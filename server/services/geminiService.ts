@@ -165,17 +165,21 @@ export async function analyzeProject(
 ): Promise<void> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-  const combinedInput = [
-    userInput,
-    ...fileContents.map((content, i) => `\n\n--- 첨부파일 ${i + 1} 내용 ---\n${content}`)
-  ].join('');
+  const userParts: { text: string }[] = [];
+  
+  userParts.push({ text: userInput });
+  
+  fileContents.forEach((content, i) => {
+    userParts.push({ text: `\n\n--- 첨부파일 ${i + 1} 내용 ---\n${content}` });
+  });
 
   const response = await ai.models.generateContentStream({
     model: 'gemini-3-pro-preview',
     contents: [
-      { role: 'user', parts: [{ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + combinedInput }] }
+      { role: 'user', parts: userParts }
     ],
     config: {
+      systemInstruction: PART1_PROMPT,
       temperature: 1.0,
       thinkingConfig: {
         thinkingBudget: 8000

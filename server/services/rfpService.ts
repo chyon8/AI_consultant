@@ -118,9 +118,10 @@ ${modulesSummary}
   const response = await ai.models.generateContentStream({
     model: 'gemini-3-pro-preview',
     contents: [
-      { role: 'user', parts: [{ text: PART2_PROMPT + '\n\n---\n\n' + userContent }] }
+      { role: 'user', parts: [{ text: userContent }] }
     ],
     config: {
+      systemInstruction: PART2_PROMPT,
       temperature: 1.0,
       thinkingConfig: {
         thinkingBudget: 8000

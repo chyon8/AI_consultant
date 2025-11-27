@@ -120,8 +120,6 @@ export async function processChat(
   const systemPrompt = CHAT_SYSTEM_PROMPT + buildContextPrompt(context);
 
   const contents = [
-    { role: 'user' as const, parts: [{ text: systemPrompt }] },
-    { role: 'model' as const, parts: [{ text: '네, 이해했습니다. 프로젝트 상태를 확인했고, 사용자의 질문에 답변하고 필요시 대시보드를 제어하겠습니다.' }] },
     ...conversationHistory.slice(-10).map(msg => ({
       role: msg.role as 'user' | 'model',
       parts: [{ text: msg.text }]
@@ -133,6 +131,7 @@ export async function processChat(
     model: 'gemini-2.5-flash',
     contents,
     config: {
+      systemInstruction: systemPrompt,
       temperature: 0.7,
     }
   });
