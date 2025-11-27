@@ -262,6 +262,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Step3WBSTab
                 modules={modules}
                 currentPartnerType={currentPartnerType}
+                estimates={estimates}
               />
             )}
             {activeTab === TabView.STEP4_RFP && (

@@ -1,11 +1,12 @@
 import React from 'react';
-import { ModuleItem, PartnerType } from '../types';
+import { ModuleItem, PartnerType, ProjectEstimates } from '../types';
 import { Icons } from './Icons';
 import { PARTNER_PRESETS } from '../constants';
 
 interface Step3WBSTabProps {
   modules: ModuleItem[];
   currentPartnerType: PartnerType;
+  estimates?: ProjectEstimates;
 }
 
 interface WBSPhase {
@@ -18,56 +19,90 @@ interface WBSPhase {
 
 export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({ 
   modules,
-  currentPartnerType
+  currentPartnerType,
+  estimates
 }) => {
-  const selectedModules = modules.filter(m => m.isSelected);
-  
-  const totalMonths = selectedModules.reduce((sum, m) => {
-    return sum + m.baseManMonths + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + (s.manWeeks / 4), 0);
-  }, 0);
+  const getAIDuration = (): { value: number; raw: string } => {
+    const aiEstimate = currentPartnerType === 'AGENCY' ? estimates?.typeA : 
+                       currentPartnerType === 'STUDIO' ? estimates?.typeB : estimates?.typeC;
+    
+    if (aiEstimate?.duration) {
+      const raw = aiEstimate.duration;
+      const rangeMatch = raw.match(/(\d+(?:\.\d+)?)\s*[~\-]\s*(\d+(?:\.\d+)?)/);
+      if (rangeMatch) {
+        const avg = (parseFloat(rangeMatch[1]) + parseFloat(rangeMatch[2])) / 2;
+        return { value: avg, raw };
+      }
+      const singleMatch = raw.match(/(\d+(?:\.\d+)?)/);
+      if (singleMatch) {
+        return { value: parseFloat(singleMatch[1]), raw };
+      }
+      return { value: 6, raw };
+    }
+    return { value: 6, raw: '분석 중...' };
+  };
 
-  const durationMultiplier = currentPartnerType === 'AGENCY' ? 1.2 : currentPartnerType === 'STUDIO' ? 1.0 : 0.5;
-  const adjustedMonths = Math.ceil(totalMonths * durationMultiplier);
+  const aiDuration = getAIDuration();
+  const totalProjectMonths = aiDuration.value;
+
+  const distributeMonths = (total: number, ratios: number[]): number[] => {
+    const allocated = ratios.map(r => total * r);
+    const lastIdx = allocated.length - 1;
+    const sumExceptLast = allocated.slice(0, lastIdx).reduce((a, b) => a + b, 0);
+    allocated[lastIdx] = total - sumExceptLast;
+    
+    return allocated.map(v => parseFloat(v.toFixed(1)));
+  };
+
+  const phaseRatios = [0.2, 0.15, 0.45, 0.1, 0.1];
+  const distributedDurations = distributeMonths(totalProjectMonths, phaseRatios);
+  
+  const formatDuration = (months: number): string => {
+    if (months < 1) return `${months}개월`;
+    if (months % 1 === 0) return `${months}개월`;
+    return `${months}개월`;
+  };
 
   const phases: WBSPhase[] = [
     {
       id: 'analysis',
       name: '분석/설계',
-      duration: Math.max(1, Math.round(adjustedMonths * 0.2)),
+      duration: distributedDurations[0],
       tasks: ['요구사항 분석', 'UI/UX 기획', '아키텍처 설계', 'DB 스키마 설계'],
       status: 'pending'
     },
     {
       id: 'design',
       name: '디자인',
-      duration: Math.max(1, Math.round(adjustedMonths * 0.15)),
+      duration: distributedDurations[1],
       tasks: ['UI/UX 디자인 시안', '스타일 가이드 수립', '디자인 검수'],
       status: 'pending'
     },
     {
       id: 'development',
       name: '개발',
-      duration: Math.max(2, Math.round(adjustedMonths * 0.45)),
+      duration: distributedDurations[2],
       tasks: ['프론트엔드 개발', '백엔드 API 개발', 'DB 구축', '관리자 페이지'],
       status: 'pending'
     },
     {
       id: 'testing',
       name: '테스트',
-      duration: Math.max(1, Math.round(adjustedMonths * 0.1)),
+      duration: distributedDurations[3],
       tasks: ['통합 테스트', '부하 테스트', '보안 점검', '버그 수정'],
       status: 'pending'
     },
     {
       id: 'deployment',
       name: '안정화/배포',
-      duration: Math.max(1, Math.round(adjustedMonths * 0.1)),
+      duration: distributedDurations[4],
       tasks: ['실운영 배포', '모니터링 설정', '초기 운영 지원'],
       status: 'pending'
     }
   ];
 
-  const totalPhaseDuration = phases.reduce((sum, p) => sum + p.duration, 0);
+  const totalPhaseDuration = parseFloat(phases.reduce((sum, p) => sum + p.duration, 0).toFixed(1));
+  const durationMismatch = Math.abs(totalPhaseDuration - aiDuration.value) > 0.15;
   const config = PARTNER_PRESETS[currentPartnerType];
 
   return (
@@ -83,8 +118,11 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
       <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">총 예상 기간</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{totalPhaseDuration}개월</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">총 예상 기간 (AI 분석)</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">{aiDuration.raw}</p>
+            {durationMismatch && (
+              <p className="text-xs text-amber-500 dark:text-amber-400 mt-1">WBS 상세: {totalPhaseDuration}개월</p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">적용 파트너 유형</p>
@@ -119,6 +157,39 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
         </div>
       </div>
 
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Icons.BarChart size={20} className="text-indigo-500" />
+          단계별 기간 분포
+        </h4>
+        <div className="space-y-3">
+          {phases.map((phase, index) => {
+            const maxDuration = Math.max(...phases.map(p => p.duration));
+            const percent = maxDuration > 0 ? (phase.duration / maxDuration) * 100 : 0;
+            const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-amber-500', 'bg-purple-500'];
+            return (
+              <div key={phase.id} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                    {phase.name}
+                    {phase.duration < 1 && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">동시 진행</span>
+                    )}
+                  </span>
+                  <span className="font-medium text-slate-900 dark:text-white">{phase.duration}개월</span>
+                </div>
+                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${colors[index] || 'bg-slate-500'} rounded-full transition-all duration-500`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div>
         <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
           <Icons.Calendar size={20} className="text-indigo-500" />
@@ -149,7 +220,12 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
                 
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-bold text-slate-900 dark:text-white">{phase.name}</h5>
+                    <h5 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      {phase.name}
+                      {phase.duration < 1 && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded font-normal">동시 진행</span>
+                      )}
+                    </h5>
                     <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                       {phase.duration}개월
                     </span>

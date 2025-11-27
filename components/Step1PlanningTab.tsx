@@ -74,6 +74,45 @@ export const Step1PlanningTab: React.FC<Step1PlanningTabProps> = ({
         </div>
       </div>
 
+      {Object.keys(categoryGroups).length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Icons.BarChart size={20} className="text-indigo-500" />
+            카테고리별 모듈 분포
+          </h4>
+          <div className="space-y-3">
+            {Object.entries(categoryGroups).map(([cat, mods]) => {
+              const totalModules = selectedModules.length;
+              const percent = totalModules > 0 ? (mods.length / totalModules) * 100 : 0;
+              const colors: Record<string, string> = {
+                frontend: 'bg-blue-500',
+                backend: 'bg-emerald-500',
+                database: 'bg-amber-500',
+                infra: 'bg-purple-500',
+                etc: 'bg-slate-500'
+              };
+              return (
+                <div key={cat} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                      {getCategoryIcon(cat)}
+                      {getCategoryLabel(cat)}
+                    </span>
+                    <span className="font-medium text-slate-900 dark:text-white">{mods.length}개 ({Math.round(percent)}%)</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${colors[cat] || 'bg-slate-500'} rounded-full transition-all duration-500`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div>
         <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
           <Icons.Layers size={20} className="text-indigo-500" />

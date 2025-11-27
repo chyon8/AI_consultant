@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ModuleItem, PartnerType, ProjectScale, ProjectEstimates } from '../types';
 import { Icons } from './Icons';
 import { PARTNER_PRESETS } from '../constants';
@@ -13,12 +13,6 @@ interface Step2EstimationTabProps {
   onScaleChange: (scale: ProjectScale) => void;
   estimates?: ProjectEstimates;
 }
-
-const DEFAULT_TEAM_SIZE: Record<PartnerType, number> = {
-  AGENCY: 7,
-  STUDIO: 5,
-  AI_NATIVE: 3
-};
 
 export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({ 
   modules, 
@@ -40,60 +34,28 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
     );
   };
 
-  const totalManMonths = useMemo(() => {
-    return modules.filter(m => m.isSelected).reduce((sum, m) => {
-      return sum + m.baseManMonths + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + (s.manWeeks / 4), 0);
-    }, 0);
-  }, [modules]);
-
-  const totalPossibleManMonths = useMemo(() => {
-    return modules.reduce((sum, m) => {
-      return sum + m.baseManMonths + m.subFeatures.reduce((sa, s) => sa + (s.manWeeks / 4), 0);
-    }, 0);
-  }, [modules]);
-
-  const selectionRatio = totalPossibleManMonths > 0 ? totalManMonths / totalPossibleManMonths : 1;
-
-  const baseDevCost = modules.filter(m => m.isSelected).reduce((acc, m) => 
-    acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
-  , 0);
-
   const getTypeEstimate = (type: PartnerType) => {
     const aiEstimate = type === 'AGENCY' ? estimates?.typeA : 
                        type === 'STUDIO' ? estimates?.typeB : estimates?.typeC;
     
-    if (aiEstimate) {
-      const teamSize = aiEstimate.teamSize || DEFAULT_TEAM_SIZE[type];
-      const aiTotalMM = aiEstimate.totalManMonths || totalManMonths;
-      
-      const adjustedMM = aiTotalMM * selectionRatio;
-      const parallelDuration = Math.ceil(adjustedMM / teamSize);
-      
-      const costRatio = selectionRatio;
-      const adjustedMinCost = Math.round(aiEstimate.minCost * costRatio);
-      const adjustedMaxCost = Math.round(aiEstimate.maxCost * costRatio);
-      
+    if (aiEstimate && (aiEstimate.minCost > 0 || aiEstimate.maxCost > 0)) {
       return {
-        minCost: adjustedMinCost,
-        maxCost: adjustedMaxCost,
-        duration: `${parallelDuration}개월`,
-        totalManMonths: Math.round(adjustedMM * 10) / 10,
-        teamSize: teamSize
+        minCost: aiEstimate.minCost,
+        maxCost: aiEstimate.maxCost,
+        duration: aiEstimate.duration || '미정',
+        totalManMonths: aiEstimate.totalManMonths || 0,
+        teamSize: aiEstimate.teamSize || 0,
+        hasData: true
       };
     }
     
-    const teamSize = DEFAULT_TEAM_SIZE[type];
-    let costMultiplier = type === 'AGENCY' ? 1.3 : type === 'STUDIO' ? 1.1 : 0.6;
-    
-    const cost = baseDevCost * costMultiplier;
-    const parallelDuration = Math.ceil(totalManMonths / teamSize);
-    
     return {
-      minCost: Math.round(cost * 0.9),
-      maxCost: Math.round(cost * 1.1),
-      duration: `${Math.max(1, parallelDuration)}개월`,
-      totalManMonths: Math.round(totalManMonths * 10) / 10,
-      teamSize: teamSize
+      minCost: 0,
+      maxCost: 0,
+      duration: '데이터 준비 중',
+      totalManMonths: 0,
+      teamSize: 0,
+      hasData: false
     };
   };
 
@@ -101,11 +63,15 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
   const typeBEstimate = getTypeEstimate('STUDIO');
   const typeCEstimate = getTypeEstimate('AI_NATIVE');
 
-  const formatCost = (cost: number) => {
+  const formatCost = (cost: number, hasData: boolean) => {
+    if (!hasData) return '-';
     if (cost >= 100000000) {
       return `${(cost / 100000000).toFixed(1)}억`;
     }
-    return `${(cost / 10000).toLocaleString()}만`;
+    if (cost >= 10000) {
+      return `${(cost / 10000).toLocaleString()}만`;
+    }
+    return `${cost.toLocaleString()}`;
   };
 
   return (
@@ -155,25 +121,66 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-slate-400">예상 견적</span>
                   <span className="font-bold text-slate-900 dark:text-white">
-                    {formatCost(estimate.minCost)} ~ {formatCost(estimate.maxCost)}원
+                    {estimate.hasData 
+                      ? `${formatCost(estimate.minCost, true)} ~ ${formatCost(estimate.maxCost, true)}원`
+                      : '데이터 준비 중'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-slate-400">총 공수</span>
-                  <span className="font-medium text-slate-500 dark:text-slate-400">{estimate.totalManMonths} M/M</span>
+                  <span className="font-medium text-slate-500 dark:text-slate-400">
+                    {estimate.hasData ? `${estimate.totalManMonths} M/M` : '-'}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-slate-400">프로젝트 기간</span>
                   <span className="font-bold text-indigo-600 dark:text-indigo-400">{estimate.duration}</span>
                 </div>
                 <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right">
-                  {estimate.teamSize}명 병렬 투입 기준
+                  {estimate.hasData ? `${estimate.teamSize}명 병렬 투입 기준` : '-'}
                 </div>
               </div>
             </button>
           );
         })}
       </div>
+
+      {estimates && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Icons.BarChart size={20} className="text-indigo-500" />
+            비용 비교
+          </h4>
+          <div className="space-y-4">
+            {[
+              { label: 'TYPE A (에이전시)', estimate: typeAEstimate, color: 'bg-blue-500' },
+              { label: 'TYPE B (스튜디오)', estimate: typeBEstimate, color: 'bg-emerald-500' },
+              { label: 'TYPE C (AI 네이티브)', estimate: typeCEstimate, color: 'bg-purple-500' }
+            ].map(({ label, estimate, color }) => {
+              const maxCostAll = Math.max(typeAEstimate.maxCost, typeBEstimate.maxCost, typeCEstimate.maxCost);
+              const widthPercent = maxCostAll > 0 ? (estimate.maxCost / maxCostAll) * 100 : 0;
+              return (
+                <div key={label} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400">{label}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">
+                      {estimate.hasData 
+                        ? `${formatCost(estimate.minCost, true)} ~ ${formatCost(estimate.maxCost, true)}원`
+                        : '데이터 준비 중'}
+                    </span>
+                  </div>
+                  <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${color} rounded-full transition-all duration-500`}
+                      style={{ width: `${widthPercent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div>
         <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
