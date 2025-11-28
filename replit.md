@@ -144,7 +144,19 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (November 27, 2024 - Update 3)
+## Recent Changes (November 28, 2024)
+- **Visual Timeline WBS 구현**: Step3WBSTab에 매트릭스 스타일 일정 그리드 추가
+  - 시간 축 자동 결정: 3개월 이하=Week 단위, 초과=Month 단위
+  - Largest-remainder 분배 알고리즘: 정수 단위 정확히 분배 (totalUnits 합계 보장)
+  - Phase/Task별 정사각형 인디케이터 (활성=파란색, 비활성=회색)
+  - 반응형 가로 스크롤: overflow-x-auto로 작은 뷰포트 지원
+  - Zero-duration phases: 빈 schedule 배열로 모든 phase/task 표시 보장
+  - Grid 아이콘 추가: lucide-react Grid3X3 → Icons.tsx
+- **모던 탭 네비게이션 디자인**: Glass morphism + segment control 스타일
+  - 활성 탭: 그라데이션 배경 + 하단 인디케이터
+  - 호버 효과: 반투명 배경 전환
+
+## Previous Changes (November 27, 2024 - Update 3)
 - **AI 원본 데이터 직접 표시**: 프론트엔드 재계산 로직 제거
   - Step2EstimationTab: AI estimates (minCost, maxCost, duration, teamSize) 그대로 표시
   - Step3WBSTab: AI duration 원본 값 표시 + 정밀도 유지 WBS 분배
