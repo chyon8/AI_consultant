@@ -182,35 +182,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
       {/* Top Bar: Step-based Tabs */}
       <div className="px-6 lg:px-10 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-         {/* Step Tabs */}
-         <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {tabs.map((tab, index) => {
+         {/* Modern Segment Control Tabs */}
+         <div className="flex p-1.5 bg-slate-100/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl gap-1 overflow-x-auto no-scrollbar max-w-full">
+            {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
-              const stepColors = [
-                'bg-indigo-500',
-                'bg-emerald-500',
-                'bg-purple-500',
-                'bg-amber-500'
-              ];
               return (
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative flex items-center gap-3 px-4 py-3 rounded-xl whitespace-nowrap transition-all duration-300 ${
+                  className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl whitespace-nowrap transition-all duration-300 ease-out group ${
                     isActive
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      ? 'bg-white dark:bg-slate-900 shadow-lg shadow-slate-200/50 dark:shadow-black/20' 
+                      : 'hover:bg-white/50 dark:hover:bg-slate-700/50'
                   }`}
                 >
-                  <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${
-                    isActive ? 'bg-white/20 dark:bg-slate-900/20 text-white dark:text-slate-900' : `${stepColors[index]} text-white`
+                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-indigo-500/30' 
+                      : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-slate-300 dark:group-hover:bg-slate-600'
                   }`}>
                     {tab.stepNumber}
                   </span>
                   <div className="text-left">
-                    <p className={`text-sm font-bold ${isActive ? '' : ''}`}>{tab.label}</p>
-                    <p className={`text-[10px] ${isActive ? 'text-white/70 dark:text-slate-900/70' : 'text-slate-400 dark:text-slate-500'}`}>{tab.description}</p>
+                    <p className={`text-sm font-semibold transition-colors duration-300 ${
+                      isActive ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200'
+                    }`}>{tab.label}</p>
+                    <p className={`text-[10px] font-medium transition-colors duration-300 ${
+                      isActive ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'
+                    }`}>{tab.description}</p>
                   </div>
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full opacity-80"></span>
+                  )}
                 </button>
               )
             })}
