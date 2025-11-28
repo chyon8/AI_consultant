@@ -171,34 +171,50 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
               
               {isExpanded && estimate.staffing && estimate.staffing.length > 0 && (
                 <div className="px-6 pb-6 border-t border-neutral-100 dark:border-neutral-800 pt-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-neutral-400 dark:text-neutral-500 text-xs uppercase tracking-wider">
-                        <th className="pb-3 font-medium">역할</th>
-                        <th className="pb-3 font-medium">등급</th>
-                        <th className="pb-3 font-medium text-center">투입 인원</th>
-                        <th className="pb-3 font-medium text-center">투입 기간</th>
-                        <th className="pb-3 font-medium text-right">M/M</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                      {estimate.staffing.map((staff, idx) => (
-                        <tr key={idx} className="text-neutral-600 dark:text-neutral-300">
-                          <td className="py-2.5">{staff.role}</td>
-                          <td className="py-2.5 text-neutral-500 dark:text-neutral-400">{staff.grade}</td>
-                          <td className="py-2.5 text-center">{staff.headcount}명</td>
-                          <td className="py-2.5 text-center">{staff.duration}</td>
-                          <td className="py-2.5 text-right font-medium">{staff.manMonth}</td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[700px]">
+                      <thead>
+                        <tr className="text-left text-neutral-400 dark:text-neutral-500 text-xs uppercase tracking-wider">
+                          <th className="pb-3 font-medium">역할</th>
+                          <th className="pb-3 font-medium">등급</th>
+                          <th className="pb-3 font-medium text-center">투입 인원</th>
+                          <th className="pb-3 font-medium text-center">투입 기간</th>
+                          <th className="pb-3 font-medium text-right">M/M</th>
+                          <th className="pb-3 font-medium text-right">월단가</th>
+                          <th className="pb-3 font-medium text-right">소계</th>
                         </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t border-neutral-200 dark:border-neutral-700">
-                        <td colSpan={4} className="pt-3 text-right text-neutral-500 dark:text-neutral-400 font-medium">총 공수</td>
-                        <td className="pt-3 text-right font-semibold text-neutral-700 dark:text-neutral-200">{estimate.totalManMonths} M/M</td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {estimate.staffing.map((staff, idx) => (
+                          <tr key={idx} className="text-neutral-600 dark:text-neutral-300">
+                            <td className="py-2.5">{staff.role}</td>
+                            <td className="py-2.5 text-neutral-500 dark:text-neutral-400">{staff.grade}</td>
+                            <td className="py-2.5 text-center">{staff.headcount}명</td>
+                            <td className="py-2.5 text-center">{staff.duration}</td>
+                            <td className="py-2.5 text-right font-medium">{staff.manMonth}</td>
+                            <td className="py-2.5 text-right text-neutral-500 dark:text-neutral-400">
+                              {staff.unitCost ? `${(staff.unitCost / 10000).toLocaleString()}만원` : '-'}
+                            </td>
+                            <td className="py-2.5 text-right font-medium">
+                              {staff.subtotal ? `${(staff.subtotal / 10000).toLocaleString()}만원` : '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-neutral-200 dark:border-neutral-700">
+                          <td colSpan={4} className="pt-3 text-right text-neutral-500 dark:text-neutral-400 font-medium">총 공수</td>
+                          <td className="pt-3 text-right font-semibold text-neutral-700 dark:text-neutral-200">{estimate.totalManMonths} M/M</td>
+                          <td></td>
+                          <td className="pt-3 text-right font-semibold text-neutral-700 dark:text-neutral-200">
+                            {estimate.staffing.reduce((sum, s) => sum + (s.subtotal || 0), 0) > 0
+                              ? `${(estimate.staffing.reduce((sum, s) => sum + (s.subtotal || 0), 0) / 10000).toLocaleString()}만원`
+                              : '-'}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                   
                   {estimate.costBasis && (
                     <div className="mt-4 text-xs text-neutral-400 dark:text-neutral-500 flex items-center gap-2">

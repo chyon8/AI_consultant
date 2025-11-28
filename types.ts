@@ -99,6 +99,8 @@ export interface StaffingDetail {
   headcount: number | string;
   duration: string;
   manMonth: number | string;
+  unitCost?: number;
+  subtotal?: number;
 }
 
 /** WBS Phase 정보 */

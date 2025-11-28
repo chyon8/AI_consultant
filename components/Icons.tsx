@@ -53,7 +53,8 @@ import {
   Layers,
   Settings,
   Lightbulb,
-  Grid3X3
+  Grid3X3,
+  Info
 } from 'lucide-react';
 
 export const Icons = {
@@ -112,5 +113,6 @@ export const Icons = {
   Layers: Layers,
   Settings: Settings,
   Lightbulb: Lightbulb,
-  Grid: Grid3X3
+  Grid: Grid3X3,
+  Info: Info
 };

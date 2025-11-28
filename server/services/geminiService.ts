@@ -34,47 +34,66 @@ const PART1_PROMPT = `# PROMPT METADATA
 - 프로젝트 기간 = 가장 긴 크리티컬 패스 기준 (병렬 작업 고려)
 - 예: 총 공수 35 M/M이지만, 7명이 동시 투입되면 실제 기간은 약 5개월
 
+### 📊 등급별 표준 월 단가 (2024년 한국SW산업협회 기준)
+
+| 등급 | 기준 월단가 | TYPE A 적용단가 | TYPE B 적용단가 | TYPE C 적용단가 |
+|------|------------|----------------|----------------|----------------|
+| **특급** | 14,000,000원 | 17,500,000원 (제경비 25% 포함) | 14,000,000원 | 18,000,000원 (AI 도구비 포함) |
+| **고급** | 11,500,000원 | 14,400,000원 (제경비 25% 포함) | 11,500,000원 | 15,000,000원 (AI 도구비 포함) |
+| **중급** | 9,000,000원 | 11,250,000원 (제경비 25% 포함) | 9,000,000원 | - |
+| **초급** | 6,500,000원 | 8,125,000원 (제경비 25% 포함) | 6,500,000원 | - |
+
+**단가 적용 규칙:**
+- TYPE A: 기준 단가 × 1.25 (제경비/이윤 25% 가산)
+- TYPE B: 기준 단가 그대로 적용 (효율적 운영으로 제경비 최소화)
+- TYPE C: 기준 단가 × 1.28 (AI 도구 구독비 월 50만원 + 프리미엄)
+
+**견적 계산 공식:**
+- 견적 = Σ(각 역할별 M/M × 해당 등급 적용단가)
+- 최소 견적: 총 M/M의 하한 × 평균 단가
+- 최대 견적: 총 M/M의 상한 × 평균 단가 × 1.15 (리스크 버퍼)
+
 ### TYPE A: 중견 SI 에이전시 / 플랫폼 전문 기업 (Stability)
 *   분석: 대규모 트래픽 처리 경험, PM/PL/DBA/AA 등 전문 인력 보유. 안정적인 마이그레이션과 고품질 산출물 보장.
 *   **[상세 산출 근거]**
     - **투입 인력 (예상 기간):**
-      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M |
-      |------|------|----------|----------|-----|
-      | PM | 특급 | 1.0명 | X개월 | X.X M/M |
-      | PL/AA | 특급 | 1.0명 | X개월 | X.X M/M |
-      | UI/UX 디자이너 | 고급 | 1.0명 | X개월 | X.X M/M |
-      | 퍼블리셔 | 중급 | 1.0명 | X개월 | X.X M/M |
-      | BE 개발자 | 고급 | X.X명 | X개월 | X.X M/M |
-      | FE/App 개발자 | 고급 | X.X명 | X개월 | X.X M/M |
-      | QA/Tester | 중급 | 0.5명 | X개월 | X.X M/M |
+      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M | 월단가 | 소계 |
+      |------|------|----------|----------|-----|--------|------|
+      | PM | 특급 | 1.0명 | X개월 | X.X M/M | 17,500,000원 | XX,XXX,XXX원 |
+      | PL/AA | 특급 | 1.0명 | X개월 | X.X M/M | 17,500,000원 | XX,XXX,XXX원 |
+      | UI/UX 디자이너 | 고급 | 1.0명 | X개월 | X.X M/M | 14,400,000원 | XX,XXX,XXX원 |
+      | 퍼블리셔 | 중급 | 1.0명 | X개월 | X.X M/M | 11,250,000원 | XX,XXX,XXX원 |
+      | BE 개발자 | 고급 | X.X명 | X개월 | X.X M/M | 14,400,000원 | XX,XXX,XXX원 |
+      | FE/App 개발자 | 고급 | X.X명 | X개월 | X.X M/M | 14,400,000원 | XX,XXX,XXX원 |
+      | QA/Tester | 중급 | 0.5명 | X개월 | X.X M/M | 11,250,000원 | XX,XXX,XXX원 |
     - **총 공수:** 약 XX~XX M/M
-    - **단가:** SW기술자 평균 노임단가 + 제경비/이윤 포함
+    - **단가 기준:** SW기술자 노임단가 + 제경비 25% (TYPE A 적용단가 사용)
 *   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
 
 ### TYPE B: 기술 중심 부티크 / 스타트업 개발사 (Efficiency)
 *   분석: 최신 기술 스택(Next.js, Flutter)에 강점이 있는 젊은 조직. 기민한 개발이 가능하나, 대규모 트래픽 인프라 설계 경험 검증 필요.
 *   **[상세 산출 근거]**
     - **투입 인력 (예상 기간):**
-      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M |
-      |------|------|----------|----------|-----|
-      | PM 겸 PL | 특급 | 1.0명 | X개월 | X.X M/M |
-      | 디자이너 | 중급 | 1.0명 | X개월 | X.X M/M |
-      | 풀스택 개발팀 | 고급/중급 혼합 | X.X명 | X개월 | X.X M/M |
+      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M | 월단가 | 소계 |
+      |------|------|----------|----------|-----|--------|------|
+      | PM 겸 PL | 특급 | 1.0명 | X개월 | X.X M/M | 14,000,000원 | XX,XXX,XXX원 |
+      | 디자이너 | 중급 | 1.0명 | X개월 | X.X M/M | 9,000,000원 | XX,XXX,XXX원 |
+      | 풀스택 개발팀 | 고급/중급 혼합 | X.X명 | X개월 | X.X M/M | 10,250,000원 | XX,XXX,XXX원 |
     - **총 공수:** 약 XX~XX M/M
-    - **단가:** 효율적 인력 구성으로 단가 절감
+    - **단가 기준:** SW기술자 기준 노임단가 (제경비 미포함, TYPE B 적용단가 사용)
 *   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
 
 ### TYPE C: AI 네이티브 시니어 개발자 (AI Productivity)
 *   분석: Cursor, Copilot, Claude 등 AI 도구 활용으로 생산성 극대화. 소수 정예로 빠른 MVP 구축 가능. 복잡한 레거시 통합이나 대규모 인프라 설계에는 제약.
 *   **[상세 산출 근거]**
     - **투입 인력 (예상 기간):**
-      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M |
-      |------|------|----------|----------|-----|
-      | Tech Lead (PM 겸임) | 특급 | 1.0명 | X개월 | X.X M/M |
-      | AI-Native 풀스택 | 특급 | X.X명 | X개월 | X.X M/M |
-      | UI/UX (외주 또는 AI 생성) | - | 0.5명 | X개월 | X.X M/M |
+      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M | 월단가 | 소계 |
+      |------|------|----------|----------|-----|--------|------|
+      | Tech Lead (PM 겸임) | 특급 | 1.0명 | X개월 | X.X M/M | 18,000,000원 | XX,XXX,XXX원 |
+      | AI-Native 풀스택 | 특급 | X.X명 | X개월 | X.X M/M | 18,000,000원 | XX,XXX,XXX원 |
+      | UI/UX (외주 또는 AI 생성) | 고급 | 0.5명 | X개월 | X.X M/M | 15,000,000원 | XX,XXX,XXX원 |
     - **총 공수:** 약 XX~XX M/M
-    - **단가:** AI 도구 비용 포함, 고급 인력 위주로 단가 높지만 공수 절감
+    - **단가 기준:** SW기술자 노임단가 + AI 도구 비용 (TYPE C 적용단가 사용)
 *   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
 
 ## STEP 3. 실행 계획 (WBS - 병렬화된 일정)
@@ -143,14 +162,14 @@ const PART1_PROMPT = `# PROMPT METADATA
       "teamSize": 7,
       "analysis": "대규모 트래픽 처리 경험, PM/PL/DBA/AA 등 전문 인력 보유. 안정적인 마이그레이션과 고품질 산출물 보장.",
       "staffing": [
-        { "role": "PM", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0 },
-        { "role": "PL/AA", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0 },
-        { "role": "UI/UX 디자이너", "grade": "고급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0 },
-        { "role": "BE 개발자", "grade": "고급", "headcount": 2.0, "duration": "4개월", "manMonth": 8.0 },
-        { "role": "FE 개발자", "grade": "고급", "headcount": 1.5, "duration": "4개월", "manMonth": 6.0 },
-        { "role": "QA/Tester", "grade": "중급", "headcount": 0.5, "duration": "2개월", "manMonth": 1.0 }
+        { "role": "PM", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0, "unitCost": 17500000, "subtotal": 87500000 },
+        { "role": "PL/AA", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0, "unitCost": 17500000, "subtotal": 87500000 },
+        { "role": "UI/UX 디자이너", "grade": "고급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0, "unitCost": 14400000, "subtotal": 28800000 },
+        { "role": "BE 개발자", "grade": "고급", "headcount": 2.0, "duration": "4개월", "manMonth": 8.0, "unitCost": 14400000, "subtotal": 115200000 },
+        { "role": "FE 개발자", "grade": "고급", "headcount": 1.5, "duration": "4개월", "manMonth": 6.0, "unitCost": 14400000, "subtotal": 86400000 },
+        { "role": "QA/Tester", "grade": "중급", "headcount": 0.5, "duration": "2개월", "manMonth": 1.0, "unitCost": 11250000, "subtotal": 11250000 }
       ],
-      "costBasis": "SW기술자 평균 노임단가 + 제경비/이윤 포함"
+      "costBasis": "SW기술자 노임단가 + 제경비 25% (TYPE A 적용단가)"
     },
     "typeB": { 
       "minCost": 150000000, 
@@ -160,11 +179,11 @@ const PART1_PROMPT = `# PROMPT METADATA
       "teamSize": 5,
       "analysis": "최신 기술 스택에 강점이 있는 조직. 기민한 개발이 가능하나, 대규모 인프라 설계 경험 검증 필요.",
       "staffing": [
-        { "role": "PM 겸 PL", "grade": "특급", "headcount": 1.0, "duration": "4개월", "manMonth": 4.0 },
-        { "role": "디자이너", "grade": "중급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0 },
-        { "role": "풀스택 개발팀", "grade": "고급/중급 혼합", "headcount": 3.0, "duration": "3.5개월", "manMonth": 10.5 }
+        { "role": "PM 겸 PL", "grade": "특급", "headcount": 1.0, "duration": "4개월", "manMonth": 4.0, "unitCost": 14000000, "subtotal": 56000000 },
+        { "role": "디자이너", "grade": "중급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0, "unitCost": 9000000, "subtotal": 18000000 },
+        { "role": "풀스택 개발팀", "grade": "고급/중급 혼합", "headcount": 3.0, "duration": "3.5개월", "manMonth": 10.5, "unitCost": 10250000, "subtotal": 107625000 }
       ],
-      "costBasis": "효율적 인력 구성으로 단가 절감"
+      "costBasis": "SW기술자 기준 노임단가 (제경비 미포함, TYPE B 적용단가)"
     },
     "typeC": { 
       "minCost": 80000000, 
@@ -174,11 +193,11 @@ const PART1_PROMPT = `# PROMPT METADATA
       "teamSize": 3,
       "analysis": "AI 도구(Cursor, Copilot, Claude) 활용으로 생산성 극대화. 소수 정예로 빠른 MVP 구축 가능. 복잡한 레거시 통합이나 대규모 인프라 설계에는 제약.",
       "staffing": [
-        { "role": "Tech Lead (PM 겸임)", "grade": "특급", "headcount": 1.0, "duration": "3개월", "manMonth": 3.0 },
-        { "role": "AI-Native 풀스택", "grade": "특급", "headcount": 1.5, "duration": "3개월", "manMonth": 4.5 },
-        { "role": "UI/UX (외주)", "grade": "-", "headcount": 0.5, "duration": "1.5개월", "manMonth": 0.75 }
+        { "role": "Tech Lead (PM 겸임)", "grade": "특급", "headcount": 1.0, "duration": "3개월", "manMonth": 3.0, "unitCost": 18000000, "subtotal": 54000000 },
+        { "role": "AI-Native 풀스택", "grade": "특급", "headcount": 1.5, "duration": "3개월", "manMonth": 4.5, "unitCost": 18000000, "subtotal": 81000000 },
+        { "role": "UI/UX (외주)", "grade": "고급", "headcount": 0.5, "duration": "1.5개월", "manMonth": 0.75, "unitCost": 15000000, "subtotal": 11250000 }
       ],
-      "costBasis": "AI 도구 비용 포함, 고급 인력 위주로 단가 높지만 공수 절감"
+      "costBasis": "SW기술자 노임단가 + AI 도구 비용 (TYPE C 적용단가)"
     },
     "wbs": {
       "totalDuration": "5개월",
