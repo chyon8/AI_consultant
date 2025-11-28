@@ -140,6 +140,30 @@ export async function analyzeProject(
             projectTitle: data.parsed.projectTitle,
             modulesCount: data.parsed.modules?.length || 0
           });
+          
+          console.log('🔴 [DEBUG: Raw AI Response - Client SSE]', {
+            rawData: data,
+            hasRawContent: !!data.parsed.raw_content,
+            rawMarkdownLength: data.parsed.rawMarkdown?.length || 0
+          });
+          
+          console.log('🟢 [DEBUG: Processed Data - Client Parsed]', {
+            projectTitle: data.parsed.projectTitle,
+            modules: data.parsed.modules?.map((m: any) => ({
+              id: m.id,
+              name: m.name,
+              baseCost: m.baseCost,
+              isSelected: m.isSelected,
+              subFeatures: m.subFeatures?.map((f: any) => ({
+                id: f.id,
+                name: f.name,
+                price: f.price,
+                isSelected: f.isSelected
+              }))
+            })),
+            estimates: data.parsed.estimates
+          });
+          
           parsedResult = data.parsed;
           if (onComplete) {
             onComplete(parsedResult, text);

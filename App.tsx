@@ -214,6 +214,12 @@ const App: React.FC = () => {
       hasEstimates: !!result.estimates
     } : 'null');
     
+    console.log('🔴 [DEBUG: Raw AI Response - App.tsx]', {
+      rawResult: result,
+      rawMarkdownPreview: result?.rawMarkdown?.substring(0, 300),
+      rawContentPreview: result?.raw_content?.substring(0, 300)
+    });
+    
     if (result && result.modules && result.modules.length > 0) {
       const convertedModules: ModuleItem[] = result.modules.map(mod => ({
         id: mod.id,
@@ -236,8 +242,27 @@ const App: React.FC = () => {
       setModules(convertedModules);
       
       if (result.estimates) {
+        console.log('🟢 [DEBUG: Processed Dashboard Data - Before setEstimates]', {
+          estimates: result.estimates,
+          typeA: result.estimates.typeA,
+          typeB: result.estimates.typeB,
+          typeC: result.estimates.typeC
+        });
         setEstimates(result.estimates);
       }
+      
+      console.log('🟢 [DEBUG: Processed Dashboard Data - Before Dashboard Render]', {
+        modulesCount: convertedModules.length,
+        modules: convertedModules.map(m => ({
+          id: m.id,
+          name: m.name,
+          baseCost: m.baseCost,
+          isSelected: m.isSelected,
+          subFeaturesCount: m.subFeatures.length,
+          subFeaturesTotalPrice: m.subFeatures.reduce((sum, f) => sum + (f.isSelected ? f.price : 0), 0)
+        })),
+        estimates: result.estimates
+      });
     } else {
       console.warn('[App] No valid modules in result');
     }
