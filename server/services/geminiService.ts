@@ -104,6 +104,12 @@ const PART1_PROMPT = `# PROMPT METADATA
 - parallelDuration: 병렬 작업 고려한 실제 프로젝트 기간
 - duration 필드에는 parallelDuration 값을 사용
 
+**⚠️ 중요: 모든 상세 데이터를 JSON에 포함해야 합니다:**
+- analysis: TYPE별 분석 텍스트 (장단점, 특징)
+- staffing: 상세 투입 인력 테이블 (역할, 등급, 인원, 기간, M/M)
+- costBasis: 단가 산정 근거
+- wbs: WBS 상세 일정 (phase, task, schedule 배열)
+
 \`\`\`json:modules
 {
   "projectTitle": "프로젝트 제목",
@@ -134,21 +140,60 @@ const PART1_PROMPT = `# PROMPT METADATA
       "maxCost": 350000000, 
       "duration": "5개월",
       "totalManMonths": 38,
-      "teamSize": 7
+      "teamSize": 7,
+      "analysis": "대규모 트래픽 처리 경험, PM/PL/DBA/AA 등 전문 인력 보유. 안정적인 마이그레이션과 고품질 산출물 보장.",
+      "staffing": [
+        { "role": "PM", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0 },
+        { "role": "PL/AA", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0 },
+        { "role": "UI/UX 디자이너", "grade": "고급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0 },
+        { "role": "BE 개발자", "grade": "고급", "headcount": 2.0, "duration": "4개월", "manMonth": 8.0 },
+        { "role": "FE 개발자", "grade": "고급", "headcount": 1.5, "duration": "4개월", "manMonth": 6.0 },
+        { "role": "QA/Tester", "grade": "중급", "headcount": 0.5, "duration": "2개월", "manMonth": 1.0 }
+      ],
+      "costBasis": "SW기술자 평균 노임단가 + 제경비/이윤 포함"
     },
     "typeB": { 
       "minCost": 150000000, 
       "maxCost": 220000000, 
       "duration": "4개월",
       "totalManMonths": 28,
-      "teamSize": 5
+      "teamSize": 5,
+      "analysis": "최신 기술 스택에 강점이 있는 조직. 기민한 개발이 가능하나, 대규모 인프라 설계 경험 검증 필요.",
+      "staffing": [
+        { "role": "PM 겸 PL", "grade": "특급", "headcount": 1.0, "duration": "4개월", "manMonth": 4.0 },
+        { "role": "디자이너", "grade": "중급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0 },
+        { "role": "풀스택 개발팀", "grade": "고급/중급 혼합", "headcount": 3.0, "duration": "3.5개월", "manMonth": 10.5 }
+      ],
+      "costBasis": "효율적 인력 구성으로 단가 절감"
     },
     "typeC": { 
       "minCost": 80000000, 
       "maxCost": 150000000, 
       "duration": "3개월",
       "totalManMonths": 15,
-      "teamSize": 3
+      "teamSize": 3,
+      "analysis": "AI 도구(Cursor, Copilot, Claude) 활용으로 생산성 극대화. 소수 정예로 빠른 MVP 구축 가능. 복잡한 레거시 통합이나 대규모 인프라 설계에는 제약.",
+      "staffing": [
+        { "role": "Tech Lead (PM 겸임)", "grade": "특급", "headcount": 1.0, "duration": "3개월", "manMonth": 3.0 },
+        { "role": "AI-Native 풀스택", "grade": "특급", "headcount": 1.5, "duration": "3개월", "manMonth": 4.5 },
+        { "role": "UI/UX (외주)", "grade": "-", "headcount": 0.5, "duration": "1.5개월", "manMonth": 0.75 }
+      ],
+      "costBasis": "AI 도구 비용 포함, 고급 인력 위주로 단가 높지만 공수 절감"
+    },
+    "wbs": {
+      "totalDuration": "5개월",
+      "timeUnit": "month",
+      "phases": [
+        { "phase": "기획/설계", "task": "요구사항 분석, DB/API 설계", "duration": "1개월", "schedule": [1, 0, 0, 0, 0] },
+        { "phase": "디자인", "task": "UI/UX 디자인, 디자인 시스템", "duration": "1.5개월", "schedule": [1, 1, 0, 0, 0] },
+        { "phase": "FE 개발", "task": "프론트엔드 구현", "duration": "3개월", "schedule": [0, 1, 1, 1, 0] },
+        { "phase": "BE 개발", "task": "백엔드 API, 비즈니스 로직", "duration": "3개월", "schedule": [0, 1, 1, 1, 0] },
+        { "phase": "통합/QA", "task": "테스트, 버그 수정, 배포", "duration": "1개월", "schedule": [0, 0, 0, 1, 1] }
+      ],
+      "partnerAdvice": {
+        "recommendedType": "TYPE B",
+        "reason": "가성비와 기술력을 모두 갖춘 중소형 개발사가 적합합니다."
+      }
     }
   }
 }

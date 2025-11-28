@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ModuleItem, PartnerType, ProjectScale, ProjectEstimates } from '../types';
+import { ModuleItem, PartnerType, ProjectScale, ProjectEstimates, StaffingDetail } from '../types';
 import { Icons } from './Icons';
 import { PARTNER_PRESETS } from '../constants';
 
@@ -25,12 +25,21 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
   estimates
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
+  const [expandedTypes, setExpandedTypes] = useState<PartnerType[]>([]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => 
       prev.includes(id) 
         ? prev.filter(expandedId => expandedId !== id) 
         : [...prev, id]
+    );
+  };
+
+  const toggleTypeExpand = (type: PartnerType) => {
+    setExpandedTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
     );
   };
 
@@ -45,6 +54,9 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
         duration: aiEstimate.duration || '미정',
         totalManMonths: aiEstimate.totalManMonths || 0,
         teamSize: aiEstimate.teamSize || 0,
+        analysis: aiEstimate.analysis || '',
+        staffing: aiEstimate.staffing || [],
+        costBasis: aiEstimate.costBasis || '',
         hasData: true
       };
     }
@@ -55,6 +67,9 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
       duration: '데이터 준비 중',
       totalManMonths: 0,
       teamSize: 0,
+      analysis: '',
+      staffing: [] as StaffingDetail[],
+      costBasis: '',
       hasData: false
     };
   };
@@ -84,61 +99,116 @@ export const Step2EstimationTab: React.FC<Step2EstimationTabProps> = ({
         <p className="text-sm text-neutral-400 dark:text-neutral-500">Detailed Estimation — 파트너 유형별 상세 산출 근거</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="space-y-4">
         {(['AGENCY', 'STUDIO', 'AI_NATIVE'] as PartnerType[]).map((type) => {
           const config = PARTNER_PRESETS[type];
           const estimate = type === 'AGENCY' ? typeAEstimate : type === 'STUDIO' ? typeBEstimate : typeCEstimate;
           const isSelected = currentPartnerType === type;
+          const isExpanded = expandedTypes.includes(type);
           const typeLabel = type === 'AGENCY' ? 'TYPE A' : type === 'STUDIO' ? 'TYPE B' : 'TYPE C';
 
           return (
-            <button
+            <div
               key={type}
-              onClick={() => onSelectPartnerType(type)}
-              className={`text-left p-8 rounded-lg border transition-all duration-200 ${
+              className={`rounded-lg border transition-all duration-200 overflow-hidden ${
                 isSelected 
                   ? 'border-neutral-600 dark:border-neutral-300 bg-white dark:bg-neutral-900' 
                   : 'border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-200 dark:hover:border-neutral-700'
               }`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-semibold px-2 py-1 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 tracking-wider">
-                  {typeLabel}
-                </span>
-                {isSelected && (
-                  <div className="w-5 h-5 rounded-full bg-neutral-600 dark:bg-neutral-300 flex items-center justify-center">
-                    <Icons.CheckMark size={12} className="text-neutral-200 dark:text-neutral-700" />
+              <div 
+                className="p-6 cursor-pointer"
+                onClick={() => onSelectPartnerType(type)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-[10px] font-semibold px-2 py-1 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 tracking-wider">
+                        {typeLabel}
+                      </span>
+                      {isSelected && (
+                        <div className="w-5 h-5 rounded-full bg-neutral-600 dark:bg-neutral-300 flex items-center justify-center">
+                          <Icons.CheckMark size={12} className="text-neutral-200 dark:text-neutral-700" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <h4 className="font-medium text-neutral-700 dark:text-neutral-200 mb-1">{config.title}</h4>
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-4">{config.description}</p>
+                    
+                    {estimate.analysis && (
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4 leading-relaxed">
+                        {estimate.analysis}
+                      </p>
+                    )}
                   </div>
+                  
+                  <div className="text-right ml-6 min-w-[160px]">
+                    <div className="text-xl font-semibold text-neutral-700 dark:text-neutral-200 mb-1">
+                      {estimate.hasData 
+                        ? `${formatCost(estimate.minCost, true)} ~ ${formatCost(estimate.maxCost, true)}원`
+                        : '데이터 준비 중'}
+                    </div>
+                    <div className="text-xs text-neutral-400">
+                      {estimate.hasData ? `${estimate.totalManMonths} M/M · ${estimate.duration}` : '-'}
+                    </div>
+                  </div>
+                </div>
+                
+                {estimate.hasData && estimate.staffing && estimate.staffing.length > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleTypeExpand(type); }}
+                    className="mt-4 flex items-center gap-2 text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  >
+                    <Icons.ChevronDown 
+                      size={14} 
+                      className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                    />
+                    <span>상세 산출 근거 {isExpanded ? '접기' : '보기'}</span>
+                  </button>
                 )}
               </div>
               
-              <h4 className="font-medium text-neutral-700 dark:text-neutral-200 mb-1">{config.title}</h4>
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 mb-6 line-clamp-2">{config.description}</p>
-              
-              <div className="space-y-3 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-neutral-400 uppercase tracking-wider">예상 견적</span>
-                  <span className="font-medium text-neutral-700 dark:text-neutral-200">
-                    {estimate.hasData 
-                      ? `${formatCost(estimate.minCost, true)} ~ ${formatCost(estimate.maxCost, true)}원`
-                      : '데이터 준비 중'}
-                  </span>
+              {isExpanded && estimate.staffing && estimate.staffing.length > 0 && (
+                <div className="px-6 pb-6 border-t border-neutral-100 dark:border-neutral-800 pt-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-neutral-400 dark:text-neutral-500 text-xs uppercase tracking-wider">
+                        <th className="pb-3 font-medium">역할</th>
+                        <th className="pb-3 font-medium">등급</th>
+                        <th className="pb-3 font-medium text-center">투입 인원</th>
+                        <th className="pb-3 font-medium text-center">투입 기간</th>
+                        <th className="pb-3 font-medium text-right">M/M</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                      {estimate.staffing.map((staff, idx) => (
+                        <tr key={idx} className="text-neutral-600 dark:text-neutral-300">
+                          <td className="py-2.5">{staff.role}</td>
+                          <td className="py-2.5 text-neutral-500 dark:text-neutral-400">{staff.grade}</td>
+                          <td className="py-2.5 text-center">{staff.headcount}명</td>
+                          <td className="py-2.5 text-center">{staff.duration}</td>
+                          <td className="py-2.5 text-right font-medium">{staff.manMonth}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-neutral-200 dark:border-neutral-700">
+                        <td colSpan={4} className="pt-3 text-right text-neutral-500 dark:text-neutral-400 font-medium">총 공수</td>
+                        <td className="pt-3 text-right font-semibold text-neutral-700 dark:text-neutral-200">{estimate.totalManMonths} M/M</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  
+                  {estimate.costBasis && (
+                    <div className="mt-4 text-xs text-neutral-400 dark:text-neutral-500 flex items-center gap-2">
+                      <Icons.Info size={12} />
+                      <span>단가 산정 근거: {estimate.costBasis}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-neutral-400 uppercase tracking-wider">총 공수</span>
-                  <span className="font-medium text-neutral-500 dark:text-neutral-400">
-                    {estimate.hasData ? `${estimate.totalManMonths} M/M` : '-'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-neutral-400 uppercase tracking-wider">프로젝트 기간</span>
-                  <span className="font-medium text-neutral-600 dark:text-neutral-300">{estimate.duration}</span>
-                </div>
-                <div className="text-[10px] text-neutral-400 dark:text-neutral-500 text-right pt-2">
-                  {estimate.hasData ? `${estimate.teamSize}명 병렬 투입 기준` : '-'}
-                </div>
-              </div>
-            </button>
+              )}
+            </div>
           );
         })}
       </div>

@@ -92,18 +92,52 @@ export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
 export type EstimationSubTab = 'DETAIL' | 'PARTNER' | 'SCHEDULE';
 
+/** 상세 투입 인력 정보 */
+export interface StaffingDetail {
+  role: string;
+  grade: string;
+  headcount: number | string;
+  duration: string;
+  manMonth: number | string;
+}
+
+/** WBS Phase 정보 */
+export interface WBSPhase {
+  phase: string;
+  task: string;
+  duration: string;
+  schedule: number[];
+}
+
+/** 상세 견적 타입 (확장) */
 export interface TypeEstimate {
   minCost: number;
   maxCost: number;
   duration: string;
   totalManMonths?: number;
   teamSize?: number;
+  analysis?: string;
+  staffing?: StaffingDetail[];
+  costBasis?: string;
+  characteristics?: string[];
+}
+
+/** WBS 상세 정보 */
+export interface WBSDetail {
+  phases: WBSPhase[];
+  totalDuration: string;
+  timeUnit: 'week' | 'month';
+  partnerAdvice?: {
+    recommendedType: string;
+    reason: string;
+  };
 }
 
 export interface ProjectEstimates {
   typeA?: TypeEstimate;
   typeB?: TypeEstimate;
   typeC?: TypeEstimate;
+  wbs?: WBSDetail;
 }
 
 export interface ProjectSnapshot {

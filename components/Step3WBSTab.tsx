@@ -1,5 +1,5 @@
 import React from 'react';
-import { ModuleItem, PartnerType, ProjectEstimates } from '../types';
+import { ModuleItem, PartnerType, ProjectEstimates, WBSPhase as WBSPhaseType } from '../types';
 import { Icons } from './Icons';
 import { PARTNER_PRESETS } from '../constants';
 
@@ -15,6 +15,7 @@ interface WBSPhase {
   duration: number;
   tasks: string[];
   status: 'completed' | 'in_progress' | 'pending';
+  schedule?: number[];
 }
 
 export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({ 
@@ -68,43 +69,62 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
     return `${months}개월`;
   };
 
-  const phases: WBSPhase[] = [
-    {
-      id: 'analysis',
-      name: '분석/설계',
-      duration: distributedDurations[0],
-      tasks: ['요구사항 분석', 'UI/UX 기획', '아키텍처 설계', 'DB 스키마 설계'],
-      status: 'pending'
-    },
-    {
-      id: 'design',
-      name: '디자인',
-      duration: distributedDurations[1],
-      tasks: ['UI/UX 디자인 시안', '스타일 가이드 수립', '디자인 검수'],
-      status: 'pending'
-    },
-    {
-      id: 'development',
-      name: '개발',
-      duration: distributedDurations[2],
-      tasks: ['프론트엔드 개발', '백엔드 API 개발', 'DB 구축', '관리자 페이지'],
-      status: 'pending'
-    },
-    {
-      id: 'testing',
-      name: '테스트',
-      duration: distributedDurations[3],
-      tasks: ['통합 테스트', '부하 테스트', '보안 점검', '버그 수정'],
-      status: 'pending'
-    },
-    {
-      id: 'deployment',
-      name: '안정화/배포',
-      duration: distributedDurations[4],
-      tasks: ['실운영 배포', '모니터링 설정', '초기 운영 지원'],
-      status: 'pending'
-    }
-  ];
+  const parseDurationToMonths = (durationStr: string): number => {
+    const match = durationStr.match(/(\d+(?:\.\d+)?)/);
+    return match ? parseFloat(match[1]) : 1;
+  };
+
+  const wbsData = estimates?.wbs;
+  const hasAIWBS = wbsData && wbsData.phases && wbsData.phases.length > 0;
+  
+  const phases: WBSPhase[] = hasAIWBS 
+    ? wbsData.phases.map((p, idx) => ({
+        id: `phase_${idx}`,
+        name: p.phase,
+        duration: parseDurationToMonths(p.duration),
+        tasks: p.task ? [p.task] : [],
+        status: 'pending' as const,
+        schedule: p.schedule
+      }))
+    : [
+        {
+          id: 'analysis',
+          name: '분석/설계',
+          duration: distributedDurations[0],
+          tasks: ['요구사항 분석', 'UI/UX 기획', '아키텍처 설계', 'DB 스키마 설계'],
+          status: 'pending'
+        },
+        {
+          id: 'design',
+          name: '디자인',
+          duration: distributedDurations[1],
+          tasks: ['UI/UX 디자인 시안', '스타일 가이드 수립', '디자인 검수'],
+          status: 'pending'
+        },
+        {
+          id: 'development',
+          name: '개발',
+          duration: distributedDurations[2],
+          tasks: ['프론트엔드 개발', '백엔드 API 개발', 'DB 구축', '관리자 페이지'],
+          status: 'pending'
+        },
+        {
+          id: 'testing',
+          name: '테스트',
+          duration: distributedDurations[3],
+          tasks: ['통합 테스트', '부하 테스트', '보안 점검', '버그 수정'],
+          status: 'pending'
+        },
+        {
+          id: 'deployment',
+          name: '안정화/배포',
+          duration: distributedDurations[4],
+          tasks: ['실운영 배포', '모니터링 설정', '초기 운영 지원'],
+          status: 'pending'
+        }
+      ];
+  
+  const partnerAdvice = wbsData?.partnerAdvice;
 
   const totalPhaseDuration = phases.reduce((sum, p) => sum + p.duration, 0);
   const durationMismatch = Math.abs(totalPhaseDuration - aiDuration.value) > 0.01;
@@ -146,6 +166,24 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
 
   const generateTimelineData = (): TimelineRow[] => {
     const rows: TimelineRow[] = [];
+    
+    if (hasAIWBS) {
+      phases.forEach((phase) => {
+        const scheduleFromAI = phase.schedule || [];
+        const schedule: boolean[] = scheduleFromAI.map(v => v === 1);
+        
+        while (schedule.length < totalUnits) {
+          schedule.push(false);
+        }
+        
+        rows.push({
+          phase: phase.name,
+          task: phase.tasks.join(', ') || '-',
+          schedule: schedule.slice(0, totalUnits)
+        });
+      });
+      return rows;
+    }
     
     const phaseRatiosForDistribution = phases.map(p => p.duration);
     const phaseUnits = distributeUnits(totalUnits, phaseRatiosForDistribution);
@@ -407,17 +445,31 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
           <Icons.Lightbulb size={16} className="text-neutral-400" />
           파트너 선정 어드바이스
         </h4>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
-          {currentPartnerType === 'AGENCY' && 
-            '대형 에이전시는 안정성과 체계적인 프로젝트 관리가 강점입니다. 복잡한 프로젝트나 대규모 트래픽 처리가 필요한 경우 적합합니다.'
-          }
-          {currentPartnerType === 'STUDIO' && 
-            '부티크 스튜디오는 가성비와 유연한 커뮤니케이션이 장점입니다. 중규모 프로젝트에서 효율적인 개발이 가능합니다.'
-          }
-          {currentPartnerType === 'AI_NATIVE' && 
-            'AI 네이티브 개발은 빠른 개발 속도와 비용 효율성이 특징입니다. MVP나 프로토타입 개발에 최적화되어 있습니다.'
-          }
-        </p>
+        {partnerAdvice ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">추천 유형:</span>
+              <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm font-medium rounded">
+                {partnerAdvice.recommendedType}
+              </span>
+            </div>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              {partnerAdvice.reason}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+            {currentPartnerType === 'AGENCY' && 
+              '대형 에이전시는 안정성과 체계적인 프로젝트 관리가 강점입니다. 복잡한 프로젝트나 대규모 트래픽 처리가 필요한 경우 적합합니다.'
+            }
+            {currentPartnerType === 'STUDIO' && 
+              '부티크 스튜디오는 가성비와 유연한 커뮤니케이션이 장점입니다. 중규모 프로젝트에서 효율적인 개발이 가능합니다.'
+            }
+            {currentPartnerType === 'AI_NATIVE' && 
+              'AI 네이티브 개발은 빠른 개발 속도와 비용 효율성이 특징입니다. MVP나 프로토타입 개발에 최적화되어 있습니다.'
+            }
+          </p>
+        )}
       </div>
     </div>
   );

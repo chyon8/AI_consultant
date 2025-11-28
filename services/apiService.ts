@@ -18,18 +18,48 @@ export interface ParsedModule {
   subFeatures: ParsedSubFeature[];
 }
 
+export interface StaffingDetail {
+  role: string;
+  grade: string;
+  headcount: number | string;
+  duration: string;
+  manMonth: number | string;
+}
+
+export interface WBSPhase {
+  phase: string;
+  task: string;
+  duration: string;
+  schedule: number[];
+}
+
 export interface ParsedTypeEstimate {
   minCost: number;
   maxCost: number;
   duration: string;
   totalManMonths?: number;
   teamSize?: number;
+  analysis?: string;
+  staffing?: StaffingDetail[];
+  costBasis?: string;
+  characteristics?: string[];
+}
+
+export interface WBSDetail {
+  phases: WBSPhase[];
+  totalDuration: string;
+  timeUnit: 'week' | 'month';
+  partnerAdvice?: {
+    recommendedType: string;
+    reason: string;
+  };
 }
 
 export interface ParsedEstimates {
   typeA: ParsedTypeEstimate;
   typeB: ParsedTypeEstimate;
   typeC: ParsedTypeEstimate;
+  wbs?: WBSDetail;
 }
 
 export interface VisualizationHints {

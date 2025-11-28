@@ -18,18 +18,48 @@ export interface ParsedModule {
   subFeatures: ParsedSubFeature[];
 }
 
+export interface StaffingDetail {
+  role: string;
+  grade: string;
+  headcount: number | string;
+  duration: string;
+  manMonth: number | string;
+}
+
+export interface WBSPhase {
+  phase: string;
+  task: string;
+  duration: string;
+  schedule: number[];
+}
+
 export interface ParsedTypeEstimate {
   minCost: number;
   maxCost: number;
   duration: string;
   totalManMonths?: number;
   teamSize?: number;
+  analysis?: string;
+  staffing?: StaffingDetail[];
+  costBasis?: string;
+  characteristics?: string[];
+}
+
+export interface WBSDetail {
+  phases: WBSPhase[];
+  totalDuration: string;
+  timeUnit: 'week' | 'month';
+  partnerAdvice?: {
+    recommendedType: string;
+    reason: string;
+  };
 }
 
 export interface ParsedEstimates {
   typeA: ParsedTypeEstimate;
   typeB: ParsedTypeEstimate;
   typeC: ParsedTypeEstimate;
+  wbs?: WBSDetail;
 }
 
 export interface VisualizationComponent {
@@ -105,7 +135,17 @@ export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResul
   try {
     const jsonMatch = fullResponse.match(/```json:modules\s*([\s\S]*?)```/);
     
-    const defaultEstimate = { minCost: 0, maxCost: 0, duration: '미정', totalManMonths: 0, teamSize: 0 };
+    const defaultEstimate: ParsedTypeEstimate = { 
+      minCost: 0, 
+      maxCost: 0, 
+      duration: '미정', 
+      totalManMonths: 0, 
+      teamSize: 0,
+      analysis: '',
+      staffing: [],
+      costBasis: '',
+      characteristics: []
+    };
     
     if (!jsonMatch) {
       const alternativeMatch = fullResponse.match(/```json\s*([\s\S]*?)```/);
@@ -118,10 +158,11 @@ export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResul
       const rawMarkdown = fullResponse.replace(/```json\s*[\s\S]*?```/, '').trim();
       
       const modules = jsonData.modules || [];
-      const estimates = {
+      const estimates: ParsedEstimates = {
         typeA: { ...defaultEstimate, ...(jsonData.estimates?.typeA || {}) },
         typeB: { ...defaultEstimate, ...(jsonData.estimates?.typeB || {}) },
-        typeC: { ...defaultEstimate, ...(jsonData.estimates?.typeC || {}) }
+        typeC: { ...defaultEstimate, ...(jsonData.estimates?.typeC || {}) },
+        wbs: jsonData.estimates?.wbs || jsonData.wbs || undefined
       };
       
       return {
@@ -143,10 +184,11 @@ export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResul
     const rawMarkdown = fullResponse.replace(/```json:modules\s*[\s\S]*?```/, '').trim();
     
     const modules = jsonData.modules || [];
-    const estimates = {
+    const estimates: ParsedEstimates = {
       typeA: { ...defaultEstimate, ...(jsonData.estimates?.typeA || {}) },
       typeB: { ...defaultEstimate, ...(jsonData.estimates?.typeB || {}) },
-      typeC: { ...defaultEstimate, ...(jsonData.estimates?.typeC || {}) }
+      typeC: { ...defaultEstimate, ...(jsonData.estimates?.typeC || {}) },
+      wbs: jsonData.estimates?.wbs || jsonData.wbs || undefined
     };
     
     return {
