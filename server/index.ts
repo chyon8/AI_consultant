@@ -78,12 +78,13 @@ app.post('/api/analyze', async (req, res) => {
     console.log('[Analyze] Response contains json:modules?', fullResponse.includes('```json:modules'));
     console.log('[Analyze] Response contains ```json?', fullResponse.includes('```json'));
 
-    console.log('🔴 [DEBUG: Raw AI Response - Server]', {
+    console.log('🔴 [DEBUG: Raw AI Response - Server]');
+    console.log(JSON.stringify({
       responseLength: fullResponse.length,
-      first500Chars: fullResponse.substring(0, 500),
-      last500Chars: fullResponse.substring(fullResponse.length - 500),
+      first1000Chars: fullResponse.substring(0, 1000),
+      last1000Chars: fullResponse.substring(fullResponse.length - 1000),
       containsJsonBlock: fullResponse.includes('```json')
-    });
+    }, null, 2));
 
     const parsedData = parseAnalysisResponse(fullResponse);
     
@@ -93,17 +94,13 @@ app.post('/api/analyze', async (req, res) => {
       hasEstimates: !!parsedData.estimates
     } : 'null');
     
-    console.log('🟢 [DEBUG: Processed Data - Server]', {
+    console.log('🟢 [DEBUG: Processed Data - Server]');
+    console.log(JSON.stringify({
       projectTitle: parsedData?.projectTitle,
       modulesCount: parsedData?.modules?.length || 0,
-      modules: parsedData?.modules?.map(m => ({
-        id: m.id,
-        name: m.name,
-        baseCost: m.baseCost,
-        subFeaturesCount: m.subFeatures?.length || 0
-      })),
+      modules: parsedData?.modules,
       estimates: parsedData?.estimates
-    });
+    }, null, 2));
 
     res.write(`data: ${JSON.stringify({ 
       done: true, 

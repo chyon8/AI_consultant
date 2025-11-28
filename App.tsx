@@ -214,11 +214,12 @@ const App: React.FC = () => {
       hasEstimates: !!result.estimates
     } : 'null');
     
-    console.log('🔴 [DEBUG: Raw AI Response - App.tsx]', {
+    console.log('🔴 [DEBUG: Raw AI Response - App.tsx]');
+    console.log(JSON.stringify({
       rawResult: result,
-      rawMarkdownPreview: result?.rawMarkdown?.substring(0, 300),
-      rawContentPreview: result?.raw_content?.substring(0, 300)
-    });
+      rawMarkdownPreview: result?.rawMarkdown?.substring(0, 500),
+      rawContentPreview: result?.raw_content?.substring(0, 500)
+    }, null, 2));
     
     if (result && result.modules && result.modules.length > 0) {
       const convertedModules: ModuleItem[] = result.modules.map(mod => ({
@@ -242,27 +243,22 @@ const App: React.FC = () => {
       setModules(convertedModules);
       
       if (result.estimates) {
-        console.log('🟢 [DEBUG: Processed Dashboard Data - Before setEstimates]', {
+        console.log('🟢 [DEBUG: Processed Dashboard Data - Before setEstimates]');
+        console.log(JSON.stringify({
           estimates: result.estimates,
           typeA: result.estimates.typeA,
           typeB: result.estimates.typeB,
           typeC: result.estimates.typeC
-        });
+        }, null, 2));
         setEstimates(result.estimates);
       }
       
-      console.log('🟢 [DEBUG: Processed Dashboard Data - Before Dashboard Render]', {
+      console.log('🟢 [DEBUG: Processed Dashboard Data - Before Dashboard Render]');
+      console.log(JSON.stringify({
         modulesCount: convertedModules.length,
-        modules: convertedModules.map(m => ({
-          id: m.id,
-          name: m.name,
-          baseCost: m.baseCost,
-          isSelected: m.isSelected,
-          subFeaturesCount: m.subFeatures.length,
-          subFeaturesTotalPrice: m.subFeatures.reduce((sum, f) => sum + (f.isSelected ? f.price : 0), 0)
-        })),
+        modules: convertedModules,
         estimates: result.estimates
-      });
+      }, null, 2));
     } else {
       console.warn('[App] No valid modules in result');
     }
