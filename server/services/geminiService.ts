@@ -225,7 +225,7 @@ export async function analyzeProject(
     ],
     config: {
       systemInstruction: PART1_PROMPT,
-      temperature: 1.0,
+      temperature: 0.35,
       thinkingConfig: {
         thinkingBudget: 8000
       }
