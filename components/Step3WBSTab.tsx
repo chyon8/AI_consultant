@@ -203,48 +203,48 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
 
   const timelineData = generateTimelineData();
   const timeHeaders = Array.from({ length: totalUnits }, (_, i) => 
-    useWeekUnit ? `Week ${i + 1}` : `${i + 1} Month`
+    useWeekUnit ? `W${i + 1}` : `M${i + 1}`
   );
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20 pt-4">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-bold rounded">STEP 3</span>
-          <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">실행 계획 (WBS)</h3>
+    <div className="space-y-12 animate-fade-in pb-20 pt-2">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] font-semibold tracking-wider uppercase rounded">Step 3</span>
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Work Breakdown Structure - 통합 일정 및 마일스톤</p>
+        <h3 className="text-2xl font-semibold tracking-tight text-neutral-700 dark:text-neutral-200 mb-2">실행 계획 (WBS)</h3>
+        <p className="text-sm text-neutral-400 dark:text-neutral-500">Work Breakdown Structure — 통합 일정 및 마일스톤</p>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-lg p-8 border border-neutral-100 dark:border-neutral-800">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">총 예상 기간 (AI 분석)</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{aiDuration.raw}</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium mb-2">Total Duration</p>
+            <p className="text-3xl font-light text-neutral-700 dark:text-neutral-200">{aiDuration.raw}</p>
             {durationMismatch && (
-              <p className="text-xs text-amber-500 dark:text-amber-400 mt-1">WBS 상세: {totalPhaseDuration}개월</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">WBS 상세: {totalPhaseDuration}개월</p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">적용 파트너 유형</p>
-            <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{config.title}</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium mb-2">Partner Type</p>
+            <p className="text-lg font-medium text-neutral-600 dark:text-neutral-300">{config.title}</p>
           </div>
         </div>
         
-        <div className="flex gap-1 h-3 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+        <div className="flex h-1 rounded-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
           {phases.map((phase, index) => {
             const width = (phase.duration / totalPhaseDuration) * 100;
-            const colors = [
-              'bg-blue-500',
-              'bg-emerald-500',
-              'bg-indigo-500',
-              'bg-amber-500',
-              'bg-purple-500'
+            const opacities = [
+              'bg-neutral-700 dark:bg-neutral-300',
+              'bg-neutral-500 dark:bg-neutral-400',
+              'bg-neutral-400 dark:bg-neutral-500',
+              'bg-neutral-300 dark:bg-neutral-600',
+              'bg-neutral-200 dark:bg-neutral-700'
             ];
             return (
               <div 
                 key={phase.id}
-                className={`${colors[index]} transition-all`}
+                className={`${opacities[index]} transition-all`}
                 style={{ width: `${width}%` }}
                 title={`${phase.name}: ${formatMonths(phase.duration)}`}
               />
@@ -252,36 +252,36 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
           })}
         </div>
         
-        <div className="flex justify-between mt-2 text-xs text-slate-400">
-          <span>착수</span>
-          <span>완료</span>
+        <div className="flex justify-between mt-3 text-[10px] text-neutral-400 uppercase tracking-wider">
+          <span>Start</span>
+          <span>Complete</span>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Icons.BarChart size={20} className="text-indigo-500" />
-          단계별 기간 분포
+      <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 p-8">
+        <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-6 flex items-center gap-2 uppercase tracking-wider">
+          <Icons.BarChart size={16} className="text-neutral-400" />
+          Phase Distribution
         </h4>
-        <div className="space-y-3">
+        <div className="space-y-5">
           {phases.map((phase, index) => {
             const maxDuration = Math.max(...phases.map(p => p.duration));
             const percent = maxDuration > 0 ? (phase.duration / maxDuration) * 100 : 0;
-            const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-amber-500', 'bg-purple-500'];
+            const opacities = ['bg-neutral-600', 'bg-neutral-500', 'bg-neutral-400', 'bg-neutral-300', 'bg-neutral-200'];
             return (
-              <div key={phase.id} className="space-y-1">
+              <div key={phase.id} className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                  <span className="text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
                     {phase.name}
                     {phase.duration < 1 && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">동시 진행</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded uppercase tracking-wider">Parallel</span>
                     )}
                   </span>
-                  <span className="font-medium text-slate-900 dark:text-white">{formatMonths(phase.duration)}</span>
+                  <span className="font-medium text-neutral-700 dark:text-neutral-200">{formatMonths(phase.duration)}</span>
                 </div>
-                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full ${colors[index] || 'bg-slate-500'} rounded-full transition-all duration-500`}
+                    className={`h-full ${opacities[index] || 'bg-neutral-400'} dark:bg-neutral-500 rounded-full transition-all duration-500`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
@@ -291,20 +291,20 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-          <Icons.Grid size={20} className="text-indigo-500" />
-          통합 WBS (Visual Timeline)
+      <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 p-8">
+        <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-8 flex items-center gap-2 uppercase tracking-wider">
+          <Icons.Grid size={16} className="text-neutral-400" />
+          Visual Timeline
         </h4>
         
         <div className="overflow-x-auto -mx-2 px-2">
           <table className="w-full min-w-[600px] border-collapse">
             <thead>
               <tr>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-24 min-w-[96px]">Phase</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider min-w-[200px]">Task</th>
+                <th className="text-left py-3 px-4 text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider w-24 min-w-[96px]">Phase</th>
+                <th className="text-left py-3 px-4 text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider min-w-[180px]">Task</th>
                 {timeHeaders.map((header, i) => (
-                  <th key={i} className="text-center py-3 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[60px]">
+                  <th key={i} className="text-center py-3 px-2 text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider whitespace-nowrap min-w-[48px]">
                     {header}
                   </th>
                 ))}
@@ -312,20 +312,20 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
             </thead>
             <tbody>
               {timelineData.map((row, rowIndex) => (
-                <tr key={rowIndex} className="border-t border-slate-100 dark:border-slate-800">
-                  <td className="py-4 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 align-top">
+                <tr key={rowIndex} className="border-t border-neutral-50 dark:border-neutral-800">
+                  <td className="py-4 px-4 text-sm font-medium text-neutral-600 dark:text-neutral-400 align-top">
                     {row.phase}
                   </td>
-                  <td className="py-4 px-4 text-sm text-slate-600 dark:text-slate-400">
+                  <td className="py-4 px-4 text-sm text-neutral-500 dark:text-neutral-500">
                     {row.task}
                   </td>
                   {row.schedule.map((isActive, cellIndex) => (
-                    <td key={cellIndex} className="py-4 px-2 text-center">
+                    <td key={cellIndex} className="py-5 px-3 text-center">
                       <div className="flex justify-center">
                         {isActive ? (
-                          <div className="w-5 h-5 rounded bg-slate-800 dark:bg-white" />
+                          <div className="w-3 h-3 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
                         ) : (
-                          <div className="w-5 h-5 rounded border-2 border-slate-200 dark:border-slate-700 bg-transparent" />
+                          <div className="w-3 h-3 rounded-sm bg-neutral-100 dark:bg-neutral-800" />
                         )}
                       </div>
                     </td>
@@ -336,55 +336,50 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
           </table>
         </div>
         
-        <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <div className="w-4 h-4 rounded bg-slate-800 dark:bg-white" />
-            <span>진행</span>
+        <div className="flex items-center gap-10 mt-10 pt-8 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="flex items-center gap-3 text-xs text-neutral-400 dark:text-neutral-500">
+            <div className="w-3 h-3 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
+            <span>Active</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <div className="w-4 h-4 rounded border-2 border-slate-200 dark:border-slate-700 bg-transparent" />
-            <span>미진행</span>
+          <div className="flex items-center gap-3 text-xs text-neutral-400 dark:text-neutral-500">
+            <div className="w-3 h-3 rounded-sm bg-neutral-100 dark:bg-neutral-800" />
+            <span>Inactive</span>
           </div>
         </div>
       </div>
 
       <div>
-        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Icons.Calendar size={20} className="text-indigo-500" />
-          단계별 상세 일정
+        <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-2 flex items-center gap-2 uppercase tracking-wider">
+          <Icons.Calendar size={16} className="text-neutral-400" />
+          Phase Details
         </h4>
+        <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-6">단계별 상세 일정 및 작업 항목</p>
         
         <div className="space-y-4">
           {phases.map((phase, index) => (
             <div 
               key={phase.id}
-              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5"
+              className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 p-6"
             >
               <div className="flex items-start gap-4">
                 <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold ${
-                    index === 0 ? 'bg-blue-500' :
-                    index === 1 ? 'bg-emerald-500' :
-                    index === 2 ? 'bg-indigo-500' :
-                    index === 3 ? 'bg-amber-500' :
-                    'bg-purple-500'
-                  }`}>
+                  <div className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-200 dark:text-neutral-700 font-medium text-sm bg-neutral-600 dark:bg-neutral-300">
                     {index + 1}
                   </div>
                   {index < phases.length - 1 && (
-                    <div className="w-0.5 h-8 bg-slate-200 dark:bg-slate-700 mt-2" />
+                    <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-700 mt-2" />
                   )}
                 </div>
                 
                 <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-medium text-neutral-700 dark:text-neutral-200 flex items-center gap-2">
                       {phase.name}
                       {phase.duration < 1 && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded font-normal">동시 진행</span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded uppercase tracking-wider font-normal">Parallel</span>
                       )}
                     </h5>
-                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                    <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
                       {formatMonths(phase.duration)}
                     </span>
                   </div>
@@ -393,9 +388,9 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
                     {phase.tasks.map((task, taskIndex) => (
                       <span 
                         key={taskIndex}
-                        className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm rounded-lg flex items-center gap-1"
+                        className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-sm rounded-md border border-neutral-100 dark:border-neutral-700 flex items-center gap-1.5"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        <span className="w-1 h-1 rounded-full bg-neutral-400" />
                         {task}
                       </span>
                     ))}
@@ -407,12 +402,12 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
         </div>
       </div>
 
-      <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800">
-        <h4 className="font-bold text-indigo-900 dark:text-indigo-100 mb-3 flex items-center gap-2">
-          <Icons.Lightbulb size={18} className="text-indigo-500" />
+      <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-lg p-8 border border-neutral-100 dark:border-neutral-800">
+        <h4 className="font-medium text-neutral-700 dark:text-neutral-200 mb-4 flex items-center gap-2">
+          <Icons.Lightbulb size={16} className="text-neutral-400" />
           파트너 선정 어드바이스
         </h4>
-        <p className="text-sm text-indigo-700 dark:text-indigo-300 leading-relaxed">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
           {currentPartnerType === 'AGENCY' && 
             '대형 에이전시는 안정성과 체계적인 프로젝트 관리가 강점입니다. 복잡한 프로젝트나 대규모 트래픽 처리가 필요한 경우 적합합니다.'
           }

@@ -33,76 +33,70 @@ export const Step1PlanningTab: React.FC<Step1PlanningTabProps> = ({
 
   const getCategoryIcon = (cat: string) => {
     switch (cat) {
-      case 'frontend': return <Icons.Monitor size={18} />;
-      case 'backend': return <Icons.Server size={18} />;
-      case 'database': return <Icons.Database size={18} />;
-      case 'infra': return <Icons.Cloud size={18} />;
-      default: return <Icons.Settings size={18} />;
+      case 'frontend': return <Icons.Monitor size={16} />;
+      case 'backend': return <Icons.Server size={16} />;
+      case 'database': return <Icons.Database size={16} />;
+      case 'infra': return <Icons.Cloud size={16} />;
+      default: return <Icons.Settings size={16} />;
     }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20 pt-4">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded">STEP 1</span>
-          <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">프로젝트 상세 기획</h3>
+    <div className="space-y-12 animate-fade-in pb-20 pt-2">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] font-semibold tracking-wider uppercase rounded">Step 1</span>
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Project Planning - 기술적 분석 및 모듈 구조</p>
+        <h3 className="text-2xl font-semibold tracking-tight text-neutral-700 dark:text-neutral-200 mb-2">프로젝트 상세 기획</h3>
+        <p className="text-sm text-neutral-400 dark:text-neutral-500">Project Planning — 기술적 분석 및 모듈 구조</p>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Icons.Target size={20} className="text-indigo-500" />
-          프로젝트 개요
+      <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-lg p-8 border border-neutral-100 dark:border-neutral-800">
+        <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-6 flex items-center gap-2 uppercase tracking-wider">
+          <Icons.Target size={16} className="text-neutral-400" />
+          Overview
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">총 모듈 수</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{selectedModules.length}개</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-neutral-100 dark:border-neutral-800">
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium mb-2">Total Modules</p>
+            <p className="text-3xl font-light text-neutral-700 dark:text-neutral-200">{selectedModules.length}</p>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">총 기능 수</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">
-              {selectedModules.reduce((acc, m) => acc + m.subFeatures.filter(f => f.isSelected).length, 0)}개
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-neutral-100 dark:border-neutral-800">
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium mb-2">Total Features</p>
+            <p className="text-3xl font-light text-neutral-700 dark:text-neutral-200">
+              {selectedModules.reduce((acc, m) => acc + m.subFeatures.filter(f => f.isSelected).length, 0)}
             </p>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">카테고리</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{Object.keys(categoryGroups).length}개</p>
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-neutral-100 dark:border-neutral-800">
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider font-medium mb-2">Categories</p>
+            <p className="text-3xl font-light text-neutral-700 dark:text-neutral-200">{Object.keys(categoryGroups).length}</p>
           </div>
         </div>
       </div>
 
       {Object.keys(categoryGroups).length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-          <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Icons.BarChart size={20} className="text-indigo-500" />
-            카테고리별 모듈 분포
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 p-8">
+          <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-6 flex items-center gap-2 uppercase tracking-wider">
+            <Icons.BarChart size={16} className="text-neutral-400" />
+            Distribution
           </h4>
-          <div className="space-y-3">
-            {Object.entries(categoryGroups).map(([cat, mods]) => {
+          <div className="space-y-5">
+            {Object.entries(categoryGroups).map(([cat, mods], index) => {
               const totalModules = selectedModules.length;
               const percent = totalModules > 0 ? (mods.length / totalModules) * 100 : 0;
-              const colors: Record<string, string> = {
-                frontend: 'bg-blue-500',
-                backend: 'bg-emerald-500',
-                database: 'bg-amber-500',
-                infra: 'bg-purple-500',
-                etc: 'bg-slate-500'
-              };
+              const opacities = ['bg-neutral-600', 'bg-neutral-500', 'bg-neutral-400', 'bg-neutral-300', 'bg-neutral-200'];
               return (
-                <div key={cat} className="space-y-1">
+                <div key={cat} className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                    <span className="text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
                       {getCategoryIcon(cat)}
                       {getCategoryLabel(cat)}
                     </span>
-                    <span className="font-medium text-slate-900 dark:text-white">{mods.length}개 ({Math.round(percent)}%)</span>
+                    <span className="font-medium text-neutral-700 dark:text-neutral-200">{mods.length} ({Math.round(percent)}%)</span>
                   </div>
-                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-1 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full ${colors[cat] || 'bg-slate-500'} rounded-full transition-all duration-500`}
+                      className={`h-full ${opacities[index % opacities.length]} dark:bg-neutral-300 rounded-full transition-all duration-500`}
                       style={{ width: `${percent}%` }}
                     />
                   </div>
@@ -114,42 +108,42 @@ export const Step1PlanningTab: React.FC<Step1PlanningTabProps> = ({
       )}
 
       <div>
-        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Icons.Layers size={20} className="text-indigo-500" />
-          기능 명세 (Functional Specifications)
+        <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-2 flex items-center gap-2 uppercase tracking-wider">
+          <Icons.Layers size={16} className="text-neutral-400" />
+          Specifications
         </h4>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">핵심 모듈 &gt; 세부 기능 계층 구조</p>
+        <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-8">핵심 모듈 및 세부 기능 계층 구조</p>
         
         <div className="space-y-4">
           {Object.entries(categoryGroups).map(([category, catModules]) => (
-            <div key={category} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <div key={category} className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+              <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                   {getCategoryIcon(category)}
                 </div>
-                <span className="font-bold text-slate-900 dark:text-white">{getCategoryLabel(category)}</span>
-                <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">{catModules.length}개 모듈</span>
+                <span className="font-medium text-neutral-700 dark:text-neutral-200">{getCategoryLabel(category)}</span>
+                <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-500">{catModules.length} modules</span>
               </div>
               
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
                 {catModules.map(module => (
-                  <div key={module.id} className="p-5">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icons.CheckMark size={14} className="text-emerald-600 dark:text-emerald-400" />
+                  <div key={module.id} className="p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 bg-neutral-600 dark:bg-neutral-300">
+                        <Icons.CheckMark size={12} className="text-neutral-200 dark:text-neutral-700" />
                       </div>
                       <div>
-                        <h5 className="font-bold text-slate-900 dark:text-white">[{module.name}]</h5>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{module.description}</p>
+                        <h5 className="font-medium text-neutral-700 dark:text-neutral-200">{module.name}</h5>
+                        <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">{module.description}</p>
                       </div>
                     </div>
                     
                     {module.subFeatures.filter(f => f.isSelected).length > 0 && (
-                      <div className="ml-9 flex flex-wrap gap-2">
+                      <div className="ml-8 flex flex-wrap gap-2">
                         {module.subFeatures.filter(f => f.isSelected).map(feature => (
                           <span 
                             key={feature.id}
-                            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm rounded-lg"
+                            className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-sm rounded-md border border-neutral-100 dark:border-neutral-700"
                           >
                             {feature.name}
                           </span>
@@ -165,9 +159,9 @@ export const Step1PlanningTab: React.FC<Step1PlanningTabProps> = ({
       </div>
 
       {selectedModules.length === 0 && (
-        <div className="text-center py-12">
-          <Icons.Layers size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">선택된 모듈이 없습니다</p>
+        <div className="text-center py-16">
+          <Icons.Layers size={40} className="mx-auto text-neutral-200 dark:text-neutral-800 mb-4" />
+          <p className="text-neutral-400 dark:text-neutral-500">선택된 모듈이 없습니다</p>
         </div>
       )}
     </div>

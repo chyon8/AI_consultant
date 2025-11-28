@@ -46,43 +46,43 @@ export const Step4RFPTab: React.FC<Step4RFPTabProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20 pt-4">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold rounded">STEP 4</span>
-          <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">입찰 공고문 (RFP)</h3>
+    <div className="space-y-12 animate-fade-in pb-20 pt-2">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] font-semibold tracking-wider uppercase rounded">Step 4</span>
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Request for Proposal - 상세 입찰 공고문 생성</p>
+        <h3 className="text-2xl font-semibold tracking-tight text-neutral-700 dark:text-neutral-200 mb-2">입찰 공고문 (RFP)</h3>
+        <p className="text-sm text-neutral-400 dark:text-neutral-500">Request for Proposal — 상세 입찰 공고문 생성</p>
       </div>
 
       {!hasGenerated && !isGenerating ? (
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
-            <Icons.File size={32} className="text-amber-600 dark:text-amber-400" />
+        <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-lg p-12 border border-neutral-100 dark:border-neutral-800 text-center">
+          <div className="w-14 h-14 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-6">
+            <Icons.File size={28} className="text-neutral-400 dark:text-neutral-500" />
           </div>
-          <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">공고문 생성 준비 완료</h4>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
+          <h4 className="text-lg font-medium text-neutral-700 dark:text-neutral-200 mb-2">공고문 생성 준비 완료</h4>
+          <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-8 max-w-md mx-auto">
             STEP 1~3에서 정의된 프로젝트 기획, 견적, 일정을 바탕으로 완벽한 입찰 공고문을 생성합니다.
           </p>
           <button
             onClick={handleGenerate}
-            className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold hover:bg-black dark:hover:bg-slate-200 transition-all flex items-center gap-2 mx-auto"
+            className="px-6 py-3 bg-neutral-700 dark:bg-neutral-300 text-neutral-200 dark:text-neutral-700 rounded-md font-medium hover:bg-neutral-600 dark:hover:bg-neutral-200 transition-colors flex items-center gap-2 mx-auto"
           >
-            <Icons.Sparkles size={18} />
+            <Icons.Sparkles size={16} />
             공고문 생성하기
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {error ? (
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-6 border border-red-200 dark:border-red-800 text-center">
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
-                <Icons.Close size={24} className="text-red-500" />
+            <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-lg p-8 border border-neutral-200 dark:border-neutral-800 text-center">
+              <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
+                <Icons.Close size={24} className="text-neutral-500" />
               </div>
-              <p className="text-red-600 dark:text-red-400 font-medium mb-4">{error}</p>
+              <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-6">{error}</p>
               <button
                 onClick={handleGenerate}
-                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-medium hover:bg-black dark:hover:bg-slate-200 transition-colors"
+                className="px-5 py-2.5 bg-neutral-700 dark:bg-neutral-300 text-neutral-200 dark:text-neutral-700 rounded-md font-medium hover:bg-neutral-600 dark:hover:bg-neutral-200 transition-colors"
               >
                 다시 시도
               </button>
@@ -90,8 +90,8 @@ export const Step4RFPTab: React.FC<Step4RFPTabProps> = ({
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Icons.File size={18} className="text-amber-500" />
+                <h4 className="font-medium text-neutral-700 dark:text-neutral-200 flex items-center gap-2">
+                  <Icons.File size={16} className="text-neutral-400" />
                   생성된 공고문
                 </h4>
                 <div className="flex items-center gap-2">
@@ -99,16 +99,16 @@ export const Step4RFPTab: React.FC<Step4RFPTabProps> = ({
                     <>
                       <button
                         onClick={handleCopy}
-                        className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors flex items-center gap-2"
                       >
-                        <Icons.Copy size={16} />
+                        <Icons.Copy size={14} />
                         복사
                       </button>
                       <button
                         onClick={handleGenerate}
-                        className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors flex items-center gap-2"
                       >
-                        <Icons.Refresh size={16} />
+                        <Icons.Refresh size={14} />
                         재생성
                       </button>
                     </>
@@ -116,18 +116,18 @@ export const Step4RFPTab: React.FC<Step4RFPTabProps> = ({
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 overflow-hidden">
                 {isGenerating && !rfpContent ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <Icons.Refresh size={32} className="text-amber-500 animate-spin mb-4" />
-                    <p className="text-slate-500 dark:text-slate-400">공고문을 생성하고 있습니다...</p>
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <Icons.Refresh size={24} className="text-neutral-400 animate-spin mb-4" />
+                    <p className="text-neutral-400 dark:text-neutral-500">공고문을 생성하고 있습니다...</p>
                   </div>
                 ) : (
-                  <div className="p-6 max-h-[600px] overflow-y-auto">
-                    <div className="whitespace-pre-wrap font-mono text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <div className="p-8 max-h-[600px] overflow-y-auto">
+                    <div className="whitespace-pre-wrap font-mono text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
                       {rfpContent}
                       {isGenerating && (
-                        <span className="inline-block w-2 h-4 bg-amber-500 animate-pulse ml-1" />
+                        <span className="inline-block w-2 h-4 bg-neutral-400 animate-pulse ml-1" />
                       )}
                     </div>
                   </div>
@@ -138,22 +138,22 @@ export const Step4RFPTab: React.FC<Step4RFPTabProps> = ({
         </div>
       )}
 
-      <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-        <h4 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-          <Icons.Help size={18} className="text-slate-400" />
+      <div className="bg-neutral-50 dark:bg-neutral-900/50 rounded-lg p-8 border border-neutral-100 dark:border-neutral-800">
+        <h4 className="font-medium text-neutral-700 dark:text-neutral-200 mb-4 flex items-center gap-2">
+          <Icons.Help size={16} className="text-neutral-400" />
           공고문 활용 안내
         </h4>
-        <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
-          <li className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
+        <ul className="text-sm text-neutral-500 dark:text-neutral-400 space-y-3">
+          <li className="flex items-start gap-3">
+            <span className="w-1 h-1 rounded-full bg-neutral-400 mt-2 flex-shrink-0" />
             생성된 공고문은 복사하여 위시켓, 이랜서 등 외주 플랫폼에 활용할 수 있습니다.
           </li>
-          <li className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
+          <li className="flex items-start gap-3">
+            <span className="w-1 h-1 rounded-full bg-neutral-400 mt-2 flex-shrink-0" />
             프로젝트 상황에 맞게 내용을 수정하여 사용하시기 바랍니다.
           </li>
-          <li className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
+          <li className="flex items-start gap-3">
+            <span className="w-1 h-1 rounded-full bg-neutral-400 mt-2 flex-shrink-0" />
             STEP 1~3의 내용을 수정하면 공고문도 새로 생성해야 합니다.
           </li>
         </ul>

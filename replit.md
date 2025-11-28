@@ -144,17 +144,52 @@ The app uses Gemini 3 Pro Preview model with thinking capabilities:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
+## Design Guidelines (Premium High-End Minimalism)
+
+### Color Palette Policy
+1. **Text Colors (Strict neutral-200~700)**
+   - Headlines: text-neutral-700 dark:text-neutral-200
+   - Body/Labels: text-neutral-500~400
+   - Button/Badge text: text-neutral-200 dark:text-neutral-700
+
+2. **Structural Colors (Exceptions Allowed)**
+   - Light backgrounds: neutral-50, neutral-100
+   - Dark backgrounds: neutral-800, neutral-900
+   - Borders: border-neutral-100 (light), border-neutral-800 (dark)
+
+3. **Prohibited Colors**
+   - No primary colors (indigo, blue, emerald, amber, purple)
+   - No fluorescent or saturated accent colors
+   - No text-white, text-neutral-900, dark:text-neutral-100 in content
+
+### Spacing & Layout
+- Section spacing: space-y-12
+- Card padding: p-8
+- Grid gaps: gap-6
+- Hairline borders only (1px)
+- No shadows on cards
+
+### Typography Hierarchy
+- Use font-weight differences instead of color for emphasis
+- Headlines: text-2xl font-semibold
+- Section titles: text-sm font-semibold uppercase tracking-wider
+- Body: text-sm
+
 ## Recent Changes (November 28, 2024)
+- **프리미엄 하이엔드 미니멀리즘 디자인 적용**: 대시보드 전체 리뉴얼
+  - 무채색 팔레트: neutral-200~700 텍스트, neutral-100/800 구조적 요소
+  - 모든 원색 컬러(indigo, blue, emerald, amber, purple) 제거
+  - 넓은 여백과 1px hairline 보더로 정제된 레이아웃
+  - CTA 버튼: bg-neutral-700 dark:bg-neutral-300
+  - 차트 컬러: neutral-600~200 그라데이션
 - **Visual Timeline WBS 구현**: Step3WBSTab에 매트릭스 스타일 일정 그리드 추가
   - 시간 축 자동 결정: 3개월 이하=Week 단위, 초과=Month 단위
   - Largest-remainder 분배 알고리즘: 정수 단위 정확히 분배 (totalUnits 합계 보장)
-  - Phase/Task별 정사각형 인디케이터 (활성=파란색, 비활성=회색)
+  - Phase/Task별 정사각형 인디케이터 (활성=neutral-600, 비활성=neutral-100)
   - 반응형 가로 스크롤: overflow-x-auto로 작은 뷰포트 지원
-  - Zero-duration phases: 빈 schedule 배열로 모든 phase/task 표시 보장
-  - Grid 아이콘 추가: lucide-react Grid3X3 → Icons.tsx
-- **모던 탭 네비게이션 디자인**: Glass morphism + segment control 스타일
-  - 활성 탭: 그라데이션 배경 + 하단 인디케이터
-  - 호버 효과: 반투명 배경 전환
+- **모던 탭 네비게이션 디자인**: Clean segment control 스타일
+  - 활성 탭: border-b-2 + neutral-600 배지
+  - 호버 효과: 투명 배경 전환
 
 ## Previous Changes (November 27, 2024 - Update 3)
 - **AI 원본 데이터 직접 표시**: 프론트엔드 재계산 로직 제거

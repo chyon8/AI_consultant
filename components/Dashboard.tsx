@@ -40,7 +40,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isReportOpen, setIsReportOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Map TabView to EstimationStep
   const getEstimationStepForTab = (tab: TabView): 'SCOPE' | 'RESULT' | 'REGISTER' => {
     switch (tab) {
       case TabView.STEP1_PLANNING:
@@ -55,7 +54,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Map EstimationStep to TabView (inverse mapping for external updates)
   const getTabForEstimationStep = (step: EstimationStep): TabView => {
     switch (step) {
       case 'SCOPE':
@@ -69,12 +67,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Sync activeTab when estimationStep changes externally (e.g., chat-driven)
   useEffect(() => {
     const expectedTab = getTabForEstimationStep(estimationStep);
     const currentEstimationStep = getEstimationStepForTab(activeTab);
     
-    // Only update if the estimationStep changed externally (not from our own tab change)
     if (currentEstimationStep !== estimationStep) {
       setActiveTab(expectedTab);
     }
@@ -95,12 +91,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     { id: TabView.STEP4_RFP, stepNumber: 4, label: '공고문', shortLabel: 'STEP 4', description: 'RFP' },
   ];
 
-  // Logic for Project DNA Analysis
   const selectedModules = modules.filter(m => m.isSelected);
-  // Base total cost (before multiplier)
   const baseTotalCost = selectedModules.reduce((acc, m) => acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0), 0);
   
-  // Dynamic Risk/Complexity Calculation
   let complexityScore = 1;
   if (selectedModules.some(m => m.id === 'm5' || m.id === 'm3')) complexityScore += 1;
   if (selectedModules.some(m => m.id === 'm6')) complexityScore += 1;
@@ -110,14 +103,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   if (currentPartnerType === 'AI_NATIVE') complexityScore += 1; 
 
   const getRiskLabel = () => {
-    if (complexityScore >= 4) return { text: 'HIGH RISK', color: 'text-amber-500 dark:text-amber-400' };
-    if (complexityScore >= 2) return { text: 'MEDIUM', color: 'text-slate-500 dark:text-slate-400' };
-    return { text: 'STABLE', color: 'text-emerald-500 dark:text-emerald-400' };
+    if (complexityScore >= 4) return { text: 'HIGH', color: 'text-neutral-700 dark:text-neutral-300' };
+    if (complexityScore >= 2) return { text: 'MEDIUM', color: 'text-neutral-500 dark:text-neutral-400' };
+    return { text: 'STABLE', color: 'text-neutral-400 dark:text-neutral-500' };
   };
 
   const risk = getRiskLabel();
 
-  // Navigate to next/previous step (uses handleTabChange which syncs estimationStep)
   const handleNextStep = () => {
     const currentIndex = tabs.findIndex(t => t.id === activeTab);
     if (currentIndex < tabs.length - 1) {
@@ -132,45 +124,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Footer Button Logic - Navigate through steps with workflow sync
   const renderFooter = () => {
     const currentIndex = tabs.findIndex(t => t.id === activeTab);
     const isFirstStep = currentIndex === 0;
     const isLastStep = currentIndex === tabs.length - 1;
 
     return (
-      <div className="flex items-center gap-3 w-full">
+      <div className="flex items-center gap-4 w-full">
         {!isFirstStep && (
           <button
             onClick={handlePrevStep}
-            className="h-14 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+            className="h-12 px-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-colors"
           >
-            <Icons.Left size={18} />
+            <Icons.Left size={16} />
             <span>이전</span>
           </button>
         )}
 
         <button
           onClick={() => setIsReportOpen(true)}
-          className="w-14 h-14 flex items-center justify-center bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 shadow-float hover:scale-105 active:scale-95 backdrop-blur-md"
+          className="w-12 h-12 flex items-center justify-center bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-md transition-colors border border-neutral-200 dark:border-neutral-800"
           title="리포트 다운로드"
         >
-          <Icons.Download size={22} />
+          <Icons.Download size={18} />
         </button>
 
         {!isLastStep ? (
           <button 
             onClick={handleNextStep}
-            className="flex-1 h-14 bg-slate-900 dark:bg-indigo-500 hover:bg-black dark:hover:bg-indigo-600 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-indigo-900/30 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
+            className="flex-1 h-12 bg-neutral-700 dark:bg-neutral-300 hover:bg-neutral-600 dark:hover:bg-neutral-200 text-neutral-200 dark:text-neutral-700 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-colors"
           >
             <span>다음 단계로</span>
-            <Icons.Right size={18} />
+            <Icons.Right size={16} />
           </button>
         ) : (
           <button 
-            className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+            className="flex-1 h-12 bg-neutral-700 dark:bg-neutral-300 hover:bg-neutral-600 dark:hover:bg-neutral-200 text-neutral-200 dark:text-neutral-700 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-colors"
           >
-            <Icons.CheckMark size={18} />
+            <Icons.CheckMark size={16} />
             <span>프로젝트 등록 완료</span>
           </button>
         )}
@@ -179,69 +170,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
-      {/* Top Bar: Step-based Tabs */}
-      <div className="px-6 lg:px-10 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-         {/* Modern Segment Control Tabs */}
-         <div className="flex p-1.5 bg-slate-100/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl gap-1 overflow-x-auto no-scrollbar max-w-full">
+    <div className="flex flex-col h-full bg-white dark:bg-neutral-950 relative transition-colors duration-300">
+      <div className="px-8 lg:px-12 pt-8 pb-6 border-b border-neutral-100 dark:border-neutral-900">
+         <div className="flex gap-1 overflow-x-auto no-scrollbar max-w-full">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl whitespace-nowrap transition-all duration-300 ease-out group ${
+                  className={`relative flex items-center gap-3 px-6 py-4 whitespace-nowrap transition-all duration-200 group border-b-2 ${
                     isActive
-                      ? 'bg-white dark:bg-slate-900 shadow-lg shadow-slate-200/50 dark:shadow-black/20' 
-                      : 'hover:bg-white/50 dark:hover:bg-slate-700/50'
+                      ? 'border-neutral-600 dark:border-neutral-300' 
+                      : 'border-transparent hover:border-neutral-200 dark:hover:border-neutral-800'
                   }`}
                 >
-                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                  <span className={`w-6 h-6 rounded flex items-center justify-center text-xs font-medium transition-all duration-200 ${
                     isActive 
-                      ? 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-indigo-500/30' 
-                      : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-slate-300 dark:group-hover:bg-slate-600'
+                      ? 'bg-neutral-600 dark:bg-neutral-300 text-neutral-200 dark:text-neutral-700' 
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700'
                   }`}>
                     {tab.stepNumber}
                   </span>
                   <div className="text-left">
-                    <p className={`text-sm font-semibold transition-colors duration-300 ${
-                      isActive ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200'
+                    <p className={`text-sm font-medium transition-colors duration-200 ${
+                      isActive ? 'text-neutral-700 dark:text-neutral-200' : 'text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-600 dark:group-hover:text-neutral-300'
                     }`}>{tab.label}</p>
-                    <p className={`text-[10px] font-medium transition-colors duration-300 ${
-                      isActive ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'
-                    }`}>{tab.description}</p>
                   </div>
-                  {isActive && (
-                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full opacity-80"></span>
-                  )}
                 </button>
               )
             })}
          </div>
 
-         {/* Minimal Stats Widget */}
-         <div className="hidden lg:flex items-center gap-6 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+         <div className="hidden lg:flex items-center gap-10 mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-900">
              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Complexity</span>
-                <div className="flex gap-1 mt-1">
+                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-600 uppercase tracking-widest mb-2">Complexity</span>
+                <div className="flex gap-1.5">
                    {[1,2,3,4].map(i => (
-                     <div key={i} className={`w-2 h-2 rounded-full ${i <= complexityScore ? 'bg-slate-800 dark:bg-slate-200' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
+                     <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i <= complexityScore ? 'bg-neutral-800 dark:bg-neutral-200' : 'bg-neutral-200 dark:bg-neutral-800'}`}></div>
                    ))}
                 </div>
              </div>
              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Risk</span>
-                <span className={`text-xs font-bold mt-0.5 ${risk.color}`}>{risk.text}</span>
+                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-600 uppercase tracking-widest mb-2">Risk Level</span>
+                <span className={`text-xs font-semibold tracking-wide ${risk.color}`}>{risk.text}</span>
              </div>
              <div className="flex flex-col ml-auto">
-                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Modules</span>
-                <span className="text-xs font-bold mt-0.5 text-slate-900 dark:text-white">{selectedModules.length}개 선택</span>
+                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-600 uppercase tracking-widest mb-2">Selected</span>
+                <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{selectedModules.length} Modules</span>
              </div>
          </div>
       </div>
 
-      {/* Content Area with Animation */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 pb-40 scroll-smooth"> 
+      <div ref={contentRef} className="flex-1 overflow-y-auto px-8 lg:px-12 py-10 pb-40 scroll-smooth"> 
         <div className="max-w-4xl mx-auto">
           <div key={activeTab} className="animate-fade-in-up">
             {activeTab === TabView.STEP1_PLANNING && (
@@ -278,12 +259,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Floating Action Bar */}
       <div className="absolute bottom-0 left-0 w-full z-30 pointer-events-none flex justify-center">
-        {/* Gradient Mask */}
-        <div className="absolute inset-0 top-auto h-32 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-950 dark:via-slate-950/90 dark:to-transparent pointer-events-none transition-colors duration-300"></div>
+        <div className="absolute inset-0 top-auto h-32 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-neutral-950 dark:via-neutral-950/95 dark:to-transparent pointer-events-none transition-colors duration-300"></div>
 
-        <div className="relative w-full max-w-4xl px-6 lg:px-0 pb-6 pt-6 pointer-events-auto">
+        <div className="relative w-full max-w-4xl px-8 lg:px-0 pb-8 pt-6 pointer-events-auto">
            {renderFooter()}
         </div>
       </div>
