@@ -110,6 +110,102 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
   const durationMismatch = Math.abs(totalPhaseDuration - aiDuration.value) > 0.01;
   const config = PARTNER_PRESETS[currentPartnerType];
 
+  const useWeekUnit = totalProjectMonths <= 3;
+  const totalUnits = Math.max(1, useWeekUnit ? Math.round(totalProjectMonths * 4) : Math.round(totalProjectMonths));
+  const unitLabel = useWeekUnit ? 'Week' : 'Month';
+
+  interface TimelineRow {
+    phase: string;
+    task: string;
+    schedule: boolean[];
+  }
+
+  const distributeUnits = (total: number, ratios: number[]): number[] => {
+    if (ratios.length === 0) return [];
+    if (ratios.length === 1) return [total];
+    
+    const n = ratios.length;
+    const sum = ratios.reduce((a, b) => a + b, 0);
+    const normalized = sum === 0 
+      ? ratios.map(() => 1 / n) 
+      : ratios.map(r => r / sum);
+    
+    const floored = normalized.map(r => Math.floor(r * total));
+    const remainders = normalized.map((r, i) => ({ index: i, remainder: (r * total) - floored[i] }));
+    
+    let remaining = total - floored.reduce((a, b) => a + b, 0);
+    remainders.sort((a, b) => b.remainder - a.remainder);
+    
+    const result = [...floored];
+    for (let i = 0; i < remaining && i < remainders.length; i++) {
+      result[remainders[i].index]++;
+    }
+    
+    return result;
+  };
+
+  const generateTimelineData = (): TimelineRow[] => {
+    const rows: TimelineRow[] = [];
+    
+    const phaseRatiosForDistribution = phases.map(p => p.duration);
+    const phaseUnits = distributeUnits(totalUnits, phaseRatiosForDistribution);
+    
+    let currentUnit = 0;
+
+    phases.forEach((phase, phaseIndex) => {
+      const phaseDurationUnits = phaseUnits[phaseIndex];
+      const phaseStartUnit = currentUnit;
+      const phaseEndUnit = currentUnit + phaseDurationUnits;
+      
+      if (phase.tasks.length === 0) {
+        const schedule: boolean[] = Array(totalUnits).fill(false);
+        for (let i = phaseStartUnit; i < phaseEndUnit && i < totalUnits; i++) {
+          schedule[i] = true;
+        }
+        rows.push({
+          phase: phase.name,
+          task: '-',
+          schedule
+        });
+        currentUnit = phaseEndUnit;
+        return;
+      }
+      
+      const taskRatios = phase.tasks.map(() => 1);
+      const taskUnits = phaseDurationUnits > 0 
+        ? distributeUnits(phaseDurationUnits, taskRatios)
+        : phase.tasks.map(() => 0);
+      
+      let taskStart = phaseStartUnit;
+      phase.tasks.forEach((task, taskIndex) => {
+        const taskDuration = taskUnits[taskIndex];
+        const taskEnd = Math.min(taskStart + taskDuration, phaseEndUnit);
+        
+        const schedule: boolean[] = [];
+        for (let i = 0; i < totalUnits; i++) {
+          schedule.push(i >= taskStart && i < taskEnd);
+        }
+        
+        rows.push({
+          phase: taskIndex === 0 ? phase.name : '',
+          task,
+          schedule
+        });
+        
+        taskStart = taskEnd;
+      });
+      
+      currentUnit = phaseEndUnit;
+    });
+
+    return rows;
+  };
+
+  const timelineData = generateTimelineData();
+  const timeHeaders = Array.from({ length: totalUnits }, (_, i) => 
+    useWeekUnit ? `Week ${i + 1}` : `${i + 1} Month`
+  );
+
   return (
     <div className="space-y-8 animate-fade-in pb-20 pt-4">
       <div className="mb-6">
@@ -192,6 +288,63 @@ export const Step3WBSTab: React.FC<Step3WBSTabProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+        <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+          <Icons.Grid size={20} className="text-indigo-500" />
+          통합 WBS (Visual Timeline)
+        </h4>
+        
+        <div className="overflow-x-auto -mx-2 px-2">
+          <table className="w-full min-w-[600px] border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-24 min-w-[96px]">Phase</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider min-w-[200px]">Task</th>
+                {timeHeaders.map((header, i) => (
+                  <th key={i} className="text-center py-3 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[60px]">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {timelineData.map((row, rowIndex) => (
+                <tr key={rowIndex} className="border-t border-slate-100 dark:border-slate-800">
+                  <td className="py-4 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 align-top">
+                    {row.phase}
+                  </td>
+                  <td className="py-4 px-4 text-sm text-slate-600 dark:text-slate-400">
+                    {row.task}
+                  </td>
+                  {row.schedule.map((isActive, cellIndex) => (
+                    <td key={cellIndex} className="py-4 px-2 text-center">
+                      <div className="flex justify-center">
+                        {isActive ? (
+                          <div className="w-5 h-5 rounded bg-slate-800 dark:bg-white" />
+                        ) : (
+                          <div className="w-5 h-5 rounded border-2 border-slate-200 dark:border-slate-700 bg-transparent" />
+                        )}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="w-4 h-4 rounded bg-slate-800 dark:bg-white" />
+            <span>진행</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="w-4 h-4 rounded border-2 border-slate-200 dark:border-slate-700 bg-transparent" />
+            <span>미진행</span>
+          </div>
         </div>
       </div>
 
