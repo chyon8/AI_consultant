@@ -1,7 +1,6 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -9,6 +8,7 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
+import { useChatSessions } from './hooks/useChatSessions';
 
 type AppView = 'landing' | 'detail';
 
@@ -16,30 +16,36 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [modules, setModules] = useState<ModuleItem[]>(INITIAL_MODULES);
   
-  // App View State (landing or detail)
+  const {
+    sessions,
+    activeSessionId,
+    setActiveSessionId,
+    createNewSession,
+    updateSessionTitle,
+    updateSessionMessages,
+    updateSessionModules,
+    updateSession,
+    deleteSession,
+    getActiveSession,
+    setSessionLoading,
+    generateTitleFromMessage,
+  } = useChatSessions();
+
   const [currentView, setCurrentView] = useState<AppView>('landing');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-
-  // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
   const multipliers = PARTNER_PRESETS[currentPartnerType];
-
-  // Estimation Step Flow State
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
   const [currentScale, setCurrentScale] = useState<ProjectScale>('STANDARD');
-
-  // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Collapsible Sidebar State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Resizing State
   const [sidebarWidth, setSidebarWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
+  
+  const latestModulesRef = useRef<ModuleItem[]>(INITIAL_MODULES);
+  const pendingSessionIdRef = useRef<string | null>(null);
 
-  // Apply Dark Mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -47,6 +53,7 @@ const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -112,25 +119,23 @@ const App: React.FC = () => {
 
   const handleScaleChange = (scale: ProjectScale) => {
     setCurrentScale(scale);
-    // Logic to select modules based on scale
     if (scale === 'MVP') {
         setModules(prev => prev.map(m => ({
             ...m,
             isSelected: m.required ? true : false,
-            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: s.id.endsWith('1') })) // Activate only first subfeature
+            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: s.id.endsWith('1') }))
         })));
     } else if (scale === 'STANDARD') {
-        setModules(INITIAL_MODULES); // Reset to defaults
+        setModules(INITIAL_MODULES);
     } else if (scale === 'HIGH_END') {
         setModules(prev => prev.map(m => ({
             ...m,
             isSelected: true,
-            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true })) // All on
+            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true }))
         })));
     }
   };
 
-  // Handle parsed analysis result
   const handleAnalysisComplete = (result: ParsedAnalysisResult | null) => {
     console.log('[App] handleAnalysisComplete called with:', result ? {
       projectTitle: result.projectTitle,
@@ -158,17 +163,53 @@ const App: React.FC = () => {
       }));
       console.log('[App] Setting modules:', convertedModules.length, 'items');
       setModules(convertedModules);
+      latestModulesRef.current = convertedModules;
     } else {
       console.warn('[App] No valid modules in result');
+      latestModulesRef.current = [...INITIAL_MODULES];
     }
   };
 
-  // Handle initial analysis from landing page
+  const handleNewChat = useCallback(() => {
+    setMessages(INITIAL_MESSAGES);
+    setModules(INITIAL_MODULES);
+    setCurrentView('landing');
+    setEstimationStep('SCOPE');
+    setCurrentPartnerType('STUDIO');
+    setActiveSessionId(null);
+    setAnalysisError(null);
+  }, [setActiveSessionId]);
+
+  const handleSelectSession = useCallback((sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setActiveSessionId(sessionId);
+      setMessages(session.messages);
+      setModules(session.modules);
+      setCurrentView('detail');
+      setAnalysisError(null);
+    }
+  }, [sessions, setActiveSessionId]);
+
+  const handleDeleteSession = useCallback((sessionId: string) => {
+    deleteSession(sessionId);
+    if (activeSessionId === sessionId) {
+      handleNewChat();
+    }
+  }, [deleteSession, activeSessionId, handleNewChat]);
+
   const handleAnalyze = async (text: string, files: File[]) => {
     setIsAnalyzing(true);
     setAnalysisError(null);
     
-    // Add user message
+    latestModulesRef.current = [...INITIAL_MODULES];
+    
+    const newSession = createNewSession();
+    const sessionId = newSession.id;
+    pendingSessionIdRef.current = sessionId;
+    
+    const title = generateTitleFromMessage(text || files.map(f => f.name).join(', '));
+    
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -176,7 +217,6 @@ const App: React.FC = () => {
       timestamp: new Date(),
     };
     
-    // Create AI message for chat (will show after view switch)
     const aiMsgId = (Date.now() + 1).toString();
     const aiMsg: Message = {
       id: aiMsgId,
@@ -187,63 +227,70 @@ const App: React.FC = () => {
     };
     
     try {
-      // Read file contents first (stay on landing page during analysis)
       const fileContents = await Promise.all(
         files.map(file => readFileContent(file))
       );
       
-      // Call analyze API - stay on landing page, show loading there
+      let analysisError: string | null = null;
+      
       const parsedResult = await analyzeProject(
         text, 
         fileContents, 
-        (chunk) => {
-          // Don't update chat - response collected internally
-        },
+        (chunk) => {},
         handleAnalysisComplete,
         (error) => {
-          setAnalysisError(error);
+          analysisError = error;
         }
       );
       
-      // Analysis complete - now switch to detail view
-      setMessages([
-        ...INITIAL_MESSAGES, 
+      if (analysisError) {
+        throw new Error(analysisError);
+      }
+      
+      const finalMessages: Message[] = [
+        ...INITIAL_MESSAGES.map(m => ({ ...m })), 
         userMsg, 
         { 
           ...aiMsg, 
           text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.' 
         }
-      ]);
+      ];
+      
+      setMessages(finalMessages);
+      
+      updateSession(sessionId, {
+        title: title,
+        messages: finalMessages,
+        modules: latestModulesRef.current,
+        isLoading: false,
+      });
+      
       setCurrentView('detail');
       
     } catch (error) {
       console.error('Analysis error:', error);
       const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
       setAnalysisError(errorMessage);
-      // Stay on landing page on error
+      
+      deleteSession(sessionId);
     }
     
+    pendingSessionIdRef.current = null;
     setIsAnalyzing(false);
   };
 
-  // Dismiss error notification and reset state
   const dismissError = () => {
     setAnalysisError(null);
   };
 
-  // Handle retry from error state
   const handleRetry = () => {
     setAnalysisError(null);
-    setCurrentView('landing');
-    setMessages(INITIAL_MESSAGES);
-    setModules(INITIAL_MODULES);
-    setEstimationStep('SCOPE');
+    handleNewChat();
   };
 
   return (
     <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
       
-      {/* Error Notification */}
       {analysisError && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="flex items-center gap-3 px-5 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl shadow-lg">
@@ -265,7 +312,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Resizing Overlay */}
       {isResizing && (
         <div 
           className="fixed inset-0 z-[100] cursor-col-resize bg-transparent"
@@ -275,9 +321,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Minimal Header */}
       <header className="h-16 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0 relative transition-colors duration-300">
-        {/* Left: Brand Only */}
         <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>
@@ -285,12 +329,10 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: Step Indicator */}
         <div className="absolute left-1/2 -translate-x-1/2 hidden md:block">
           <StepIndicator />
         </div>
 
-        {/* Right Section */}
         <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
@@ -301,13 +343,7 @@ const App: React.FC = () => {
               </button>
               
               <button 
-                onClick={() => { 
-                    setModules(INITIAL_MODULES); 
-                    setCurrentPartnerType('STUDIO'); 
-                    setEstimationStep('SCOPE');
-                    setCurrentView('landing');
-                    setMessages(INITIAL_MESSAGES);
-                }}
+                onClick={handleNewChat}
                 className="p-2 text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                 title="Reset"
               >
@@ -319,23 +355,23 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Layout */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Collapsible Sidebar - Always visible */}
         <CollapsibleSidebar 
           isCollapsed={isSidebarCollapsed} 
-          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onSelectSession={handleSelectSession}
+          onNewChat={handleNewChat}
+          onDeleteSession={handleDeleteSession}
         />
 
-        {/* Conditional View Rendering */}
         {currentView === 'landing' ? (
-          /* Landing View - Full width (minus sidebar) */
           <LandingView 
             onAnalyze={handleAnalyze}
             isLoading={isAnalyzing}
           />
         ) : (
-          /* Detail View - Chat + Dashboard */
           <>
             <div 
               className="h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative transition-all duration-500 animate-slide-in-left"
