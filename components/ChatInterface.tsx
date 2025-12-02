@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, ModuleItem } from '../types';
+import { Message, ModuleItem, ChatAction } from '../types';
 import { Icons } from './Icons';
 
 interface ChatInterfaceProps {
@@ -8,13 +8,61 @@ interface ChatInterfaceProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   modules: ModuleItem[];
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
+  onChatAction?: (action: ChatAction) => void;
+}
+
+function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
+  const chatMatch = fullText.match(/<CHAT>([\s\S]*?)<\/CHAT>/);
+  const actionMatch = fullText.match(/<ACTION>([\s\S]*?)<\/ACTION>/);
+  
+  let chatText = fullText;
+  let action: ChatAction | null = null;
+  
+  if (chatMatch) {
+    chatText = chatMatch[1].trim();
+  } else {
+    chatText = fullText
+      .replace(/<CHAT>[\s\S]*?<\/CHAT>/g, '')
+      .replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '')
+      .trim();
+  }
+  
+  if (actionMatch) {
+    try {
+      const actionJson = actionMatch[1].trim();
+      action = JSON.parse(actionJson);
+    } catch (e) {
+      console.warn('Failed to parse action JSON:', e);
+    }
+  }
+  
+  return { chatText, action };
+}
+
+function extractDisplayText(text: string): string {
+  const chatMatch = text.match(/<CHAT>([\s\S]*?)(<\/CHAT>|$)/);
+  if (chatMatch) {
+    return chatMatch[1].trim();
+  }
+  
+  let displayText = text
+    .replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '')
+    .replace(/<ACTION>[\s\S]*$/g, '')
+    .trim();
+  
+  if (displayText.startsWith('<CHAT>')) {
+    displayText = displayText.replace('<CHAT>', '').trim();
+  }
+  
+  return displayText;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   setMessages, 
   modules, 
-  setModules 
+  setModules,
+  onChatAction
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +100,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
     setMessages(prev => [...prev, aiMsg]);
 
+    let fullResponseText = '';
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -59,7 +109,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          history: [...messages, userMsg],
+          history: [...messages, userMsg].map(m => ({
+            role: m.role,
+            text: m.text
+          })),
           currentModules: modules,
         }),
       });
@@ -80,51 +133,68 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6));
-            
-            if (data.chunk) {
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMsgId 
-                  ? { ...msg, text: msg.text + data.chunk } 
-                  : msg
-              ));
-            }
-            
-            if (data.error) {
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMsgId 
-                  ? { ...msg, text: data.error, isStreaming: false } 
-                  : msg
-              ));
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.chunk) {
+                fullResponseText += data.chunk;
+                const displayText = extractDisplayText(fullResponseText);
+                
+                setMessages(prev => prev.map(msg => 
+                  msg.id === aiMsgId 
+                    ? { ...msg, text: displayText } 
+                    : msg
+                ));
+              }
+              
+              if (data.error) {
+                setMessages(prev => prev.map(msg => 
+                  msg.id === aiMsgId 
+                    ? { ...msg, text: data.error, isStreaming: false } 
+                    : msg
+                ));
+              }
+            } catch (e) {
+              console.warn('JSON parse error:', e);
             }
           }
         }
       }
+
+      const { chatText, action } = parseAIResponse(fullResponseText);
+      
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId 
+          ? { ...msg, text: chatText, isStreaming: false } 
+          : msg
+      ));
+
+      if (action && action.type !== 'no_action' && onChatAction) {
+        console.log('[Chat] Executing action:', action);
+        onChatAction(action);
+      }
+
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => prev.map(msg => 
         msg.id === aiMsgId 
-          ? { ...msg, text: 'Error connecting to AI service.', isStreaming: false } 
+          ? { ...msg, text: 'AI 서비스 연결 중 오류가 발생했습니다.', isStreaming: false } 
           : msg
       ));
     }
 
-    setMessages(prev => prev.map(msg => 
-      msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
-    ));
     setIsLoading(false);
   };
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
-      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 scroll-smooth">
         <div className="text-center py-4">
            <div className="inline-block p-3 bg-slate-50 dark:bg-slate-900 rounded-full mb-2 transition-colors">
              <Icons.Bot className="text-slate-900 dark:text-slate-100" size={24} />
            </div>
            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">AI Consultant</h3>
-           <p className="text-xs text-slate-400 dark:text-slate-500">Ask about features & budget</p>
+           <p className="text-xs text-slate-400 dark:text-slate-500">기능 추가/제거, 예산 조정을 요청하세요</p>
         </div>
 
         {messages.map((msg, idx) => {
@@ -135,7 +205,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               className={`flex w-full gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} animate-slide-up`}
               style={{ animationDelay: `${idx * 50}ms` }}
             >
-              {/* Bubble */}
               <div
                 className={`max-w-[85%] text-sm leading-relaxed p-0 ${
                   isUser
@@ -162,7 +231,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Minimal Input Area */}
       <div className="p-6 bg-white dark:bg-slate-950 border-t border-transparent dark:border-slate-800 transition-colors">
         <div className="relative flex items-center gap-3">
           <button
@@ -176,7 +244,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your requirements..."
+            placeholder="예: 결제 모듈 제거해줘, MVP로 줄여줘..."
             className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
             disabled={isLoading}
           />

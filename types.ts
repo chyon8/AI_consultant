@@ -90,6 +90,23 @@ export interface DashboardState {
   estimationStep: EstimationStep;
 }
 
+export type ChatActionType = 
+  | 'toggle_module' 
+  | 'toggle_feature' 
+  | 'update_partner_type' 
+  | 'update_scale' 
+  | 'no_action';
+
+export interface ChatAction {
+  type: ChatActionType;
+  payload: {
+    moduleId?: string;
+    featureId?: string;
+    partnerType?: PartnerType;
+    scale?: ProjectScale;
+  };
+}
+
 export interface ChatSession {
   id: string;
   title: string;

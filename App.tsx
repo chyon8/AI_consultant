@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -246,21 +246,54 @@ const App: React.FC = () => {
 
   const handleScaleChange = (scale: ProjectScale) => {
     setCurrentScale(scale);
-    // Logic to select modules based on scale
     if (scale === 'MVP') {
         setModules(prev => prev.map(m => ({
             ...m,
             isSelected: m.required ? true : false,
-            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: s.id.endsWith('1') })) // Activate only first subfeature
+            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: s.id.endsWith('1') }))
         })));
     } else if (scale === 'STANDARD') {
-        setModules(INITIAL_MODULES); // Reset to defaults
+        setModules(INITIAL_MODULES);
     } else if (scale === 'HIGH_END') {
         setModules(prev => prev.map(m => ({
             ...m,
             isSelected: true,
-            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true })) // All on
+            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true }))
         })));
+    }
+  };
+
+  const handleChatAction = (action: ChatAction) => {
+    console.log('[App] Handling chat action:', action);
+    
+    switch (action.type) {
+      case 'toggle_module':
+        if (action.payload.moduleId) {
+          handleToggleModule(action.payload.moduleId);
+        }
+        break;
+        
+      case 'toggle_feature':
+        if (action.payload.moduleId && action.payload.featureId) {
+          handleToggleSubFeature(action.payload.moduleId, action.payload.featureId);
+        }
+        break;
+        
+      case 'update_partner_type':
+        if (action.payload.partnerType) {
+          applyPartnerType(action.payload.partnerType);
+        }
+        break;
+        
+      case 'update_scale':
+        if (action.payload.scale) {
+          handleScaleChange(action.payload.scale);
+        }
+        break;
+        
+      case 'no_action':
+      default:
+        break;
     }
   };
 
@@ -522,6 +555,7 @@ const App: React.FC = () => {
                 setMessages={setMessages}
                 modules={modules}
                 setModules={setModules}
+                onChatAction={handleChatAction}
               />
             </div>
 
