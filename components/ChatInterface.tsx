@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message, ModuleItem } from '../types';
 import { Icons } from './Icons';
-import { streamGeminiResponse } from '../services/geminiService';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -53,17 +52,62 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
     setMessages(prev => [...prev, aiMsg]);
 
-    await streamGeminiResponse(
-      [...messages, userMsg],
-      modules,
-      (chunk) => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMsgId 
-            ? { ...msg, text: msg.text + chunk } 
-            : msg
-        ));
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          history: [...messages, userMsg],
+          currentModules: modules,
+        }),
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No reader available');
       }
-    );
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.chunk) {
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMsgId 
+                  ? { ...msg, text: msg.text + data.chunk } 
+                  : msg
+              ));
+            }
+            
+            if (data.error) {
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMsgId 
+                  ? { ...msg, text: data.error, isStreaming: false } 
+                  : msg
+              ));
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId 
+          ? { ...msg, text: 'Error connecting to AI service.', isStreaming: false } 
+          : msg
+      ));
+    }
 
     setMessages(prev => prev.map(msg => 
       msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg

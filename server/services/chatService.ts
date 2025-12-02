@@ -1,5 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
-import { Message, ModuleItem } from "../types";
+import { GoogleGenAI } from '@google/genai';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const SYSTEM_INSTRUCTION = `
 You are a 'Wishket AI Consultant', a top-tier expert in IT project estimation and solution architecture.
@@ -21,27 +22,36 @@ Current State Injection:
 The user message will include a summary of the currently selected modules and sub-features. Use this to give accurate advice.
 `;
 
-let ai: GoogleGenAI | null = null;
+interface Message {
+  role: string;
+  text: string;
+}
 
-const getAI = () => {
-  if (!ai && process.env.API_KEY) {
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  }
-  return ai;
-};
+interface ModuleItem {
+  id: string;
+  name: string;
+  baseCost: number;
+  isSelected: boolean;
+  subFeatures: Array<{
+    id: string;
+    name: string;
+    price: number;
+    isSelected: boolean;
+  }>;
+}
 
-export const streamGeminiResponse = async (
+export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
   onChunk: (text: string) => void
-) => {
-  const aiInstance = getAI();
-  if (!aiInstance) {
-    onChunk("API Key is missing. Please configure the environment.");
+): Promise<void> {
+  if (!GEMINI_API_KEY) {
+    onChunk("API Key is missing. Please configure GEMINI_API_KEY environment variable.");
     return;
   }
 
-  // Generate a detailed summary of the current state
+  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
   const selectedModules = currentModules.filter(m => m.isSelected);
   const totalCost = selectedModules.reduce((acc, m) => 
     acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sAcc, s) => sAcc + s.price, 0)
@@ -59,39 +69,35 @@ export const streamGeminiResponse = async (
   ${activeFeaturesList}
   `;
 
-  const validHistory = history.map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.text }]
+  const lastUserMessage = history[history.length - 1];
+  const previousHistory = history.slice(0, history.length - 1).map(h => ({
+    role: h.role,
+    parts: [{ text: h.text }]
   }));
+  
+  const messageToSend = `${stateSummary}\n\nUser Question: ${lastUserMessage.text}`;
+
+  const contents = [
+    ...previousHistory,
+    { role: 'user', parts: [{ text: messageToSend }] }
+  ];
 
   try {
-      const lastUserMessage = history[history.length - 1];
-      const previousHistory = history.slice(0, history.length - 1).map(h => ({
-        role: h.role,
-        parts: [{ text: h.text }]
-      }));
-      
-      const messageToSend = `${stateSummary}\n\nUser Question: ${lastUserMessage.text}`;
+    const result = await ai.models.generateContentStream({
+      model: 'gemini-2.5-flash',
+      contents: contents,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION
+      }
+    });
 
-      const contents = [
-          ...previousHistory,
-          { role: 'user', parts: [{ text: messageToSend }] }
-      ];
-
-      const result = await aiInstance.models.generateContentStream({
-        model: 'gemini-2.5-flash',
-        contents: contents,
-        config: {
-            systemInstruction: SYSTEM_INSTRUCTION
-        }
-      });
-
-      for await (const chunk of result) {
+    for await (const chunk of result) {
+      if (chunk.text) {
         onChunk(chunk.text);
       }
-
+    }
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Chat Error:", error);
     onChunk("죄송합니다. AI 서비스 연결 중 오류가 발생했습니다.");
   }
-};
+}

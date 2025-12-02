@@ -112,6 +112,29 @@ app.post('/api/rfp', async (req, res) => {
   }
 });
 
+app.post('/api/chat', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    const { history, currentModules } = req.body;
+    
+    const { streamChatResponse } = await import('./services/chatService');
+    
+    await streamChatResponse(history, currentModules, (chunk: string) => {
+      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+    });
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.write(`data: ${JSON.stringify({ error: 'Chat failed' })}\n\n`);
+  } finally {
+    res.end();
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
