@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -9,6 +9,14 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
+import { 
+  getChatHistory, 
+  saveChatHistory, 
+  createNewSession, 
+  updateSessionMessages, 
+  updateSessionTitle,
+  getSessionById 
+} from './services/chatHistoryService';
 
 type AppView = 'landing' | 'detail';
 
@@ -34,6 +42,59 @@ const App: React.FC = () => {
 
   // Collapsible Sidebar State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Chat Session State
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Load chat history on mount
+  useEffect(() => {
+    const stored = getChatHistory();
+    setChatSessions(stored);
+    if (stored.length > 0) {
+      setActiveSessionId(stored[0].id);
+    }
+  }, []);
+
+  // Sync messages to localStorage when they change (debounced)
+  const messagesRef = React.useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    if (activeSessionId && currentView === 'detail' && messagesRef.current.length > INITIAL_MESSAGES.length) {
+      updateSessionMessages(activeSessionId, messagesRef.current);
+    }
+  }, [activeSessionId, currentView]);
+
+  // Handle new chat
+  const handleNewChat = () => {
+    const newSession = createNewSession();
+    const updatedSessions = [newSession, ...chatSessions];
+    saveChatHistory(updatedSessions);
+    setChatSessions(updatedSessions);
+    setActiveSessionId(newSession.id);
+    setMessages(INITIAL_MESSAGES);
+    setModules(INITIAL_MODULES);
+    setCurrentView('landing');
+    setEstimationStep('SCOPE');
+  };
+
+  // Handle session selection
+  const handleSelectSession = (sessionId: string) => {
+    const session = getSessionById(sessionId);
+    if (session) {
+      setActiveSessionId(sessionId);
+      if (session.messages.length > 0) {
+        setMessages(session.messages);
+        setCurrentView('detail');
+      } else {
+        setMessages(INITIAL_MESSAGES);
+        setCurrentView('landing');
+      }
+    }
+  };
 
   // Resizing State
   const [sidebarWidth, setSidebarWidth] = useState(450);
@@ -206,15 +267,33 @@ const App: React.FC = () => {
       );
       
       // Analysis complete - now switch to detail view
-      setMessages([
+      const newMessages = [
         ...INITIAL_MESSAGES, 
         userMsg, 
         { 
           ...aiMsg, 
           text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.' 
         }
-      ]);
+      ];
+      setMessages(newMessages);
       setCurrentView('detail');
+
+      // Save session with first message as title
+      if (activeSessionId) {
+        const title = text ? text.substring(0, 20).trim() : 'New Chat';
+        updateSessionTitle(activeSessionId, title);
+        updateSessionMessages(activeSessionId, newMessages);
+        setChatSessions(getChatHistory());
+      } else {
+        // Create new session if none exists
+        const newSession = createNewSession();
+        newSession.title = text ? text.substring(0, 20).trim() : 'New Chat';
+        newSession.messages = newMessages;
+        const updatedSessions = [newSession, ...chatSessions];
+        saveChatHistory(updatedSessions);
+        setChatSessions(updatedSessions);
+        setActiveSessionId(newSession.id);
+      }
       
     } catch (error) {
       console.error('Analysis error:', error);
@@ -324,7 +403,11 @@ const App: React.FC = () => {
         {/* Collapsible Sidebar - Always visible */}
         <CollapsibleSidebar 
           isCollapsed={isSidebarCollapsed} 
-          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          chatSessions={chatSessions}
+          activeSessionId={activeSessionId}
+          onNewChat={handleNewChat}
+          onSelectSession={handleSelectSession}
         />
 
         {/* Conditional View Rendering */}

@@ -82,3 +82,10 @@ export type EstimationStep = 'SCOPE' | 'RESULT' | 'REGISTER';
 export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
 export type EstimationSubTab = 'DETAIL' | 'PARTNER' | 'SCHEDULE';
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: number;
+  messages: Message[];
+}

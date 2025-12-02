@@ -1,0 +1,51 @@
+**[Implementation of ChatGPT-style 'New Chat' & Sidebar History (No Design Changes & Data Integrity Guaranteed)]**
+
+Implement the 'New Chat' and 'Sidebar History' features based on LocalStorage, providing a UX identical to ChatGPT, without **EVER changing the existing UI or Design**.
+
+**⚠️ Critical Constraints (Absolute Rules)**
+1.  **NO DESIGN CHANGES:** Do not modify colors, fonts, sizes, margins, layouts, or any existing CSS.
+2.  **REUSE EXISTING STYLES:** If a new UI state is needed (e.g., active state), you **MUST** reuse existing components or style classes. You have NO design authority.
+3.  **RESPECT STATE MANAGEMENT:** Analyze the current codebase and strictly follow the existing state management pattern (React State, Redux, Context API, etc.).
+
+**1. Data Structure & Storage (LocalStorage Definition)**
+*   **Storage Key:** `chat_history_storage`
+*   **Value Structure:**
+    ```json
+    [
+      {
+        "id": "string (UUID or Date.now())",
+        "title": "string",
+        "createdAt": "timestamp",
+        "messages": [ ...Array of message objects... ]
+      }
+    ]
+    ```
+*   **Message Sync:** The sidebar items are summaries. Clicking an item must load its specific `messages` array into the main chat window.
+
+**2. UI Interaction: 'New Chat' Button**
+*   **On Click:**
+    1.  Reset the current main chat state (messages) to an empty array.
+    2.  Generate a new Session ID (use `Date.now()` or UUID).
+    3.  Immediately **prepend** a new item to the top of the Sidebar list.
+
+**3. State Management & Title Update Logic**
+*   **Phase 1 (Loading State):**
+    *   Immediately after creation, set the title to **'New Chat'**. (Do not save to LocalStorage yet).
+*   **Phase 2 (First Interaction):**
+    *   **Trigger:** When the user sends the **first message** and the AI starts responding.
+    *   **Action:** Save the session to LocalStorage.
+    *   **[IMPORTANT] Title Rule:** Automatically set the title using the **first 15-20 characters** of the user's first message. (Do NOT use an external API for summarization).
+*   **Phase 3 (Persistence):**
+    *   Continuously sync the `messages` array of the current ID to LocalStorage whenever a new message is added.
+
+**4. Error Handling**
+*   **Rollback:** If an error occurs during the first message transmission or network failure, **immediately remove** the temporary item from the sidebar to prevent "empty ghost rooms."
+*   **Refresh Protection:** Sidebar list and the last active conversation must persist after a page refresh.
+
+**5. Session Switching**
+*   **When a sidebar item is clicked:**
+    1.  Save the current session state (if necessary).
+    2.  Retrieve the `messages` data matching the clicked ID from LocalStorage and render it in the main view.
+    3.  **Active Style:** Apply the "active/selected" style to the clicked item using **only existing CSS**.
+
+---
