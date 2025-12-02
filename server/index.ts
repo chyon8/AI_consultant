@@ -2,22 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { analyzeProject } from './services/geminiService';
 import { generateRFP } from './services/rfpService';
 import { parseAnalysisResponse } from './services/responseParser';
-import { processChat } from './services/chatService';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
-const isProduction = process.env.NODE_ENV === 'production';
-const PORT = isProduction ? (process.env.PORT || 5000) : 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json());
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -78,14 +71,6 @@ app.post('/api/analyze', async (req, res) => {
     console.log('[Analyze] Response contains json:modules?', fullResponse.includes('```json:modules'));
     console.log('[Analyze] Response contains ```json?', fullResponse.includes('```json'));
 
-    console.log('🔴 [DEBUG: Raw AI Response - Server]');
-    console.log(JSON.stringify({
-      responseLength: fullResponse.length,
-      first1000Chars: fullResponse.substring(0, 1000),
-      last1000Chars: fullResponse.substring(fullResponse.length - 1000),
-      containsJsonBlock: fullResponse.includes('```json')
-    }, null, 2));
-
     const parsedData = parseAnalysisResponse(fullResponse);
     
     console.log('[Analyze] Parsed data:', parsedData ? {
@@ -93,14 +78,6 @@ app.post('/api/analyze', async (req, res) => {
       modulesCount: parsedData.modules?.length || 0,
       hasEstimates: !!parsedData.estimates
     } : 'null');
-    
-    console.log('🟢 [DEBUG: Processed Data - Server]');
-    console.log(JSON.stringify({
-      projectTitle: parsedData?.projectTitle,
-      modulesCount: parsedData?.modules?.length || 0,
-      modules: parsedData?.modules,
-      estimates: parsedData?.estimates
-    }, null, 2));
 
     res.write(`data: ${JSON.stringify({ 
       done: true, 
@@ -135,62 +112,12 @@ app.post('/api/rfp', async (req, res) => {
   }
 });
 
-app.post('/api/chat', async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  try {
-    const { message, conversationHistory, context } = req.body;
-
-    console.log('[Chat] Processing message:', message?.substring(0, 100));
-
-    const result = await processChat(
-      message,
-      conversationHistory || [],
-      context,
-      (chunk: string) => {
-        res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-      }
-    );
-
-    console.log('[Chat] Response parsed:', {
-      chatMessageLength: result.chatMessage.length,
-      actionType: result.action?.type
-    });
-
-    res.write(`data: ${JSON.stringify({ 
-      done: true, 
-      chatMessage: result.chatMessage,
-      action: result.action 
-    })}\n\n`);
-  } catch (error) {
-    console.error('Chat error:', error);
-    res.write(`data: ${JSON.stringify({ error: 'Chat processing failed' })}\n\n`);
-  } finally {
-    res.end();
-  }
-});
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-if (isProduction) {
-  const distPath = path.join(__dirname, '..', 'dist');
-  app.use(express.static(distPath));
-  
-  app.use((req, res, next) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api')) {
-      res.sendFile(path.join(distPath, 'index.html'));
-    } else {
-      next();
-    }
-  });
-}
-
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
+  console.log(`Server running on port ${PORT}`);
 });
 
 export default app;

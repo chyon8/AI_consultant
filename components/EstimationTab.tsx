@@ -224,23 +224,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
             >
               <div className="px-6 pb-6 pt-2 border-t border-slate-50 dark:border-slate-800/50">
                 <div className="grid gap-2 pl-11">
-                  {/* Base Cost Line Item */}
-                  <div 
-                    className="flex items-center justify-between py-3 px-4 rounded-lg transition-all duration-200 border bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded border flex items-center justify-center bg-slate-400 border-slate-400 text-white">
-                        <Icons.Briefcase size={12} strokeWidth={2} />
-                      </div>
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                        기본 구축비 (Core Framework)
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold w-20 text-right text-slate-600 dark:text-slate-300">
-                      {(module.baseCost / 10000).toLocaleString()}만
-                    </span>
-                  </div>
-                  
                   {module.subFeatures.map((sub) => (
                     <div 
                       key={sub.id} 

@@ -1,39 +1,25 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, ModuleItem, PartnerType, ProjectScale, DashboardAction } from '../types';
+import { Message, ModuleItem } from '../types';
 import { Icons } from './Icons';
-import { sendChatMessage, ChatContext, ChatResult } from '../services/apiService';
-import { useAsyncState } from '../contexts/AsyncStateContext';
+import { streamGeminiResponse } from '../services/geminiService';
 
 interface ChatInterfaceProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   modules: ModuleItem[];
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
-  partnerType: PartnerType;
-  currentScale: ProjectScale;
-  estimates?: {
-    typeA?: { minCost: number; maxCost: number; duration: string };
-    typeB?: { minCost: number; maxCost: number; duration: string };
-    typeC?: { minCost: number; maxCost: number; duration: string };
-  };
-  onDashboardAction?: (action: DashboardAction) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   setMessages, 
   modules, 
-  setModules,
-  partnerType,
-  currentScale,
-  estimates,
-  onDashboardAction
+  setModules 
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { setChatStatus, addToast } = useAsyncState();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,56 +53,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
     setMessages(prev => [...prev, aiMsg]);
 
-    const context: ChatContext = {
+    await streamGeminiResponse(
+      [...messages, userMsg],
       modules,
-      partnerType,
-      currentScale,
-      estimates
-    };
+      (chunk) => {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, text: msg.text + chunk } 
+            : msg
+        ));
+      }
+    );
 
-    const conversationHistory = messages.slice(-10).map(msg => ({
-      role: msg.role,
-      text: msg.text
-    }));
-
-    setChatStatus('loading');
-    
-    try {
-      const result = await sendChatMessage(
-        input,
-        conversationHistory,
-        context,
-        (chunk) => {
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMsgId 
-              ? { ...msg, text: msg.text + chunk } 
-              : msg
-          ));
-        },
-        (chatResult: ChatResult) => {
-          if (chatResult.action && chatResult.action.type !== 'no_action' && onDashboardAction) {
-            onDashboardAction(chatResult.action as DashboardAction);
-            addToast({ type: 'info', message: '대시보드가 업데이트되었습니다.' });
-          }
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMsgId 
-              ? { ...msg, text: chatResult.chatMessage, isStreaming: false } 
-              : msg
-          ));
-          setChatStatus('success');
-        }
-      );
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMsgId 
-          ? { ...msg, text: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.', isStreaming: false } 
-          : msg
-      ));
-      setChatStatus('error');
-      addToast({ type: 'error', message: '채팅 처리 중 오류가 발생했습니다.' });
-    }
-
+    setMessages(prev => prev.map(msg => 
+      msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
+    ));
     setIsLoading(false);
   };
 

@@ -3,15 +3,15 @@ import { GoogleGenAI } from '@google/genai';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const PART1_PROMPT = `# PROMPT METADATA
-# Version: v2.0.0-MM-Parallel-Estimation
-# Description: IT 컨설팅(기획/견적/WBS) 생성 + M/M 기반 병렬 작업 견적
+# Version: v1.2.0-JSON-Module-Output
+# Description: IT 컨설팅(기획/견적/WBS) 생성 + JSON 모듈 데이터
 
 # Role & Objective
 당신은 20년 경력의 수석 IT 컨설턴트입니다.
 입력 데이터를 분석하여 다음을 제공합니다:
 1. 프로젝트 상세 기획 (모듈 구조)
-2. 유형별 비교 견적 (M/M 기반 병렬 작업 고려)
-3. 실행 계획 (WBS - 병렬화된 일정)
+2. 유형별 비교 견적 (TYPE A/B/C)
+3. 실행 계획 (WBS)
 
 ## STEP 1. 프로젝트 상세 기획 (Project Planning)
 *   [Mode: Technical & Logical]
@@ -20,114 +20,34 @@ const PART1_PROMPT = `# PROMPT METADATA
 *   시스템 아키텍처 & 기술 스택: SW(FE/BE, Infra), HW(MCU, BOM) 제안.
 *   기능 명세 (Functional Specifications):
     - 반드시 '핵심 모듈(Module) > 세부 기능(Detail Features)'의 계층 구조로 작성
-    - **중요: 각 모듈당 5~10개의 세부 기능을 목표로 상세히 도출하세요** (프로젝트 복잡도에 따라 조정 가능)
-    - 큰 기능은 더 작은 단위로 세분화하여 개별 기능으로 분리 (견적 정확도를 위해)
-    - 예시: [회원 모듈]: 이메일 회원가입, 소셜 로그인(카카오), 소셜 로그인(네이버), 소셜 로그인(구글), 비밀번호 찾기, 비밀번호 변경, 프로필 조회, 프로필 수정, 프로필 이미지 업로드, 회원 탈퇴
-    - 예시: [결제 모듈]: PG사 연동(토스페이먼츠), 카드 결제, 간편결제(카카오페이), 간편결제(네이버페이), 결제 이력 조회, 결제 상세 조회, 환불 요청, 환불 처리, 정기결제 등록, 정기결제 해지
+    - 예시: [회원 모듈]: 소셜 로그인, 회원가입/탈퇴, 마이페이지
+    - 예시: [결제 모듈]: PG사 연동, 결제 이력 조회, 환불 처리
 
 ## STEP 2. 유형별 비교 견적 및 상세 산출 근거
-[Mode: Strict Analytical - M/M 기반 병렬 작업 산정]
+[Mode: Strict Analytical]
 
-**⚠️ 중요: M/M(Man-Month) 기반 병렬 작업 산정 규칙**
-- 현실에서는 여러 역할이 **동시에** 작업합니다 (순차적 X)
-- 총 공수(M/M)와 실제 프로젝트 기간은 **별개**입니다
-- 프로젝트 기간 = 가장 긴 크리티컬 패스 기준 (병렬 작업 고려)
-- 예: 총 공수 35 M/M이지만, 7명이 동시 투입되면 실제 기간은 약 5개월
+### TYPE A: 대형 에이전시 / 전문 개발사 (Stability)
+*   분석: 적합성 및 리스크 분석
+*   투입 인력 및 M/M 상세
+*   예상 견적 범위
 
-### 📊 등급별 표준 월 단가 (2024년 한국SW산업협회 기준)
-
-| 등급 | 기준 월단가 | TYPE A 적용단가 | TYPE B 적용단가 | TYPE C 적용단가 |
-|------|------------|----------------|----------------|----------------|
-| **특급** | 14,000,000원 | 17,500,000원 (제경비 25% 포함) | 14,000,000원 | 18,000,000원 (AI 도구비 포함) |
-| **고급** | 11,500,000원 | 14,400,000원 (제경비 25% 포함) | 11,500,000원 | 15,000,000원 (AI 도구비 포함) |
-| **중급** | 9,000,000원 | 11,250,000원 (제경비 25% 포함) | 9,000,000원 | - |
-| **초급** | 6,500,000원 | 8,125,000원 (제경비 25% 포함) | 6,500,000원 | - |
-
-**단가 적용 규칙:**
-- TYPE A: 기준 단가 × 1.25 (제경비/이윤 25% 가산)
-- TYPE B: 기준 단가 그대로 적용 (효율적 운영으로 제경비 최소화)
-- TYPE C: 기준 단가 × 1.28 (AI 도구 구독비 월 50만원 + 프리미엄)
-
-**견적 계산 공식:**
-- 견적 = Σ(각 역할별 M/M × 해당 등급 적용단가)
-- 최소 견적: 총 M/M의 하한 × 평균 단가
-- 최대 견적: 총 M/M의 상한 × 평균 단가 × 1.15 (리스크 버퍼)
-
-### TYPE A: 중견 SI 에이전시 / 플랫폼 전문 기업 (Stability)
-*   분석: 대규모 트래픽 처리 경험, PM/PL/DBA/AA 등 전문 인력 보유. 안정적인 마이그레이션과 고품질 산출물 보장.
-*   **[상세 산출 근거]**
-    - **투입 인력 (예상 기간):**
-      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M | 월단가 | 소계 |
-      |------|------|----------|----------|-----|--------|------|
-      | PM | 특급 | 1.0명 | X개월 | X.X M/M | 17,500,000원 | XX,XXX,XXX원 |
-      | PL/AA | 특급 | 1.0명 | X개월 | X.X M/M | 17,500,000원 | XX,XXX,XXX원 |
-      | UI/UX 디자이너 | 고급 | 1.0명 | X개월 | X.X M/M | 14,400,000원 | XX,XXX,XXX원 |
-      | 퍼블리셔 | 중급 | 1.0명 | X개월 | X.X M/M | 11,250,000원 | XX,XXX,XXX원 |
-      | BE 개발자 | 고급 | X.X명 | X개월 | X.X M/M | 14,400,000원 | XX,XXX,XXX원 |
-      | FE/App 개발자 | 고급 | X.X명 | X개월 | X.X M/M | 14,400,000원 | XX,XXX,XXX원 |
-      | QA/Tester | 중급 | 0.5명 | X개월 | X.X M/M | 11,250,000원 | XX,XXX,XXX원 |
-    - **총 공수:** 약 XX~XX M/M
-    - **단가 기준:** SW기술자 노임단가 + 제경비 25% (TYPE A 적용단가 사용)
-*   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
-
-### TYPE B: 기술 중심 부티크 / 스타트업 개발사 (Efficiency)
-*   분석: 최신 기술 스택(Next.js, Flutter)에 강점이 있는 젊은 조직. 기민한 개발이 가능하나, 대규모 트래픽 인프라 설계 경험 검증 필요.
-*   **[상세 산출 근거]**
-    - **투입 인력 (예상 기간):**
-      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M | 월단가 | 소계 |
-      |------|------|----------|----------|-----|--------|------|
-      | PM 겸 PL | 특급 | 1.0명 | X개월 | X.X M/M | 14,000,000원 | XX,XXX,XXX원 |
-      | 디자이너 | 중급 | 1.0명 | X개월 | X.X M/M | 9,000,000원 | XX,XXX,XXX원 |
-      | 풀스택 개발팀 | 고급/중급 혼합 | X.X명 | X개월 | X.X M/M | 10,250,000원 | XX,XXX,XXX원 |
-    - **총 공수:** 약 XX~XX M/M
-    - **단가 기준:** SW기술자 기준 노임단가 (제경비 미포함, TYPE B 적용단가 사용)
-*   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
+### TYPE B: 소규모 스튜디오 / 프리랜서 팀 (Cost-Effective)
+*   분석: 가성비 및 리스크 분석
+*   투입 인력 및 M/M 상세
+*   예상 견적 범위
 
 ### TYPE C: AI 네이티브 시니어 개발자 (AI Productivity)
-*   분석: Cursor, Copilot, Claude 등 AI 도구 활용으로 생산성 극대화. 소수 정예로 빠른 MVP 구축 가능. 복잡한 레거시 통합이나 대규모 인프라 설계에는 제약.
-*   **[상세 산출 근거]**
-    - **투입 인력 (예상 기간):**
-      | 역할 | 등급 | 투입 인원 | 투입 기간 | M/M | 월단가 | 소계 |
-      |------|------|----------|----------|-----|--------|------|
-      | Tech Lead (PM 겸임) | 특급 | 1.0명 | X개월 | X.X M/M | 18,000,000원 | XX,XXX,XXX원 |
-      | AI-Native 풀스택 | 특급 | X.X명 | X개월 | X.X M/M | 18,000,000원 | XX,XXX,XXX원 |
-      | UI/UX (외주 또는 AI 생성) | 고급 | 0.5명 | X개월 | X.X M/M | 15,000,000원 | XX,XXX,XXX원 |
-    - **총 공수:** 약 XX~XX M/M
-    - **단가 기준:** SW기술자 노임단가 + AI 도구 비용 (TYPE C 적용단가 사용)
-*   💰 **예상 견적 범위:** X억 X,XXX만 원 ~ X억 X,XXX만 원
+*   분석: AI 도구 활용 생산성 분석
+*   투입 인력 및 M/M 상세
+*   예상 견적 범위
 
-## STEP 3. 실행 계획 (WBS - 병렬화된 일정)
-*   [Mode: Visual - 병렬 작업 반영]
-*   **⚠️ 중요:** WBS 기간은 STEP 2에서 산정한 병렬화된 프로젝트 기간과 일치해야 함
-*   동시 진행 가능한 단계는 같은 기간에 표시 (예: FE/BE 개발 동시 진행)
-*   통합 WBS 예시:
-    | 단계 | 기간 | 1월 | 2월 | 3월 | 4월 | 5월 |
-    |------|------|-----|-----|-----|-----|-----|
-    | 기획/설계 | 1개월 | ■■ | | | | |
-    | 디자인 | 1.5개월 | ■ | ■■ | | | |
-    | FE 개발 | 3개월 | | ■■ | ■■ | ■■ | |
-    | BE 개발 | 3개월 | | ■■ | ■■ | ■■ | |
-    | 통합/QA | 1개월 | | | | ■ | ■■ |
+## STEP 3. 실행 계획 (WBS)
+*   [Mode: Visual]
+*   통합 WBS: ■(진행), □(대기) 문자를 사용한 시각적 표
 *   파트너 선정 어드바이스
 
 ## STEP 4. 구조화된 모듈 데이터 (JSON)
 응답 마지막에 반드시 아래 형식으로 JSON 블록을 출력하세요:
-
-**비용 구조 규칙:**
-- baseCost: 모듈의 기본 구축비 (Core Framework 비용). 해당 모듈 개발 시 필수적으로 발생하는 기본 인프라/설계 비용
-- subFeatures.price: 각 세부 기능 추가 시 발생하는 추가 비용
-- 모듈 총 비용 = baseCost + Σ(선택된 subFeatures.price)
-
-**기간 산정 규칙:**
-- totalManMonths: 총 투입 공수 (M/M 합계)
-- parallelDuration: 병렬 작업 고려한 실제 프로젝트 기간
-- duration 필드에는 parallelDuration 값을 사용
-
-**⚠️ 중요: 모든 상세 데이터를 JSON에 포함해야 합니다:**
-- analysis: TYPE별 분석 텍스트 (장단점, 특징)
-- staffing: 상세 투입 인력 테이블 (역할, 등급, 인원, 기간, M/M)
-- costBasis: 단가 산정 근거
-- wbs: WBS 상세 일정 (phase, task, schedule 배열)
 
 \`\`\`json:modules
 {
@@ -154,66 +74,9 @@ const PART1_PROMPT = `# PROMPT METADATA
     }
   ],
   "estimates": {
-    "typeA": { 
-      "minCost": 250000000, 
-      "maxCost": 350000000, 
-      "duration": "5개월",
-      "totalManMonths": 38,
-      "teamSize": 7,
-      "analysis": "대규모 트래픽 처리 경험, PM/PL/DBA/AA 등 전문 인력 보유. 안정적인 마이그레이션과 고품질 산출물 보장.",
-      "staffing": [
-        { "role": "PM", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0, "unitCost": 17500000, "subtotal": 87500000 },
-        { "role": "PL/AA", "grade": "특급", "headcount": 1.0, "duration": "5개월", "manMonth": 5.0, "unitCost": 17500000, "subtotal": 87500000 },
-        { "role": "UI/UX 디자이너", "grade": "고급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0, "unitCost": 14400000, "subtotal": 28800000 },
-        { "role": "BE 개발자", "grade": "고급", "headcount": 2.0, "duration": "4개월", "manMonth": 8.0, "unitCost": 14400000, "subtotal": 115200000 },
-        { "role": "FE 개발자", "grade": "고급", "headcount": 1.5, "duration": "4개월", "manMonth": 6.0, "unitCost": 14400000, "subtotal": 86400000 },
-        { "role": "QA/Tester", "grade": "중급", "headcount": 0.5, "duration": "2개월", "manMonth": 1.0, "unitCost": 11250000, "subtotal": 11250000 }
-      ],
-      "costBasis": "SW기술자 노임단가 + 제경비 25% (TYPE A 적용단가)"
-    },
-    "typeB": { 
-      "minCost": 150000000, 
-      "maxCost": 220000000, 
-      "duration": "4개월",
-      "totalManMonths": 28,
-      "teamSize": 5,
-      "analysis": "최신 기술 스택에 강점이 있는 조직. 기민한 개발이 가능하나, 대규모 인프라 설계 경험 검증 필요.",
-      "staffing": [
-        { "role": "PM 겸 PL", "grade": "특급", "headcount": 1.0, "duration": "4개월", "manMonth": 4.0, "unitCost": 14000000, "subtotal": 56000000 },
-        { "role": "디자이너", "grade": "중급", "headcount": 1.0, "duration": "2개월", "manMonth": 2.0, "unitCost": 9000000, "subtotal": 18000000 },
-        { "role": "풀스택 개발팀", "grade": "고급/중급 혼합", "headcount": 3.0, "duration": "3.5개월", "manMonth": 10.5, "unitCost": 10250000, "subtotal": 107625000 }
-      ],
-      "costBasis": "SW기술자 기준 노임단가 (제경비 미포함, TYPE B 적용단가)"
-    },
-    "typeC": { 
-      "minCost": 80000000, 
-      "maxCost": 150000000, 
-      "duration": "3개월",
-      "totalManMonths": 15,
-      "teamSize": 3,
-      "analysis": "AI 도구(Cursor, Copilot, Claude) 활용으로 생산성 극대화. 소수 정예로 빠른 MVP 구축 가능. 복잡한 레거시 통합이나 대규모 인프라 설계에는 제약.",
-      "staffing": [
-        { "role": "Tech Lead (PM 겸임)", "grade": "특급", "headcount": 1.0, "duration": "3개월", "manMonth": 3.0, "unitCost": 18000000, "subtotal": 54000000 },
-        { "role": "AI-Native 풀스택", "grade": "특급", "headcount": 1.5, "duration": "3개월", "manMonth": 4.5, "unitCost": 18000000, "subtotal": 81000000 },
-        { "role": "UI/UX (외주)", "grade": "고급", "headcount": 0.5, "duration": "1.5개월", "manMonth": 0.75, "unitCost": 15000000, "subtotal": 11250000 }
-      ],
-      "costBasis": "SW기술자 노임단가 + AI 도구 비용 (TYPE C 적용단가)"
-    },
-    "wbs": {
-      "totalDuration": "5개월",
-      "timeUnit": "month",
-      "phases": [
-        { "phase": "기획/설계", "task": "요구사항 분석, DB/API 설계", "duration": "1개월", "schedule": [1, 0, 0, 0, 0] },
-        { "phase": "디자인", "task": "UI/UX 디자인, 디자인 시스템", "duration": "1.5개월", "schedule": [1, 1, 0, 0, 0] },
-        { "phase": "FE 개발", "task": "프론트엔드 구현", "duration": "3개월", "schedule": [0, 1, 1, 1, 0] },
-        { "phase": "BE 개발", "task": "백엔드 API, 비즈니스 로직", "duration": "3개월", "schedule": [0, 1, 1, 1, 0] },
-        { "phase": "통합/QA", "task": "테스트, 버그 수정, 배포", "duration": "1개월", "schedule": [0, 0, 0, 1, 1] }
-      ],
-      "partnerAdvice": {
-        "recommendedType": "TYPE B",
-        "reason": "가성비와 기술력을 모두 갖춘 중소형 개발사가 적합합니다."
-      }
-    }
+    "typeA": { "minCost": 50000000, "maxCost": 80000000, "duration": "4개월" },
+    "typeB": { "minCost": 30000000, "maxCost": 50000000, "duration": "5개월" },
+    "typeC": { "minCost": 20000000, "maxCost": 35000000, "duration": "6개월" }
   }
 }
 \`\`\`
@@ -229,22 +92,18 @@ export async function analyzeProject(
 ): Promise<void> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-  const userParts: { text: string }[] = [];
-  
-  userParts.push({ text: userInput });
-  
-  fileContents.forEach((content, i) => {
-    userParts.push({ text: `\n\n--- 첨부파일 ${i + 1} 내용 ---\n${content}` });
-  });
+  const combinedInput = [
+    userInput,
+    ...fileContents.map((content, i) => `\n\n--- 첨부파일 ${i + 1} 내용 ---\n${content}`)
+  ].join('');
 
   const response = await ai.models.generateContentStream({
     model: 'gemini-3-pro-preview',
     contents: [
-      { role: 'user', parts: userParts }
+      { role: 'user', parts: [{ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + combinedInput }] }
     ],
     config: {
-      systemInstruction: PART1_PROMPT,
-      temperature: 0.35,
+      temperature: 1.0,
       thinkingConfig: {
         thinkingBudget: 8000
       }
