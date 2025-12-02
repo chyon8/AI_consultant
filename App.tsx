@@ -73,38 +73,10 @@ const App: React.FC = () => {
     }
   }, [activeSessionId, currentView]);
 
-  // Handle new chat - block if current chat is empty
+  // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
-    // Rule 1: Block infinite new chat creation
-    // Check if current active session is empty
-    if (activeSessionId) {
-      const currentSession = getSessionById(activeSessionId);
-      if (currentSession && (!currentSession.messages || currentSession.messages.length === 0)) {
-        // Current chat is empty, don't create new one
-        return;
-      }
-    }
-    
-    // Also check if there's already an empty session in the list
-    const hasEmptySession = chatSessions.some(s => !s.messages || s.messages.length === 0);
-    if (hasEmptySession) {
-      // Switch to the empty session instead of creating new
-      const emptySession = chatSessions.find(s => !s.messages || s.messages.length === 0);
-      if (emptySession) {
-        setActiveSessionId(emptySession.id);
-        setMessages(INITIAL_MESSAGES);
-        setModules(INITIAL_MODULES);
-        setCurrentView('landing');
-        setEstimationStep('SCOPE');
-        return;
-      }
-    }
-    
-    const newSession = createNewSession();
-    const updatedSessions = [newSession, ...chatSessions];
-    saveChatHistory(updatedSessions);
-    setChatSessions(updatedSessions);
-    setActiveSessionId(newSession.id);
+    // Simply reset to landing view - a new session will be created when analysis starts
+    setActiveSessionId(null);
     setMessages(INITIAL_MESSAGES);
     setModules(INITIAL_MODULES);
     setCurrentView('landing');
@@ -259,23 +231,14 @@ const App: React.FC = () => {
     setIsAnalyzing(true);
     setAnalysisError(null);
     
-    // Create session immediately with loading state for sidebar
-    let currentSessionId = activeSessionId;
-    if (!currentSessionId) {
-      const newSession = createNewSession();
-      newSession.isLoading = true;
-      const updatedSessions = [newSession, ...chatSessions];
-      saveChatHistory(updatedSessions);
-      setChatSessions(updatedSessions);
-      setActiveSessionId(newSession.id);
-      currentSessionId = newSession.id;
-    } else {
-      // Update existing session to show loading
-      const updatedSessions = chatSessions.map(s => 
-        s.id === currentSessionId ? { ...s, isLoading: true } : s
-      );
-      setChatSessions(updatedSessions);
-    }
+    // Always create a NEW session for each analysis (add to history, don't overwrite)
+    const newSession = createNewSession();
+    newSession.isLoading = true;
+    const updatedSessions = [newSession, ...chatSessions];
+    saveChatHistory(updatedSessions);
+    setChatSessions(updatedSessions);
+    setActiveSessionId(newSession.id);
+    const currentSessionId = newSession.id;
     
     // Add user message
     const userMsg: Message = {
