@@ -47,12 +47,17 @@ const App: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
-  // Load chat history on mount
+  // Load chat history on mount and cleanup ghost sessions
   useEffect(() => {
     const stored = getChatHistory();
-    setChatSessions(stored);
-    if (stored.length > 0) {
-      setActiveSessionId(stored[0].id);
+    // Remove ghost sessions (empty sessions that have no messages)
+    const cleaned = stored.filter(s => s.messages && s.messages.length > 0);
+    if (cleaned.length !== stored.length) {
+      saveChatHistory(cleaned);
+    }
+    setChatSessions(cleaned);
+    if (cleaned.length > 0) {
+      setActiveSessionId(cleaned[0].id);
     }
   }, []);
 
@@ -68,8 +73,33 @@ const App: React.FC = () => {
     }
   }, [activeSessionId, currentView]);
 
-  // Handle new chat
+  // Handle new chat - block if current chat is empty
   const handleNewChat = () => {
+    // Rule 1: Block infinite new chat creation
+    // Check if current active session is empty
+    if (activeSessionId) {
+      const currentSession = getSessionById(activeSessionId);
+      if (currentSession && (!currentSession.messages || currentSession.messages.length === 0)) {
+        // Current chat is empty, don't create new one
+        return;
+      }
+    }
+    
+    // Also check if there's already an empty session in the list
+    const hasEmptySession = chatSessions.some(s => !s.messages || s.messages.length === 0);
+    if (hasEmptySession) {
+      // Switch to the empty session instead of creating new
+      const emptySession = chatSessions.find(s => !s.messages || s.messages.length === 0);
+      if (emptySession) {
+        setActiveSessionId(emptySession.id);
+        setMessages(INITIAL_MESSAGES);
+        setModules(INITIAL_MODULES);
+        setCurrentView('landing');
+        setEstimationStep('SCOPE');
+        return;
+      }
+    }
+    
     const newSession = createNewSession();
     const updatedSessions = [newSession, ...chatSessions];
     saveChatHistory(updatedSessions);
@@ -229,6 +259,24 @@ const App: React.FC = () => {
     setIsAnalyzing(true);
     setAnalysisError(null);
     
+    // Create session immediately with loading state for sidebar
+    let currentSessionId = activeSessionId;
+    if (!currentSessionId) {
+      const newSession = createNewSession();
+      newSession.isLoading = true;
+      const updatedSessions = [newSession, ...chatSessions];
+      saveChatHistory(updatedSessions);
+      setChatSessions(updatedSessions);
+      setActiveSessionId(newSession.id);
+      currentSessionId = newSession.id;
+    } else {
+      // Update existing session to show loading
+      const updatedSessions = chatSessions.map(s => 
+        s.id === currentSessionId ? { ...s, isLoading: true } : s
+      );
+      setChatSessions(updatedSessions);
+    }
+    
     // Add user message
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -279,27 +327,37 @@ const App: React.FC = () => {
       setCurrentView('detail');
 
       // Save session with first message as title
-      if (activeSessionId) {
+      if (currentSessionId) {
         const title = text ? text.substring(0, 20).trim() : 'New Chat';
-        updateSessionTitle(activeSessionId, title);
-        updateSessionMessages(activeSessionId, newMessages);
-        setChatSessions(getChatHistory());
-      } else {
-        // Create new session if none exists
-        const newSession = createNewSession();
-        newSession.title = text ? text.substring(0, 20).trim() : 'New Chat';
-        newSession.messages = newMessages;
-        const updatedSessions = [newSession, ...chatSessions];
-        saveChatHistory(updatedSessions);
-        setChatSessions(updatedSessions);
-        setActiveSessionId(newSession.id);
+        updateSessionTitle(currentSessionId, title);
+        updateSessionMessages(currentSessionId, newMessages);
+        // Remove loading state
+        const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
+        saveChatHistory(sessions);
+        setChatSessions(sessions);
       }
       
     } catch (error) {
       console.error('Analysis error:', error);
       const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
       setAnalysisError(errorMessage);
-      // Stay on landing page on error
+      
+      // Rule 3: Remove failed ghost session
+      if (currentSessionId) {
+        const sessions = getChatHistory().filter(s => {
+          if (s.id === currentSessionId && (!s.messages || s.messages.length === 0)) {
+            return false; // Remove empty failed session
+          }
+          return true;
+        });
+        saveChatHistory(sessions);
+        setChatSessions(sessions);
+        if (sessions.length > 0) {
+          setActiveSessionId(sessions[0].id);
+        } else {
+          setActiveSessionId(null);
+        }
+      }
     }
     
     setIsAnalyzing(false);

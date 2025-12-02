@@ -88,4 +88,5 @@ export interface ChatSession {
   title: string;
   createdAt: number;
   messages: Message[];
+  isLoading?: boolean;
 }
