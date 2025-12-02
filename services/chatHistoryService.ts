@@ -1,4 +1,4 @@
-import { ChatSession, Message } from '../types';
+import { ChatSession, Message, DashboardState } from '../types';
 
 const STORAGE_KEY = 'chat_history_storage';
 
@@ -61,4 +61,13 @@ export const deleteSession = (sessionId: string): void => {
   const sessions = getChatHistory();
   const filtered = sessions.filter(s => s.id !== sessionId);
   saveChatHistory(filtered);
+};
+
+export const updateSessionDashboardState = (sessionId: string, dashboardState: DashboardState): void => {
+  const sessions = getChatHistory();
+  const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+  if (sessionIndex !== -1) {
+    sessions[sessionIndex].dashboardState = JSON.parse(JSON.stringify(dashboardState));
+    saveChatHistory(sessions);
+  }
 };

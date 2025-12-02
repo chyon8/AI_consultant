@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -15,7 +15,8 @@ import {
   createNewSession, 
   updateSessionMessages, 
   updateSessionTitle,
-  getSessionById 
+  getSessionById,
+  updateSessionDashboardState
 } from './services/chatHistoryService';
 
 type AppView = 'landing' | 'detail';
@@ -73,6 +74,19 @@ const App: React.FC = () => {
     }
   }, [activeSessionId, currentView]);
 
+  // Sync dashboard state to localStorage whenever modules or settings change
+  useEffect(() => {
+    if (activeSessionId && currentView === 'detail') {
+      const dashboardState: DashboardState = {
+        modules,
+        partnerType: currentPartnerType,
+        projectScale: currentScale,
+        estimationStep
+      };
+      updateSessionDashboardState(activeSessionId, dashboardState);
+    }
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep]);
+
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
     // Simply reset to landing view - a new session will be created when analysis starts
@@ -83,16 +97,32 @@ const App: React.FC = () => {
     setEstimationStep('SCOPE');
   };
 
-  // Handle session selection
+  // Handle session selection - restore both messages AND dashboard state
   const handleSelectSession = (sessionId: string) => {
     const session = getSessionById(sessionId);
     if (session) {
       setActiveSessionId(sessionId);
       if (session.messages.length > 0) {
         setMessages(session.messages);
+        
+        // Restore dashboard state if available
+        if (session.dashboardState) {
+          setModules(session.dashboardState.modules);
+          setCurrentPartnerType(session.dashboardState.partnerType);
+          setCurrentScale(session.dashboardState.projectScale);
+          setEstimationStep(session.dashboardState.estimationStep);
+        } else {
+          // Legacy session without dashboard state - reset to defaults
+          setModules(INITIAL_MODULES);
+          setCurrentPartnerType('STUDIO');
+          setCurrentScale('STANDARD');
+          setEstimationStep('SCOPE');
+        }
+        
         setCurrentView('detail');
       } else {
         setMessages(INITIAL_MESSAGES);
+        setModules(INITIAL_MODULES);
         setCurrentView('landing');
       }
     }

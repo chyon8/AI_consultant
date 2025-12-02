@@ -83,10 +83,18 @@ export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
 export type EstimationSubTab = 'DETAIL' | 'PARTNER' | 'SCHEDULE';
 
+export interface DashboardState {
+  modules: ModuleItem[];
+  partnerType: PartnerType;
+  projectScale: ProjectScale;
+  estimationStep: EstimationStep;
+}
+
 export interface ChatSession {
   id: string;
   title: string;
   createdAt: number;
   messages: Message[];
   isLoading?: boolean;
+  dashboardState?: DashboardState;
 }
