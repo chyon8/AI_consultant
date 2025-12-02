@@ -45,7 +45,8 @@ import {
   MoreHorizontal,
   Paperclip,
   X,
-  Copy
+  Copy,
+  Trash2
 } from 'lucide-react';
 
 export const Icons = {
@@ -95,5 +96,6 @@ export const Icons = {
   Attach: Paperclip,
   Close: X,
   FileText: FileText,
-  Copy: Copy
+  Copy: Copy,
+  Trash: Trash2
 };

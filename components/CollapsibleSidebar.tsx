@@ -9,6 +9,7 @@ interface CollapsibleSidebarProps {
   activeSessionId: string | null;
   onNewChat: () => void;
   onSelectSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string, sessionTitle: string) => void;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -26,9 +27,11 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
   chatSessions,
   activeSessionId,
   onNewChat,
-  onSelectSession
+  onSelectSession,
+  onDeleteSession
 }) => {
   const [isProjectExpanded, setIsProjectExpanded] = useState(true);
+  const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
   const sessionCount = (chatSessions || []).length;
 
   return (
@@ -90,33 +93,52 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                 }`}
               >
                 {(chatSessions || []).map((session) => (
-                  <button
+                  <div
                     key={session.id}
-                    onClick={() => onSelectSession(session.id)}
-                    className={`w-full flex flex-col items-start pl-10 pr-3 py-2.5 text-left transition-colors ${
+                    className={`relative group flex items-center pl-10 pr-2 py-2.5 transition-colors ${
                       activeSessionId === session.id 
                         ? 'bg-slate-100 dark:bg-slate-800' 
                         : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
+                    onMouseEnter={() => setHoveredSessionId(session.id)}
+                    onMouseLeave={() => setHoveredSessionId(null)}
                   >
-                    <span className={`text-sm truncate w-full ${
-                      activeSessionId === session.id 
-                        ? 'text-slate-900 dark:text-white font-medium' 
-                        : 'text-slate-600 dark:text-slate-400'
-                    }`}>
-                      {session.isLoading ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                          <span>생성 중...</span>
-                        </span>
-                      ) : (
-                        session.title
-                      )}
-                    </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                      {formatDate(session.createdAt)}
-                    </span>
-                  </button>
+                    <button
+                      onClick={() => onSelectSession(session.id)}
+                      className="flex-1 flex flex-col items-start text-left min-w-0"
+                    >
+                      <span className={`text-sm truncate w-full ${
+                        activeSessionId === session.id 
+                          ? 'text-slate-900 dark:text-white font-medium' 
+                          : 'text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {session.isLoading ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                            <span>생성 중...</span>
+                          </span>
+                        ) : (
+                          session.title
+                        )}
+                      </span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                        {formatDate(session.createdAt)}
+                      </span>
+                    </button>
+                    
+                    {hoveredSessionId === session.id && !session.isLoading && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSession(session.id, session.title);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        title="삭제"
+                      >
+                        <Icons.Trash size={14} />
+                      </button>
+                    )}
+                  </div>
                 ))}
                 
                 {(!chatSessions || chatSessions.length === 0) && (

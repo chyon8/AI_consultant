@@ -8,6 +8,8 @@ import { Icons } from './components/Icons';
 import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
+import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 import { 
   getChatHistory, 
@@ -47,6 +49,10 @@ const App: React.FC = () => {
   // Chat Session State
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<{id: string, title: string} | null>(null);
 
   // Load chat history on mount and cleanup ghost sessions
   useEffect(() => {
@@ -95,6 +101,41 @@ const App: React.FC = () => {
     setModules(INITIAL_MODULES);
     setCurrentView('landing');
     setEstimationStep('SCOPE');
+  };
+
+  // Handle delete session - show confirmation modal
+  const handleDeleteSessionClick = (sessionId: string, sessionTitle: string) => {
+    setSessionToDelete({ id: sessionId, title: sessionTitle });
+    setDeleteModalOpen(true);
+  };
+
+  // Confirm delete session
+  const handleConfirmDelete = () => {
+    if (sessionToDelete) {
+      deleteSession(sessionToDelete.id);
+      const updated = getChatHistory();
+      setChatSessions(updated);
+      
+      // If deleted session was active, switch to another or reset
+      if (activeSessionId === sessionToDelete.id) {
+        if (updated.length > 0) {
+          handleSelectSession(updated[0].id);
+        } else {
+          setActiveSessionId(null);
+          setMessages(INITIAL_MESSAGES);
+          setModules(INITIAL_MODULES);
+          setCurrentView('landing');
+        }
+      }
+    }
+    setDeleteModalOpen(false);
+    setSessionToDelete(null);
+  };
+
+  // Cancel delete
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setSessionToDelete(null);
   };
 
   // Handle session selection - restore both messages AND dashboard state
@@ -459,6 +500,7 @@ const App: React.FC = () => {
           activeSessionId={activeSessionId}
           onNewChat={handleNewChat}
           onSelectSession={handleSelectSession}
+          onDeleteSession={handleDeleteSessionClick}
         />
 
         {/* Conditional View Rendering */}
@@ -508,6 +550,14 @@ const App: React.FC = () => {
           </>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        sessionTitle={sessionToDelete?.title || ''}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };
