@@ -38,7 +38,7 @@ export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ curren
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {(['AGENCY', 'STUDIO', 'AI_NATIVE'] as PartnerType[]).map((type) => {
+        {(['AI_NATIVE', 'STUDIO', 'AGENCY'] as PartnerType[]).map((type) => {
           const isSelected = currentType === type;
           const config = PARTNER_PRESETS[type];
           
