@@ -245,21 +245,33 @@ const App: React.FC = () => {
   };
 
   const handleScaleChange = (scale: ProjectScale) => {
+    console.log('[App] handleScaleChange called with:', scale);
     setCurrentScale(scale);
     if (scale === 'MVP') {
-        setModules(prev => prev.map(m => ({
-            ...m,
-            isSelected: m.required ? true : false,
-            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: s.id.endsWith('1') }))
-        })));
+        console.log('[App] Applying MVP scale - disabling optional modules');
+        setModules(prev => {
+            const updated = prev.map(m => ({
+                ...m,
+                isSelected: m.required ? true : false,
+                subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: s.id.endsWith('1') }))
+            }));
+            console.log('[App] MVP modules updated:', updated.filter(m => m.isSelected).length, 'active');
+            return updated;
+        });
     } else if (scale === 'STANDARD') {
+        console.log('[App] Applying STANDARD scale - reset to initial');
         setModules(INITIAL_MODULES);
     } else if (scale === 'HIGH_END') {
-        setModules(prev => prev.map(m => ({
-            ...m,
-            isSelected: true,
-            subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true }))
-        })));
+        console.log('[App] Applying HIGH_END scale - enabling all modules');
+        setModules(prev => {
+            const updated = prev.map(m => ({
+                ...m,
+                isSelected: true,
+                subFeatures: m.subFeatures.map(s => ({ ...s, isSelected: true }))
+            }));
+            console.log('[App] HIGH_END modules updated:', updated.length, 'all active');
+            return updated;
+        });
     }
   };
 
