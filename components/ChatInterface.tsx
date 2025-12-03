@@ -8,7 +8,7 @@ interface ChatInterfaceProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   modules: ModuleItem[];
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
-  onChatAction?: (action: ChatAction) => void;
+  onChatAction?: (action: ChatAction) => { success: boolean; error?: string };
 }
 
 function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
@@ -85,15 +85,26 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleConfirmAction = () => {
     if (pendingAction && onChatAction) {
       console.log('[Chat] User confirmed action:', pendingAction.action);
-      onChatAction(pendingAction.action);
+      const result = onChatAction(pendingAction.action);
+      console.log('[Chat] Action result:', result);
       
-      const confirmMsg: Message = {
-        id: Date.now().toString(),
-        role: 'model',
-        text: '✅ 변경이 적용되었습니다. 견적이 재산정되었습니다.',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, confirmMsg]);
+      if (result.success) {
+        const confirmMsg: Message = {
+          id: Date.now().toString(),
+          role: 'model',
+          text: '✅ 변경이 적용되었습니다. 견적이 재산정되었습니다.',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, confirmMsg]);
+      } else {
+        const errorMsg: Message = {
+          id: Date.now().toString(),
+          role: 'model',
+          text: `❌ 변경에 실패했습니다: ${result.error || '알 수 없는 오류'}\n\n다시 시도하시거나, 다른 방법으로 요청해 주세요.`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      }
       setPendingAction(null);
     }
   };

@@ -343,85 +343,114 @@ const App: React.FC = () => {
     setModules(prev => [...prev, newModule]);
   };
 
-  const handleChatAction = (action: ChatAction) => {
+  const handleChatAction = (action: ChatAction): { success: boolean; error?: string } => {
     console.log('[App] Handling chat action:', action);
     
+    const findModuleByIdOrName = (moduleIdOrName: string) => {
+      let found = modules.find(m => m.id === moduleIdOrName);
+      if (!found) {
+        found = modules.find(m => m.name === moduleIdOrName || m.name.includes(moduleIdOrName) || moduleIdOrName.includes(m.name));
+        if (found) {
+          console.log(`[App] Module found by name fallback: "${moduleIdOrName}" -> "${found.name}" [${found.id}]`);
+        }
+      }
+      return found;
+    };
+
+    const findFeatureByIdOrName = (module: ModuleItem, featureIdOrName: string) => {
+      let found = module.subFeatures.find(f => f.id === featureIdOrName);
+      if (!found) {
+        found = module.subFeatures.find(f => f.name === featureIdOrName || f.name.includes(featureIdOrName) || featureIdOrName.includes(f.name));
+        if (found) {
+          console.log(`[App] Feature found by name fallback: "${featureIdOrName}" -> "${found.name}" [${found.id}]`);
+        }
+      }
+      return found;
+    };
+    
     switch (action.type) {
-      case 'toggle_module':
+      case 'toggle_module': {
         console.log('[App] toggle_module case triggered');
-        if (action.payload.moduleId) {
-          const targetModule = modules.find(m => m.id === action.payload.moduleId);
-          if (!targetModule) {
-            console.warn(`[App] Invalid moduleId: "${action.payload.moduleId}" - not found in current modules`);
-            console.log('[App] Available moduleIds:', modules.map(m => m.id));
-            return;
-          }
-          if (targetModule.required && targetModule.isSelected) {
-            console.warn(`[App] Cannot disable required module: "${targetModule.name}"`);
-            return;
-          }
-          console.log('[App] Calling handleToggleModule for:', targetModule.name);
-          handleToggleModule(action.payload.moduleId);
+        if (!action.payload.moduleId) {
+          return { success: false, error: '모듈 ID가 누락되었습니다.' };
         }
-        break;
+        const targetModule = findModuleByIdOrName(action.payload.moduleId);
+        if (!targetModule) {
+          console.warn(`[App] Invalid moduleId: "${action.payload.moduleId}" - not found`);
+          console.log('[App] Available modules:', modules.map(m => `${m.name} [${m.id}]`));
+          return { success: false, error: `"${action.payload.moduleId}" 모듈을 찾을 수 없습니다.` };
+        }
+        if (targetModule.required && targetModule.isSelected) {
+          console.warn(`[App] Cannot disable required module: "${targetModule.name}"`);
+          return { success: false, error: `"${targetModule.name}"은(는) 필수 모듈이므로 비활성화할 수 없습니다.` };
+        }
+        console.log('[App] Calling handleToggleModule for:', targetModule.name);
+        handleToggleModule(targetModule.id);
+        return { success: true };
+      }
         
-      case 'toggle_feature':
+      case 'toggle_feature': {
         console.log('[App] toggle_feature case triggered');
-        if (action.payload.moduleId && action.payload.featureId) {
-          const targetModule = modules.find(m => m.id === action.payload.moduleId);
-          if (!targetModule) {
-            console.warn(`[App] Invalid moduleId: "${action.payload.moduleId}" - not found`);
-            console.log('[App] Available moduleIds:', modules.map(m => m.id));
-            return;
-          }
-          const targetFeature = targetModule.subFeatures.find(f => f.id === action.payload.featureId);
-          if (!targetFeature) {
-            console.warn(`[App] Invalid featureId: "${action.payload.featureId}" - not found in module "${targetModule.name}"`);
-            console.log('[App] Available featureIds:', targetModule.subFeatures.map(f => f.id));
-            return;
-          }
-          handleToggleSubFeature(action.payload.moduleId, action.payload.featureId);
+        if (!action.payload.moduleId || !action.payload.featureId) {
+          return { success: false, error: '모듈 ID 또는 기능 ID가 누락되었습니다.' };
         }
-        break;
+        const targetModule = findModuleByIdOrName(action.payload.moduleId);
+        if (!targetModule) {
+          console.warn(`[App] Invalid moduleId: "${action.payload.moduleId}" - not found`);
+          console.log('[App] Available modules:', modules.map(m => `${m.name} [${m.id}]`));
+          return { success: false, error: `"${action.payload.moduleId}" 모듈을 찾을 수 없습니다.` };
+        }
+        const targetFeature = findFeatureByIdOrName(targetModule, action.payload.featureId);
+        if (!targetFeature) {
+          console.warn(`[App] Invalid featureId: "${action.payload.featureId}" - not found in module "${targetModule.name}"`);
+          console.log('[App] Available features:', targetModule.subFeatures.map(f => `${f.name} [${f.id}]`));
+          return { success: false, error: `"${targetModule.name}" 모듈에서 "${action.payload.featureId}" 기능을 찾을 수 없습니다.` };
+        }
+        console.log('[App] Calling handleToggleSubFeature for:', targetModule.name, '->', targetFeature.name);
+        handleToggleSubFeature(targetModule.id, targetFeature.id);
+        return { success: true };
+      }
 
-      case 'add_feature':
+      case 'add_feature': {
         console.log('[App] add_feature case triggered');
-        if (action.payload.moduleId && action.payload.feature) {
-          const targetModule = modules.find(m => m.id === action.payload.moduleId);
-          if (!targetModule) {
-            console.warn(`[App] Invalid moduleId for add_feature: "${action.payload.moduleId}"`);
-            console.log('[App] Available moduleIds:', modules.map(m => m.id));
-            return;
-          }
-          handleAddFeature(action.payload.moduleId, action.payload.feature);
-        } else {
-          console.warn('[App] add_feature requires moduleId and feature payload');
+        if (!action.payload.moduleId || !action.payload.feature) {
+          return { success: false, error: 'add_feature에 필요한 정보가 누락되었습니다.' };
         }
-        break;
+        const targetModule = findModuleByIdOrName(action.payload.moduleId);
+        if (!targetModule) {
+          console.warn(`[App] Invalid moduleId for add_feature: "${action.payload.moduleId}"`);
+          console.log('[App] Available modules:', modules.map(m => `${m.name} [${m.id}]`));
+          return { success: false, error: `"${action.payload.moduleId}" 모듈을 찾을 수 없습니다.` };
+        }
+        handleAddFeature(targetModule.id, action.payload.feature);
+        return { success: true };
+      }
 
-      case 'create_module':
+      case 'create_module': {
         console.log('[App] create_module case triggered');
-        if (action.payload.module) {
-          handleCreateModule(action.payload.module);
-        } else {
-          console.warn('[App] create_module requires module payload');
+        if (!action.payload.module) {
+          return { success: false, error: 'create_module에 필요한 정보가 누락되었습니다.' };
         }
-        break;
+        handleCreateModule(action.payload.module);
+        return { success: true };
+      }
         
-      case 'update_scale':
-        if (action.payload.scale) {
-          const validScales = ['MVP', 'STANDARD', 'HIGH_END'];
-          if (!validScales.includes(action.payload.scale)) {
-            console.warn(`[App] Invalid scale: "${action.payload.scale}"`);
-            return;
-          }
-          handleScaleChange(action.payload.scale);
+      case 'update_scale': {
+        if (!action.payload.scale) {
+          return { success: false, error: '규모 정보가 누락되었습니다.' };
         }
-        break;
+        const validScales = ['MVP', 'STANDARD', 'HIGH_END'];
+        if (!validScales.includes(action.payload.scale)) {
+          console.warn(`[App] Invalid scale: "${action.payload.scale}"`);
+          return { success: false, error: `잘못된 규모 값: "${action.payload.scale}"` };
+        }
+        handleScaleChange(action.payload.scale);
+        return { success: true };
+      }
         
       case 'no_action':
       default:
-        break;
+        return { success: true };
     }
   };
 
