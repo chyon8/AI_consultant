@@ -222,7 +222,9 @@ const App: React.FC = () => {
   };
 
   const applyPartnerType = (type: PartnerType) => {
+    console.log('[App] applyPartnerType called with:', type);
     setCurrentPartnerType(type);
+    console.log('[App] Partner type updated to:', type);
     
     if (type === 'AI_NATIVE') {
        setModules(prev => prev.map(m => ({
@@ -280,6 +282,7 @@ const App: React.FC = () => {
     
     switch (action.type) {
       case 'toggle_module':
+        console.log('[App] toggle_module case triggered');
         if (action.payload.moduleId) {
           const targetModule = modules.find(m => m.id === action.payload.moduleId);
           if (!targetModule) {
@@ -291,11 +294,13 @@ const App: React.FC = () => {
             console.warn(`[App] Cannot disable required module: "${targetModule.name}"`);
             return;
           }
+          console.log('[App] Calling handleToggleModule for:', targetModule.name);
           handleToggleModule(action.payload.moduleId);
         }
         break;
         
       case 'toggle_feature':
+        console.log('[App] toggle_feature case triggered');
         if (action.payload.moduleId && action.payload.featureId) {
           const targetModule = modules.find(m => m.id === action.payload.moduleId);
           if (!targetModule) {
@@ -314,12 +319,14 @@ const App: React.FC = () => {
         break;
         
       case 'update_partner_type':
+        console.log('[App] update_partner_type case triggered');
         if (action.payload.partnerType) {
           const validTypes = ['AGENCY', 'STUDIO', 'AI_NATIVE'];
           if (!validTypes.includes(action.payload.partnerType)) {
             console.warn(`[App] Invalid partnerType: "${action.payload.partnerType}"`);
             return;
           }
+          console.log('[App] Calling applyPartnerType for:', action.payload.partnerType);
           applyPartnerType(action.payload.partnerType);
         }
         break;
