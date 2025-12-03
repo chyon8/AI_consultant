@@ -295,11 +295,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     return (
       <div className="space-y-6">
         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">총 공수 (MM)</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">{rawMM.toFixed(1)} MM</p>
-            </div>
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">투입 인원</p>
               <p className="text-lg font-bold text-slate-900 dark:text-white">{teamSize}명</p>
