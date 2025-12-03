@@ -22,17 +22,20 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 </ACTION>
 
 # ACTION TYPES
-1. toggle_module: 모듈 활성화/비활성화 토글 (현재 상태 반전)
-   - payload: { "moduleId": "mod_1" }
-   - 예: 현재 활성화된 모듈이면 비활성화, 비활성화면 활성화
+⚠️ 중요: moduleId와 featureId는 반드시 아래 "CURRENT PROJECT STATE"에 [대괄호] 안에 표시된 정확한 ID를 사용하세요.
 
-2. toggle_feature: 세부 기능 활성화/비활성화 토글 (현재 상태 반전)
-   - payload: { "moduleId": "mod_1", "featureId": "feat_1_1" }
+1. toggle_module: 모듈 활성화/비활성화 토글
+   - payload: { "moduleId": "<CURRENT PROJECT STATE에 [대괄호]로 표시된 모듈 ID>" }
+   - 예시: { "moduleId": "module_payment" } (실제 ID는 아래 상태에서 확인)
+
+2. toggle_feature: 세부 기능 활성화/비활성화 토글
+   - payload: { "moduleId": "<모듈 ID>", "featureId": "<기능 ID>" }
+   - 예시: { "moduleId": "module_payment", "featureId": "payment_card" }
 
 3. update_partner_type: 파트너 유형 변경
    - payload: { "partnerType": "AGENCY" | "STUDIO" | "AI_NATIVE" }
 
-4. update_scale: 프로젝트 규모 변경 (현재 모듈 기준으로 조정)
+4. update_scale: 프로젝트 규모 변경
    - payload: { "scale": "MVP" | "STANDARD" | "HIGH_END" }
    - MVP: 필수 모듈만 유지, 각 모듈의 첫 번째 기능만 활성화
    - STANDARD: 현재 상태 유지
@@ -47,9 +50,11 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 3. 여러 변경이 필요하면 가장 중요한 하나만 ACTION에 포함하고, 나머지는 CHAT에서 안내하세요.
 4. 한국어로 답변하세요.
 5. <CHAT>과 <ACTION> 태그는 반드시 포함해야 합니다.
+6. ⚠️ ACTION의 moduleId/featureId는 반드시 아래 상태에서 [대괄호] 안의 정확한 값을 복사하세요.
+7. 필수 모듈(required: true)은 비활성화할 수 없습니다. 비활성화 요청 시 CHAT에서 안내하고 no_action을 사용하세요.
 
 # CURRENT PROJECT STATE
-아래는 현재 프로젝트 상태입니다. 이를 참고하여 답변하세요.
+아래는 현재 프로젝트 상태입니다. [대괄호] 안의 ID를 ACTION에서 사용하세요.
 `;
 
 interface Message {

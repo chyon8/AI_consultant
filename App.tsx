@@ -269,24 +269,56 @@ const App: React.FC = () => {
     switch (action.type) {
       case 'toggle_module':
         if (action.payload.moduleId) {
+          const targetModule = modules.find(m => m.id === action.payload.moduleId);
+          if (!targetModule) {
+            console.warn(`[App] Invalid moduleId: "${action.payload.moduleId}" - not found in current modules`);
+            console.log('[App] Available moduleIds:', modules.map(m => m.id));
+            return;
+          }
+          if (targetModule.required && targetModule.isSelected) {
+            console.warn(`[App] Cannot disable required module: "${targetModule.name}"`);
+            return;
+          }
           handleToggleModule(action.payload.moduleId);
         }
         break;
         
       case 'toggle_feature':
         if (action.payload.moduleId && action.payload.featureId) {
+          const targetModule = modules.find(m => m.id === action.payload.moduleId);
+          if (!targetModule) {
+            console.warn(`[App] Invalid moduleId: "${action.payload.moduleId}" - not found`);
+            console.log('[App] Available moduleIds:', modules.map(m => m.id));
+            return;
+          }
+          const targetFeature = targetModule.subFeatures.find(f => f.id === action.payload.featureId);
+          if (!targetFeature) {
+            console.warn(`[App] Invalid featureId: "${action.payload.featureId}" - not found in module "${targetModule.name}"`);
+            console.log('[App] Available featureIds:', targetModule.subFeatures.map(f => f.id));
+            return;
+          }
           handleToggleSubFeature(action.payload.moduleId, action.payload.featureId);
         }
         break;
         
       case 'update_partner_type':
         if (action.payload.partnerType) {
+          const validTypes = ['AGENCY', 'STUDIO', 'AI_NATIVE'];
+          if (!validTypes.includes(action.payload.partnerType)) {
+            console.warn(`[App] Invalid partnerType: "${action.payload.partnerType}"`);
+            return;
+          }
           applyPartnerType(action.payload.partnerType);
         }
         break;
         
       case 'update_scale':
         if (action.payload.scale) {
+          const validScales = ['MVP', 'STANDARD', 'HIGH_END'];
+          if (!validScales.includes(action.payload.scale)) {
+            console.warn(`[App] Invalid scale: "${action.payload.scale}"`);
+            return;
+          }
           handleScaleChange(action.payload.scale);
         }
         break;
