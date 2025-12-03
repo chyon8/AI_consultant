@@ -4,8 +4,6 @@ import React, { useState, useRef } from 'react';
 import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale } from '../types';
 import { Icons } from './Icons';
 import { EstimationTab } from './EstimationTab';
-import { SimilarCasesTab } from './SimilarCasesTab';
-import { PresetSelectionTab } from './PresetSelectionTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
 import { RFPModal } from './RFPModal';
 
@@ -51,8 +49,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const tabs = [
     { id: TabView.ESTIMATION, label: '견적/예산' },
-    { id: TabView.PRESET_COMPARISON, label: '파트너 유형' },
-    { id: TabView.SIMILAR_CASES, label: '유사 사례' },
   ];
 
   // Logic for Project DNA Analysis
@@ -202,15 +198,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 currentScale={currentScale}
                 onScaleChange={onScaleChange}
               />
-            )}
-            {activeTab === TabView.PRESET_COMPARISON && (
-              <PresetSelectionTab
-                currentPartnerType={currentPartnerType}
-                onSelect={onSelectPartnerType}
-              />
-            )}
-            {activeTab === TabView.SIMILAR_CASES && (
-              <SimilarCasesTab />
             )}
           </div>
         </div>
