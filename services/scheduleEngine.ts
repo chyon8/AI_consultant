@@ -35,9 +35,9 @@ export interface ScheduleResult {
 
 const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
   AGENCY: {
-    teamSize: 6,
-    productivityCoeff: 0.9,
-    coordinationBuffer: 0.10,
+    teamSize: 5,
+    productivityCoeff: 0.667,
+    coordinationBuffer: 0.0,
     phaseWeights: {
       analysis: 0.20,
       design: 0.15,
@@ -48,7 +48,7 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
   STUDIO: {
     teamSize: 4,
     productivityCoeff: 1.0,
-    coordinationBuffer: 0.05,
+    coordinationBuffer: 0.0,
     phaseWeights: {
       analysis: 0.20,
       design: 0.15,
@@ -58,7 +58,7 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
   },
   AI_NATIVE: {
     teamSize: 2,
-    productivityCoeff: 1.3,
+    productivityCoeff: 4.0,
     coordinationBuffer: 0.0,
     phaseWeights: {
       analysis: 0.20,
