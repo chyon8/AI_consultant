@@ -275,81 +275,93 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     </div>
   );
 
-  const renderScheduleTab = () => (
-    <div className="space-y-6">
-      <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-          <Icons.Calendar size={20} className="text-indigo-500" />
-          프로젝트 WBS (작업분해도)
-        </h3>
-        
-        {/* WBS Tree */}
-        <div className="space-y-4">
-          {modules.filter(m => m.isSelected).map((module, idx) => {
-            const baseDays = module.baseManMonths * 20;
-            const subDays = module.subFeatures.filter(s => s.isSelected).reduce((sum, s) => sum + (s.manWeeks * 5), 0);
-            const totalDays = baseDays + subDays;
-            return (
-              <div key={module.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">
-                      {idx + 1}
-                    </div>
-                    <span className="font-semibold text-slate-900 dark:text-white">{module.name}</span>
-                  </div>
-                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{totalDays}일</span>
-                </div>
-                
-                {/* Sub-features */}
-                {module.subFeatures.filter(s => s.isSelected).length > 0 && (
-                  <div className="ml-9 space-y-2">
-                    {module.subFeatures.filter(s => s.isSelected).map(sub => (
-                      <div key={sub.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                          <span className="text-slate-600 dark:text-slate-400">{sub.name}</span>
-                        </div>
-                        <span className="text-slate-500 dark:text-slate-500 text-xs">{sub.manWeeks * 5}일</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+  const renderScheduleTab = () => {
+    const wbsPhases = [
+      {
+        phase: '분석/설계',
+        tasks: [
+          { name: '요구사항 분석', months: [1] },
+          { name: 'UI/UX 기획', months: [1] },
+          { name: '아키텍처 설계', months: [1] },
+          { name: 'DB 스키마 설계', months: [1] },
+        ]
+      },
+      {
+        phase: '디자인',
+        tasks: [
+          { name: 'UI/UX 디자인 시안', months: [2] },
+          { name: '스타일 가이드 수립', months: [2] },
+          { name: '디자인 검수', months: [2] },
+        ]
+      },
+      {
+        phase: '개발',
+        tasks: [
+          { name: '프론트엔드 개발', months: [3] },
+          { name: '백엔드 API 개발', months: [3, 4] },
+          { name: 'DB 연동 및 테스트', months: [4] },
+        ]
+      },
+      {
+        phase: 'QA/배포',
+        tasks: [
+          { name: '통합 테스트', months: [4] },
+          { name: '버그 수정 및 최적화', months: [4] },
+          { name: '배포 및 인수인계', months: [4] },
+        ]
+      }
+    ];
 
-        {/* Summary */}
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">총 작업량</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">
-                {modules.filter(m => m.isSelected).reduce((sum, m) => {
-                  const base = m.baseManMonths * 20;
-                  const subs = m.subFeatures.filter(s => s.isSelected).reduce((s, sub) => s + (sub.manWeeks * 5), 0);
-                  return sum + base + subs;
-                }, 0)}일
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">모듈 수</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">
-                {modules.filter(m => m.isSelected).length}개
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">기능 수</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">
-                {modules.filter(m => m.isSelected).reduce((sum, m) => sum + m.subFeatures.filter(s => s.isSelected).length, 0)}개
-              </p>
-            </div>
-          </div>
+    const monthLabels = ['M1', 'M2', 'M3', 'M4'];
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-slate-800">
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-28">Phase</th>
+                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Task</th>
+                {monthLabels.map(m => (
+                  <th key={m} className="text-center py-4 px-4 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-16">{m}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {wbsPhases.map((phaseGroup, phaseIdx) => (
+                phaseGroup.tasks.map((task, taskIdx) => (
+                  <tr 
+                    key={`${phaseIdx}-${taskIdx}`} 
+                    className="border-b border-slate-50 dark:border-slate-800/50 last:border-b-0"
+                  >
+                    <td className="py-4 px-6 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {taskIdx === 0 ? phaseGroup.phase : ''}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400">
+                      {task.name}
+                    </td>
+                    {[1, 2, 3, 4].map(month => (
+                      <td key={month} className="py-4 px-4 text-center">
+                        <div className="flex justify-center">
+                          <div 
+                            className={`w-3 h-3 rounded-sm transition-colors ${
+                              task.months.includes(month)
+                                ? 'bg-slate-700 dark:bg-slate-300'
+                                : 'bg-slate-100 dark:bg-slate-800'
+                            }`}
+                          />
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (estimationStep === 'REGISTER') {
     return (
