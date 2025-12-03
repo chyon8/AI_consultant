@@ -7,7 +7,9 @@ export interface PartnerConfig {
   phaseWeights: {
     analysis: number;
     design: number;
-    development: number;
+    frontend: number;
+    backend: number;
+    dbIntegration: number;
     qa: number;
   };
 }
@@ -39,9 +41,11 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
     productivityCoeff: 0.9,
     coordinationBuffer: 0.10,
     phaseWeights: {
-      analysis: 0.20,
-      design: 0.15,
-      development: 0.50,
+      analysis: 0.15,
+      design: 0.10,
+      frontend: 0.25,
+      backend: 0.25,
+      dbIntegration: 0.10,
       qa: 0.15
     }
   },
@@ -50,9 +54,11 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
     productivityCoeff: 1.0,
     coordinationBuffer: 0.05,
     phaseWeights: {
-      analysis: 0.20,
-      design: 0.15,
-      development: 0.50,
+      analysis: 0.15,
+      design: 0.10,
+      frontend: 0.25,
+      backend: 0.25,
+      dbIntegration: 0.10,
       qa: 0.15
     }
   },
@@ -61,25 +67,31 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
     productivityCoeff: 1.3,
     coordinationBuffer: 0.0,
     phaseWeights: {
-      analysis: 0.20,
-      design: 0.15,
-      development: 0.50,
+      analysis: 0.15,
+      design: 0.10,
+      frontend: 0.25,
+      backend: 0.25,
+      dbIntegration: 0.10,
       qa: 0.15
     }
   }
 };
 
 const PHASE_TASKS: Record<string, string[]> = {
-  analysis: ['요구사항 분석', 'UI/UX 기획', '아키텍처 설계', 'DB 스키마 설계'],
-  design: ['UI/UX 디자인 시안', '스타일 가이드 수립', '디자인 검수'],
-  development: ['프론트엔드 개발', '백엔드 API 개발', 'DB 연동 및 테스트'],
-  qa: ['통합 테스트', '버그 수정 및 최적화', '배포 및 인수인계']
+  analysis: ['분석/설계'],
+  design: ['디자인'],
+  frontend: ['프론트엔드개발'],
+  backend: ['백엔드개발'],
+  dbIntegration: ['DB연동 및 테스트'],
+  qa: ['통합테스트', '버그수정 및 최적화']
 };
 
 const PHASE_NAMES: Record<string, string> = {
   analysis: '분석/설계',
   design: '디자인',
-  development: '개발',
+  frontend: '프론트엔드개발',
+  backend: '백엔드개발',
+  dbIntegration: 'DB연동 및 테스트',
   qa: 'QA/배포'
 };
 
@@ -130,7 +142,7 @@ function distributePhases(
   totalMonths: number,
   config: PartnerConfig
 ): PhaseSchedule[] {
-  const phaseKeys = ['analysis', 'design', 'development', 'qa'] as const;
+  const phaseKeys = ['analysis', 'design', 'frontend', 'backend', 'dbIntegration', 'qa'] as const;
   const phases: PhaseSchedule[] = [];
   let currentMonth = 1;
   
