@@ -7,9 +7,7 @@ export interface PartnerConfig {
   phaseWeights: {
     analysis: number;
     design: number;
-    frontend: number;
-    backend: number;
-    dbIntegration: number;
+    development: number;
     qa: number;
   };
 }
@@ -43,9 +41,7 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
     phaseWeights: {
       analysis: 0.15,
       design: 0.10,
-      frontend: 0.25,
-      backend: 0.25,
-      dbIntegration: 0.10,
+      development: 0.60,
       qa: 0.15
     }
   },
@@ -56,9 +52,7 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
     phaseWeights: {
       analysis: 0.15,
       design: 0.10,
-      frontend: 0.25,
-      backend: 0.25,
-      dbIntegration: 0.10,
+      development: 0.60,
       qa: 0.15
     }
   },
@@ -69,9 +63,7 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
     phaseWeights: {
       analysis: 0.15,
       design: 0.10,
-      frontend: 0.25,
-      backend: 0.25,
-      dbIntegration: 0.10,
+      development: 0.60,
       qa: 0.15
     }
   }
@@ -80,18 +72,14 @@ const PARTNER_CONFIGS: Record<PartnerType, PartnerConfig> = {
 const PHASE_TASKS: Record<string, string[]> = {
   analysis: ['분석/설계'],
   design: ['디자인'],
-  frontend: ['프론트엔드개발'],
-  backend: ['백엔드개발'],
-  dbIntegration: ['DB연동 및 테스트'],
+  development: ['프론트엔드', '백엔드', 'DB연동 및 테스트'],
   qa: ['통합테스트', '버그수정 및 최적화']
 };
 
 const PHASE_NAMES: Record<string, string> = {
   analysis: '분석/설계',
   design: '디자인',
-  frontend: '프론트엔드개발',
-  backend: '백엔드개발',
-  dbIntegration: 'DB연동 및 테스트',
+  development: '개발',
   qa: 'QA/배포'
 };
 
@@ -142,7 +130,7 @@ function distributePhases(
   totalMonths: number,
   config: PartnerConfig
 ): PhaseSchedule[] {
-  const phaseKeys = ['analysis', 'design', 'frontend', 'backend', 'dbIntegration', 'qa'] as const;
+  const phaseKeys = ['analysis', 'design', 'development', 'qa'] as const;
   const phases: PhaseSchedule[] = [];
   let currentMonth = 1;
   
