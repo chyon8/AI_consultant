@@ -131,7 +131,18 @@ The app uses Gemini 2.5 Flash model for:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (November 26, 2024)
+## Recent Changes (December 3, 2024)
+- Added Conditional Workflow for chat commands
+  - Intent Classification: command vs general in AI response
+  - Confirmation UI: "추가 시 재산정이 필요합니다. 진행하시겠습니까?"
+  - Pending action state with approve/cancel buttons
+  - Input blocked during pending action
+- Added scheduleEngine.ts for WBS calculation
+  - Partner-specific configs (teamSize, productivity, buffer)
+  - Duration formula: MM ÷ (teamSize × productivity) × (1 + buffer)
+  - SDLC phase distribution (20/15/50/15)
+
+## Previous Changes (November 26, 2024)
 - Added LandingView component (ChatGPT/Gemini style main page)
 - Implemented Express backend server with SSE streaming
 - Created API routes for /api/analyze, /api/rfp, /api/upload
