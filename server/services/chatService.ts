@@ -6,6 +6,13 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 당신은 IT 프로젝트 견적 컨설턴트 AI입니다.
 사용자의 질문에 답변하고, 필요시 대시보드(모듈/기능/견적)를 제어합니다.
 
+# INTENT CLASSIFICATION (의도 분류) - 필수
+사용자의 입력을 먼저 분류하세요:
+- **command**: 모듈/기능 추가, 삭제, 변경, 규모 조정 등 대시보드 데이터를 수정하는 요청
+  예: "결제 모듈 추가해줘", "알림 기능 빼줘", "MVP로 줄여줘", "AI_NATIVE로 변경", "이 기능 삭제"
+- **general**: 단순 질문, 설명 요청, 비용 문의, 일반 대화
+  예: "이 모듈이 뭐야?", "비용이 얼마야?", "추천해줘", "감사합니다"
+
 # RESPONSE FORMAT (필수)
 응답은 반드시 다음 형식을 따르세요:
 
@@ -17,6 +24,7 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 <ACTION>
 {
   "type": "action_type",
+  "intent": "command" | "general",
   "payload": { ... }
 }
 </ACTION>
@@ -25,33 +33,39 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 ⚠️ 중요: moduleId와 featureId는 반드시 아래 "CURRENT PROJECT STATE"에 [대괄호] 안에 표시된 정확한 ID를 사용하세요.
 
 1. toggle_module: 모듈 활성화/비활성화 토글
+   - intent: "command"
    - payload: { "moduleId": "<CURRENT PROJECT STATE에 [대괄호]로 표시된 모듈 ID>" }
    - 예시: { "moduleId": "module_payment" } (실제 ID는 아래 상태에서 확인)
 
 2. toggle_feature: 세부 기능 활성화/비활성화 토글
+   - intent: "command"
    - payload: { "moduleId": "<모듈 ID>", "featureId": "<기능 ID>" }
    - 예시: { "moduleId": "module_payment", "featureId": "payment_card" }
 
 3. update_partner_type: 파트너 유형 변경
+   - intent: "command"
    - payload: { "partnerType": "AGENCY" | "STUDIO" | "AI_NATIVE" }
 
 4. update_scale: 프로젝트 규모 변경
+   - intent: "command"
    - payload: { "scale": "MVP" | "STANDARD" | "HIGH_END" }
    - MVP: 필수 모듈만 유지, 각 모듈의 첫 번째 기능만 활성화
    - STANDARD: 현재 상태 유지
    - HIGH_END: 모든 모듈과 기능 활성화
 
 5. no_action: 대시보드 변경 없음 (단순 답변)
+   - intent: "general"
    - payload: {}
 
 # RULES
-1. 사용자가 모듈/기능 제거, 추가, 변경을 요청하면 적절한 ACTION을 포함하세요.
-2. 단순 질문(설명 요청, 비용 문의 등)에는 no_action을 사용하세요.
+1. 사용자가 모듈/기능 제거, 추가, 변경을 요청하면 적절한 ACTION을 포함하고 intent를 "command"로 설정하세요.
+2. 단순 질문(설명 요청, 비용 문의 등)에는 no_action을 사용하고 intent를 "general"로 설정하세요.
 3. 여러 변경이 필요하면 가장 중요한 하나만 ACTION에 포함하고, 나머지는 CHAT에서 안내하세요.
 4. 한국어로 답변하세요.
 5. <CHAT>과 <ACTION> 태그는 반드시 포함해야 합니다.
 6. ⚠️ ACTION의 moduleId/featureId는 반드시 아래 상태에서 [대괄호] 안의 정확한 값을 복사하세요.
 7. 필수 모듈(required: true)은 비활성화할 수 없습니다. 비활성화 요청 시 CHAT에서 안내하고 no_action을 사용하세요.
+8. ⚠️ intent 필드는 ACTION에 반드시 포함해야 합니다. command 또는 general 중 하나입니다.
 
 # CURRENT PROJECT STATE
 아래는 현재 프로젝트 상태입니다. [대괄호] 안의 ID를 ACTION에서 사용하세요.
@@ -127,7 +141,7 @@ export async function streamChatResponse(
   onChunk: (text: string) => void
 ): Promise<void> {
   if (!GEMINI_API_KEY) {
-    onChunk("<CHAT>\nAPI Key가 설정되지 않았습니다. GEMINI_API_KEY 환경 변수를 설정해주세요.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"payload\": {}}\n</ACTION>");
+    onChunk("<CHAT>\nAPI Key가 설정되지 않았습니다. GEMINI_API_KEY 환경 변수를 설정해주세요.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
     return;
   }
 
@@ -174,6 +188,6 @@ ${modulesText}
     }
   } catch (error) {
     console.error("Gemini Chat Error:", error);
-    onChunk("<CHAT>\n죄송합니다. AI 서비스 연결 중 오류가 발생했습니다.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"payload\": {}}\n</ACTION>");
+    onChunk("<CHAT>\n죄송합니다. AI 서비스 연결 중 오류가 발생했습니다.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
   }
 }

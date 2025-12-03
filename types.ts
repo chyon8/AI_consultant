@@ -99,6 +99,7 @@ export type ChatActionType =
 
 export interface ChatAction {
   type: ChatActionType;
+  intent: 'command' | 'general';
   payload: {
     moduleId?: string;
     featureId?: string;

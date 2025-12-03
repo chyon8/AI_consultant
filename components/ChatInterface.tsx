@@ -57,6 +57,11 @@ function extractDisplayText(text: string): string {
   return displayText;
 }
 
+interface PendingAction {
+  action: ChatAction;
+  messageId: string;
+}
+
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   setMessages, 
@@ -66,6 +71,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -75,6 +81,37 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleConfirmAction = () => {
+    if (pendingAction && onChatAction) {
+      console.log('[Chat] User confirmed action:', pendingAction.action);
+      onChatAction(pendingAction.action);
+      
+      const confirmMsg: Message = {
+        id: Date.now().toString(),
+        role: 'model',
+        text: '✅ 변경이 적용되었습니다. 견적이 재산정되었습니다.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, confirmMsg]);
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelAction = () => {
+    if (pendingAction) {
+      console.log('[Chat] User cancelled action:', pendingAction.action);
+      
+      const cancelMsg: Message = {
+        id: Date.now().toString(),
+        role: 'model',
+        text: '❌ 변경이 취소되었습니다. 다른 질문이 있으시면 말씀해주세요.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, cancelMsg]);
+      setPendingAction(null);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -169,9 +206,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           : msg
       ));
 
-      if (action && action.type !== 'no_action' && onChatAction) {
-        console.log('[Chat] Executing action:', action);
-        onChatAction(action);
+      if (action && action.type !== 'no_action') {
+        if (!action.intent) {
+          console.warn('[Chat] Action missing intent field, defaulting to command:', action);
+          action.intent = 'command';
+        }
+        
+        if (action.intent === 'command') {
+          console.log('[Chat] Command detected, awaiting confirmation:', action);
+          setPendingAction({ action, messageId: aiMsgId });
+        } else if (onChatAction) {
+          console.log('[Chat] Executing general action:', action);
+          onChatAction(action);
+        }
       }
 
     } catch (error) {
@@ -228,6 +275,37 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           );
         })}
+        
+        {pendingAction && (
+          <div className="flex w-full gap-4 flex-row animate-slide-up">
+            <div className="max-w-[85%] text-sm leading-relaxed">
+              <div className="inline-block py-3 px-4 rounded-2xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-bl-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icons.Warning className="text-amber-600 dark:text-amber-400" size={18} />
+                  <span className="font-semibold text-amber-800 dark:text-amber-300">확인 필요</span>
+                </div>
+                <p className="text-amber-700 dark:text-amber-300 mb-3">
+                  추가 시 재산정이 필요합니다. 진행하시겠습니까?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleConfirmAction}
+                    className="px-4 py-1.5 bg-slate-900 dark:bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-slate-700 dark:hover:bg-indigo-500 transition-colors"
+                  >
+                    예, 진행합니다
+                  </button>
+                  <button
+                    onClick={handleCancelAction}
+                    className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -246,11 +324,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="예: 결제 모듈 제거해줘, MVP로 줄여줘..."
             className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
-            disabled={isLoading}
+            disabled={isLoading || !!pendingAction}
           />
           <button
             onClick={handleSend}
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !input.trim() || !!pendingAction}
             className={`p-2 transition-colors duration-200 ${
               input.trim() 
                 ? 'text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400' 
