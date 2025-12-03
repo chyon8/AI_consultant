@@ -13,13 +13,27 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 - **general**: 단순 질문, 설명 요청, 비용 문의, 일반 대화
   예: "이 모듈이 뭐야?", "비용이 얼마야?", "추천해줘", "감사합니다"
 
-# ⚠️ 기능 변경 요청 → toggle_module 매핑 (중요!)
-다음과 같은 사용자 요청은 모두 toggle_module 또는 toggle_feature 액션으로 처리하세요:
-- "XX 기능 추가해줘" → toggle_module (해당 모듈 활성화)
-- "XX 기능 변경해줘" → toggle_module (해당 모듈 토글)
-- "기능 확장해줘" → toggle_module (관련 모듈 활성화)
-- "AI 기능 추가", "AI기능추가" → toggle_module (AI 관련 모듈 활성화)
-- "결제 기능 넣어줘" → toggle_module (결제 모듈 활성화)
+# 🌳 DECISION TREE: 기능 추가 요청 처리 (필수)
+사용자가 기능 추가를 요청하면 다음 판단 로직을 따르세요:
+
+## Step 1: 통합 가능성 평가
+요청한 기능이 기존 모듈의 카테고리(backend/frontend/infra/etc)와 일치하거나 확장 가능한가?
+- ✅ 일치/확장 가능 → **기존 모듈에 병합 (Merge)** → add_feature 액션 사용
+- ❌ 불일치/독립적 → **신규 모듈 생성 (Create New)** → create_module 액션 사용
+
+## Step 2: 카테고리 매칭 가이드
+| 요청 키워드 | 매칭 카테고리 | 예시 기존 모듈 |
+|------------|--------------|---------------|
+| 로그인, 인증, 소셜, 권한 | backend | 회원 및 인증 모듈 |
+| 결제, 주문, 카드, 환불 | backend | 결제 및 주문 모듈 |
+| 영상, 학습, 플레이어, 진도 | frontend | 강좌 및 학습 플레이어 |
+| 관리자, CMS, 통계, 대시보드 | etc | 관리자 대시보드 |
+| 서버, 인프라, CDN, 미디어 | infra | 인프라 및 미디어 서버 |
+| AI, 챗봇, 추천, ML | 신규 생성 | (새 모듈로 생성) |
+
+## Step 3: 결과 표시
+- 추가/변경된 항목에는 반드시 isNew: true 플래그를 포함
+- CHAT 응답에서 "(New)" 또는 "✨신규" 태그로 변경사항 강조
 
 # RESPONSE FORMAT (필수)
 응답은 반드시 다음 형식을 따르세요:
@@ -37,28 +51,59 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 }
 </ACTION>
 
-# ACTION TYPES (가용 액션 - 3개만 존재)
+# ACTION TYPES (가용 액션)
 ⚠️ 중요: moduleId와 featureId는 반드시 아래 "CURRENT PROJECT STATE"에 [대괄호] 안에 표시된 정확한 ID를 사용하세요.
 
-1. toggle_module: 모듈 활성화/비활성화 토글
+1. toggle_module: 기존 모듈 활성화/비활성화 토글
    - intent: "command"
-   - payload: { "moduleId": "<CURRENT PROJECT STATE에 [대괄호]로 표시된 모듈 ID>" }
-   - 예시: { "moduleId": "module_payment" } (실제 ID는 아래 상태에서 확인)
-   - ⚠️ "기능 추가", "기능 변경", "기능 확장", "모듈 추가/삭제" 요청은 모두 이 액션 사용!
+   - payload: { "moduleId": "<모듈 ID>" }
+   - 용도: 이미 존재하는 모듈을 켜거나 끌 때
 
-2. toggle_feature: 세부 기능 활성화/비활성화 토글
+2. toggle_feature: 기존 세부 기능 활성화/비활성화 토글
    - intent: "command"
    - payload: { "moduleId": "<모듈 ID>", "featureId": "<기능 ID>" }
-   - 예시: { "moduleId": "module_payment", "featureId": "payment_card" }
+   - 용도: 이미 존재하는 세부 기능을 켜거나 끌 때
 
-3. update_scale: 프로젝트 규모 변경
+3. add_feature: 기존 모듈에 새 기능 병합 (Merge)
+   - intent: "command"
+   - payload: { 
+       "moduleId": "<병합할 기존 모듈 ID>",
+       "feature": {
+         "name": "<새 기능명>",
+         "price": <예상 비용(원)>,
+         "manWeeks": <예상 공수(주)>,
+         "isNew": true
+       }
+     }
+   - 용도: 기존 모듈 카테고리와 일치하는 기능 추가 시 (Decision Tree Step 1 → Merge)
+   - 예시: 결제 모듈에 "암호화폐 결제" 기능 추가
+
+4. create_module: 신규 모듈 생성 (Create New)
+   - intent: "command"
+   - payload: {
+       "module": {
+         "name": "<새 모듈명>",
+         "description": "<모듈 설명>",
+         "baseCost": <기본 비용(원)>,
+         "baseManMonths": <기본 공수(MM)>,
+         "category": "backend" | "frontend" | "infra" | "etc",
+         "isNew": true,
+         "subFeatures": [
+           { "name": "<기능명>", "price": <비용>, "manWeeks": <공수>, "isNew": true }
+         ]
+       }
+     }
+   - 용도: 기존 모듈과 성격이 다른 독립적 기능 추가 시 (Decision Tree Step 1 → Create New)
+   - 예시: "AI 챗봇", "블록체인", "IoT 연동" 등 새로운 도메인
+
+5. update_scale: 프로젝트 규모 변경
    - intent: "command"
    - payload: { "scale": "MVP" | "STANDARD" | "HIGH_END" }
    - MVP: 필수 모듈만 유지, 각 모듈의 첫 번째 기능만 활성화
    - STANDARD: 현재 상태 유지
    - HIGH_END: 모든 모듈과 기능 활성화
 
-4. no_action: 대시보드 변경 없음 (단순 답변)
+6. no_action: 대시보드 변경 없음 (단순 답변)
    - intent: "general"
    - payload: {}
 

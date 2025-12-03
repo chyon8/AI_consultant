@@ -6,6 +6,7 @@ export interface SubFeature {
   price: number; // Additional cost
   manWeeks: number; // Additional time in weeks
   isSelected: boolean;
+  isNew?: boolean; // Flag for newly added features
 }
 
 export interface ModuleItem {
@@ -17,6 +18,7 @@ export interface ModuleItem {
   category: string;
   isSelected: boolean;
   required?: boolean;
+  isNew?: boolean; // Flag for newly added modules
   subFeatures: SubFeature[];
 }
 
@@ -93,9 +95,27 @@ export interface DashboardState {
 export type ChatActionType = 
   | 'toggle_module' 
   | 'toggle_feature' 
-  | 'update_partner_type' 
+  | 'add_feature'
+  | 'create_module'
   | 'update_scale' 
   | 'no_action';
+
+export interface NewFeaturePayload {
+  name: string;
+  price: number;
+  manWeeks: number;
+  isNew: true;
+}
+
+export interface NewModulePayload {
+  name: string;
+  description: string;
+  baseCost: number;
+  baseManMonths: number;
+  category: 'backend' | 'frontend' | 'infra' | 'etc';
+  isNew: true;
+  subFeatures: NewFeaturePayload[];
+}
 
 export interface ChatAction {
   type: ChatActionType;
@@ -103,8 +123,9 @@ export interface ChatAction {
   payload: {
     moduleId?: string;
     featureId?: string;
-    partnerType?: PartnerType;
     scale?: ProjectScale;
+    feature?: NewFeaturePayload;
+    module?: NewModulePayload;
   };
 }
 

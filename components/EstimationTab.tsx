@@ -198,6 +198,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                   <h5 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                     {module.name}
                   </h5>
+                  {module.isNew && (
+                    <span className="text-[10px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-2 py-0.5 rounded-full animate-pulse">
+                      ✨ New
+                    </span>
+                  )}
                   {module.required && (
                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
                       필수 (CORE)
@@ -244,6 +249,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                         <span className={`text-sm font-medium ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                           {sub.name}
                         </span>
+                        {sub.isNew && (
+                          <span className="text-[9px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-1.5 py-0.5 rounded-full">
+                            New
+                          </span>
+                        )}
                       </div>
                       
                       <span className={`text-sm font-bold w-20 text-right ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'}`}>
@@ -461,6 +471,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                     <h5 className={`text-lg font-bold tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                       {module.name}
                     </h5>
+                    {module.isNew && (
+                      <span className="text-[10px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-2 py-0.5 rounded-full animate-pulse">
+                        ✨ New
+                      </span>
+                    )}
                     {module.required && (
                       <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
                         필수 (CORE)
@@ -521,6 +536,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                               <span className={`text-sm font-medium ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                                 {sub.name}
                               </span>
+                              {sub.isNew && (
+                                <span className="text-[9px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-1.5 py-0.5 rounded-full">
+                                  New
+                                </span>
+                              )}
                            </div>
                            
                            {/* Right Side: Price or Qualitative Tag */}

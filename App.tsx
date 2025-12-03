@@ -277,6 +277,72 @@ const App: React.FC = () => {
     }
   };
 
+  const generateFeatureId = (moduleId: string, featureName: string): string => {
+    const sanitized = featureName.toLowerCase().replace(/[^a-z0-9가-힣]/g, '_').slice(0, 20);
+    return `${moduleId}_${sanitized}_${Date.now()}`;
+  };
+
+  const generateModuleId = (moduleName: string): string => {
+    const sanitized = moduleName.toLowerCase().replace(/[^a-z0-9가-힣]/g, '_').slice(0, 20);
+    return `module_${sanitized}_${Date.now()}`;
+  };
+
+  const handleAddFeature = (moduleId: string, feature: { name: string; price: number; manWeeks: number; isNew: true }) => {
+    console.log('[App] Adding new feature to module:', moduleId, feature);
+    setModules(prev => prev.map(m => {
+      if (m.id === moduleId) {
+        const newFeature = {
+          id: generateFeatureId(moduleId, feature.name),
+          name: feature.name,
+          price: feature.price,
+          manWeeks: feature.manWeeks,
+          isSelected: true,
+          isNew: true
+        };
+        console.log('[App] New feature created:', newFeature);
+        return {
+          ...m,
+          isSelected: true,
+          subFeatures: [...m.subFeatures, newFeature]
+        };
+      }
+      return m;
+    }));
+  };
+
+  const handleCreateModule = (moduleData: { 
+    name: string; 
+    description: string; 
+    baseCost: number; 
+    baseManMonths: number; 
+    category: string; 
+    isNew: true;
+    subFeatures: { name: string; price: number; manWeeks: number; isNew: true }[] 
+  }) => {
+    console.log('[App] Creating new module:', moduleData);
+    const newModuleId = generateModuleId(moduleData.name);
+    const newModule: ModuleItem = {
+      id: newModuleId,
+      name: moduleData.name,
+      description: moduleData.description,
+      baseCost: moduleData.baseCost,
+      baseManMonths: moduleData.baseManMonths,
+      category: moduleData.category,
+      isSelected: true,
+      isNew: true,
+      subFeatures: moduleData.subFeatures.map((f, idx) => ({
+        id: `${newModuleId}_feature_${idx + 1}`,
+        name: f.name,
+        price: f.price,
+        manWeeks: f.manWeeks,
+        isSelected: true,
+        isNew: true
+      }))
+    };
+    console.log('[App] New module created:', newModule);
+    setModules(prev => [...prev, newModule]);
+  };
+
   const handleChatAction = (action: ChatAction) => {
     console.log('[App] Handling chat action:', action);
     
@@ -317,9 +383,29 @@ const App: React.FC = () => {
           handleToggleSubFeature(action.payload.moduleId, action.payload.featureId);
         }
         break;
-        
-      case 'update_partner_type':
-        console.warn('[App] ⛔ PROHIBITED ACTION: update_partner_type is disabled. Ignoring.');
+
+      case 'add_feature':
+        console.log('[App] add_feature case triggered');
+        if (action.payload.moduleId && action.payload.feature) {
+          const targetModule = modules.find(m => m.id === action.payload.moduleId);
+          if (!targetModule) {
+            console.warn(`[App] Invalid moduleId for add_feature: "${action.payload.moduleId}"`);
+            console.log('[App] Available moduleIds:', modules.map(m => m.id));
+            return;
+          }
+          handleAddFeature(action.payload.moduleId, action.payload.feature);
+        } else {
+          console.warn('[App] add_feature requires moduleId and feature payload');
+        }
+        break;
+
+      case 'create_module':
+        console.log('[App] create_module case triggered');
+        if (action.payload.module) {
+          handleCreateModule(action.payload.module);
+        } else {
+          console.warn('[App] create_module requires module payload');
+        }
         break;
         
       case 'update_scale':
