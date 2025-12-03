@@ -1,10 +1,11 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ModuleItem, PartnerType, EstimationStep, ProjectScale, EstimationSubTab } from '../types';
 import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
 import { ScheduleSection } from './ScheduleSection';
+import { calculateSchedule, getMonthLabels } from '../services/scheduleEngine';
 
 interface EstimationTabProps {
   modules: ModuleItem[];
@@ -73,12 +74,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     durationMultiplier = 0.5;
   }
 
-  // Duration Calculation
-  const rawTotalMonths = modules.filter(m => m.isSelected).reduce((sum, m) => {
-     const subsWeeks = m.subFeatures.filter(s => s.isSelected).reduce((acc, s) => acc + s.manWeeks, 0);
-     return sum + m.baseManMonths + (subsWeeks / 4);
-  }, 0);
-  const finalMonths = rawTotalMonths * durationMultiplier;
+  const scheduleResult = useMemo(() => {
+    return calculateSchedule(modules, currentPartnerType);
+  }, [modules, currentPartnerType]);
+
+  const finalMonths = scheduleResult.totalDuration;
 
   // --- UI Renders ---
 
@@ -276,46 +276,41 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   );
 
   const renderScheduleTab = () => {
-    const wbsPhases = [
-      {
-        phase: '분석/설계',
-        tasks: [
-          { name: '요구사항 분석', months: [1] },
-          { name: 'UI/UX 기획', months: [1] },
-          { name: '아키텍처 설계', months: [1] },
-          { name: 'DB 스키마 설계', months: [1] },
-        ]
-      },
-      {
-        phase: '디자인',
-        tasks: [
-          { name: 'UI/UX 디자인 시안', months: [2] },
-          { name: '스타일 가이드 수립', months: [2] },
-          { name: '디자인 검수', months: [2] },
-        ]
-      },
-      {
-        phase: '개발',
-        tasks: [
-          { name: '프론트엔드 개발', months: [3] },
-          { name: '백엔드 API 개발', months: [3, 4] },
-          { name: 'DB 연동 및 테스트', months: [4] },
-        ]
-      },
-      {
-        phase: 'QA/배포',
-        tasks: [
-          { name: '통합 테스트', months: [4] },
-          { name: '버그 수정 및 최적화', months: [4] },
-          { name: '배포 및 인수인계', months: [4] },
-        ]
-      }
-    ];
+    const { rawMM, teamSize, productivityCoeff, totalDuration, totalMonths, phases, coordinationBuffer } = scheduleResult;
+    const monthLabels = getMonthLabels(totalMonths);
 
-    const monthLabels = ['M1', 'M2', 'M3', 'M4'];
+    const phaseDurationSum = phases.reduce((sum, p) => sum + p.duration, 0);
+    const isValid = Math.abs(phaseDurationSum - totalDuration) < 0.01;
 
     return (
       <div className="space-y-6">
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">총 공수 (MM)</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">{rawMM.toFixed(1)} MM</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">투입 인원</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">{teamSize}명</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">생산성 계수</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">×{productivityCoeff.toFixed(1)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">총 기간</p>
+              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(1)}개월</p>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <p className="text-xs text-slate-400">
+              Duration = {rawMM.toFixed(1)}MM ÷ ({teamSize}명 × {productivityCoeff}) × (1 + {(coordinationBuffer * 100).toFixed(0)}% 버퍼) = <span className="font-semibold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(2)}개월</span>
+              {!isValid && <span className="text-red-500 ml-2">(검증 오류: Phase 합계 불일치)</span>}
+            </p>
+          </div>
+        </div>
+
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
           <table className="w-full">
             <thead>
@@ -323,12 +318,12 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                 <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-28">Phase</th>
                 <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Task</th>
                 {monthLabels.map(m => (
-                  <th key={m} className="text-center py-4 px-4 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-16">{m}</th>
+                  <th key={m} className="text-center py-4 px-4 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-14">{m}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {wbsPhases.map((phaseGroup, phaseIdx) => (
+              {phases.map((phaseGroup, phaseIdx) => (
                 phaseGroup.tasks.map((task, taskIdx) => (
                   <tr 
                     key={`${phaseIdx}-${taskIdx}`} 
@@ -340,7 +335,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                     <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400">
                       {task.name}
                     </td>
-                    {[1, 2, 3, 4].map(month => (
+                    {Array.from({ length: totalMonths }, (_, i) => i + 1).map(month => (
                       <td key={month} className="py-4 px-4 text-center">
                         <div className="flex justify-center">
                           <div 
@@ -358,6 +353,27 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Phase 배분 상세</h4>
+          <div className="space-y-2">
+            {phases.map((phase, idx) => (
+              <div key={idx} className="flex items-center justify-between text-sm">
+                <span className="text-slate-600 dark:text-slate-400">{phase.phase}</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-slate-500 dark:text-slate-500">M{phase.startMonth} ~ M{phase.endMonth}</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-300 w-20 text-right">{phase.duration.toFixed(2)}개월</span>
+                </div>
+              </div>
+            ))}
+            <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-sm font-semibold">
+              <span className="text-slate-700 dark:text-slate-300">합계</span>
+              <span className={`${isValid ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                {phaseDurationSum.toFixed(2)}개월 {isValid ? '✓' : '✗'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     );
