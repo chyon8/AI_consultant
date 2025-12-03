@@ -319,16 +319,7 @@ const App: React.FC = () => {
         break;
         
       case 'update_partner_type':
-        console.log('[App] update_partner_type case triggered');
-        if (action.payload.partnerType) {
-          const validTypes = ['AGENCY', 'STUDIO', 'AI_NATIVE'];
-          if (!validTypes.includes(action.payload.partnerType)) {
-            console.warn(`[App] Invalid partnerType: "${action.payload.partnerType}"`);
-            return;
-          }
-          console.log('[App] Calling applyPartnerType for:', action.payload.partnerType);
-          applyPartnerType(action.payload.partnerType);
-        }
+        console.warn('[App] ⛔ PROHIBITED ACTION: update_partner_type is disabled. Ignoring.');
         break;
         
       case 'update_scale':
