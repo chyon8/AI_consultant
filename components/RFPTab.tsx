@@ -95,7 +95,7 @@ export const RFPTab: React.FC<RFPTabProps> = ({
 
       <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-          <Icons.Info size={16} />
+          <Icons.Help size={16} />
           공고 생성 안내
         </h4>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">

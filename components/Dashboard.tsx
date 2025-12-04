@@ -4,6 +4,8 @@ import React, { useState, useRef } from 'react';
 import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale } from '../types';
 import { Icons } from './Icons';
 import { EstimationTab } from './EstimationTab';
+import { ExecutionPlanTab } from './ExecutionPlanTab';
+import { RFPTab } from './RFPTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
 import { RFPModal } from './RFPModal';
 
@@ -48,7 +50,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const tabs = [
-    { id: TabView.ESTIMATION, label: '견적/예산' },
+    { id: TabView.ESTIMATION, label: '견적/예산', icon: Icons.Wallet },
+    { id: TabView.EXECUTION_PLAN, label: '수행계획', icon: Icons.Calendar },
+    { id: TabView.RFP, label: '공고작성', icon: Icons.File },
   ];
 
   // Logic for Project DNA Analysis
@@ -197,6 +201,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 estimationStep={estimationStep}
                 currentScale={currentScale}
                 onScaleChange={onScaleChange}
+              />
+            )}
+            {activeTab === TabView.EXECUTION_PLAN && (
+              <ExecutionPlanTab
+                modules={modules}
+                currentPartnerType={currentPartnerType}
+              />
+            )}
+            {activeTab === TabView.RFP && (
+              <RFPTab
+                modules={modules}
+                currentPartnerType={currentPartnerType}
+                onGenerateRFP={() => setIsRFPOpen(true)}
               />
             )}
           </div>
