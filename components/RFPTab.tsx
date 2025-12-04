@@ -10,12 +10,14 @@ interface RFPTabProps {
   modules: ModuleItem[];
   currentPartnerType: PartnerType;
   onGenerateRFP?: () => void;
+  modelId?: string;
 }
 
 export const RFPTab: React.FC<RFPTabProps> = ({
   modules,
   currentPartnerType,
-  onGenerateRFP
+  onGenerateRFP,
+  modelId
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [rfpContent, setRfpContent] = useState('');
@@ -67,7 +69,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
         },
         (error) => {
           console.error('RFP generation error:', error);
-        }
+        },
+        modelId
       );
       setRfpContent(content);
       setShowResult(true);

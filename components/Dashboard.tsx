@@ -24,6 +24,7 @@ interface DashboardProps {
   onScaleChange: (scale: ProjectScale) => void;
   projectSummaryContent: string;
   aiInsight?: string;
+  rfpModelId?: string;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -39,7 +40,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   currentScale,
   onScaleChange,
   projectSummaryContent,
-  aiInsight
+  aiInsight,
+  rfpModelId
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -283,6 +285,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 modules={modules}
                 currentPartnerType={currentPartnerType}
                 onGenerateRFP={() => setIsRFPOpen(true)}
+                modelId={rfpModelId}
               />
             )}
           </div>

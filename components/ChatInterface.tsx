@@ -3,12 +3,18 @@ import ReactMarkdown from 'react-markdown';
 import { Message, ModuleItem, ChatAction } from '../types';
 import { Icons } from './Icons';
 
+interface ChatModelSettings {
+  classifyUserIntent?: string;
+  streamChatResponse?: string;
+}
+
 interface ChatInterfaceProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   modules: ModuleItem[];
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
   onChatAction?: (action: ChatAction) => { success: boolean; error?: string };
+  modelSettings?: ChatModelSettings;
 }
 
 function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
@@ -67,7 +73,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   setMessages, 
   modules, 
   setModules,
-  onChatAction
+  onChatAction,
+  modelSettings
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -162,6 +169,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             text: m.text
           })),
           currentModules: modules,
+          modelSettings: modelSettings,
         }),
       });
 

@@ -537,11 +537,11 @@ const App: React.FC = () => {
     featureCount: number;
   }) => {
     try {
-      console.log('[App] Generating AI insight for:', params.projectName);
+      console.log('[App] Generating AI insight for:', params.projectName, 'with model:', aiModelSettings.generateInsight);
       const response = await fetch('/api/insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
+        body: JSON.stringify({ ...params, modelId: aiModelSettings.generateInsight })
       });
       
       if (response.ok) {
@@ -604,7 +604,8 @@ const App: React.FC = () => {
         handleAnalysisComplete,
         (error) => {
           setAnalysisError(error);
-        }
+        },
+        aiModelSettings.analyzeProject
       );
       
       // Analysis complete - now switch to detail view
@@ -775,6 +776,10 @@ const App: React.FC = () => {
                 modules={modules}
                 setModules={setModules}
                 onChatAction={handleChatAction}
+                modelSettings={{
+                  classifyUserIntent: aiModelSettings.classifyUserIntent,
+                  streamChatResponse: aiModelSettings.streamChatResponse
+                }}
               />
             </div>
 
@@ -800,6 +805,7 @@ const App: React.FC = () => {
                 onScaleChange={handleScaleChange}
                 projectSummaryContent={projectSummaryContent}
                 aiInsight={aiInsight}
+                rfpModelId={aiModelSettings.generateRFP}
               />
             </div>
           </>
