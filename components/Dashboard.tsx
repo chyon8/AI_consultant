@@ -41,9 +41,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isRFPOpen, setIsRFPOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Phase 1 Action: Calculate estimate and transition to Phase 2
   const handleGenerateEstimate = () => {
     onStepChange('RESULT');
-    setActiveTab(TabView.ESTIMATION);
+    // After calculation, immediately switch to 수행계획 tab
+    setTimeout(() => {
+      setActiveTab(TabView.EXECUTION_PLAN);
+      contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Phase 2 Action: Navigate to 공고작성 tab
+  const handleNextToRFP = () => {
+    setActiveTab(TabView.RFP);
+    setTimeout(() => {
+      contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Navigation: Go back to previous tab
+  const handlePreviousTab = () => {
+    if (activeTab === TabView.RFP) {
+      setActiveTab(TabView.EXECUTION_PLAN);
+    } else if (activeTab === TabView.EXECUTION_PLAN) {
+      setActiveTab(TabView.ESTIMATION);
+    }
     setTimeout(() => {
       contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
@@ -88,65 +110,90 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </button>
   );
 
-  // Footer Button Logic - Multi-Action Container
+  // FAB State Machine - Tab-based Navigation
   const renderFooter = () => {
-    if (estimationStep === 'REGISTER') {
-        return (
-            <div className="flex items-center gap-3 w-full">
-              <DownloadButton />
-              <div className="flex-1 flex gap-3">
-                <button 
-                    onClick={() => setIsRFPOpen(true)}
-                    className="flex-1 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
-                >
-                    <Icons.File size={18} />
-                    <span>공고문 생성</span>
-                </button>
-                <button 
-                    className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-                >
-                    <Icons.CheckMark size={18} strokeWidth={3} />
-                    <span>등록 완료</span>
-                </button>
-              </div>
-            </div>
-        );
-    }
-
-    if (estimationStep === 'RESULT') {
-        return (
-           <div className="flex items-center gap-3 w-full">
-              <DownloadButton />
-              <button 
-                  onClick={() => onStepChange('SCOPE')}
-                  className="h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
-              >
-                  <Icons.Refresh size={18} />
-                  <span>수정하기</span>
-              </button>
-              <button 
-                  onClick={() => onStepChange('REGISTER')}
-                  className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-              >
-                  <span>이 내용으로 공고 등록</span>
-                  <Icons.Right size={18} strokeWidth={3} />
-              </button>
-           </div>
-        );
-    }
-
-    // Default: SCOPE Step
-    return (
+    // Phase 3: [Tab: 공고작성] - Final State
+    if (activeTab === TabView.RFP) {
+      return (
         <div className="flex items-center gap-3 w-full">
-            <DownloadButton />
-            <button 
-                onClick={handleGenerateEstimate}
-                className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-            >
-                <Icons.PieChart size={18} />
-                <span>견적 산출하기</span>
-            </button>
+          <DownloadButton />
+          <button 
+            onClick={handlePreviousTab}
+            className="h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+          >
+            <Icons.Left size={18} />
+            <span>이전 단계</span>
+          </button>
+          <button 
+            disabled
+            className="flex-1 h-14 bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg cursor-not-allowed opacity-70"
+          >
+            <Icons.CheckMark size={18} strokeWidth={3} />
+            <span>공고작성완료</span>
+          </button>
         </div>
+      );
+    }
+
+    // Phase 2: [Tab: 수행계획] - Navigation Mode
+    if (activeTab === TabView.EXECUTION_PLAN) {
+      return (
+        <div className="flex items-center gap-3 w-full">
+          <DownloadButton />
+          <button 
+            onClick={handlePreviousTab}
+            className="h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+          >
+            <Icons.Left size={18} />
+            <span>이전 단계</span>
+          </button>
+          <button 
+            onClick={handleNextToRFP}
+            className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+          >
+            <span>다음 단계</span>
+            <Icons.Right size={18} strokeWidth={3} />
+          </button>
+        </div>
+      );
+    }
+
+    // Phase 1: [Tab: 견적/예산] - Initial or Post-Calculation State
+    if (estimationStep === 'RESULT') {
+      // Post-calculation: Show split mode (이전/다음)
+      return (
+        <div className="flex items-center gap-3 w-full">
+          <DownloadButton />
+          <button 
+            onClick={() => onStepChange('SCOPE')}
+            className="h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+          >
+            <Icons.Refresh size={18} />
+            <span>수정하기</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab(TabView.EXECUTION_PLAN)}
+            className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+          >
+            <span>다음 단계</span>
+            <Icons.Right size={18} strokeWidth={3} />
+          </button>
+        </div>
+      );
+    }
+
+    // Phase 1 Initial: SCOPE Step - Show "견적 산출하기"
+    return (
+      <div className="flex items-center gap-3 w-full">
+        <DownloadButton />
+        <button 
+          onClick={handleGenerateEstimate}
+          className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+        >
+          <Icons.PieChart size={18} />
+          <span>견적 산출하기</span>
+        </button>
+      </div>
     );
   };
 

@@ -140,6 +140,12 @@ The app uses Gemini 2.5 Flash model for:
   - ExecutionPlanTab.tsx - WBS/Schedule display
   - RFPTab.tsx - RFP generation interface
 - Required module protection: All sub-features of required modules are now locked
+- **FAB State Machine Implementation**:
+  - Phase 1 [견적/예산]: '견적 산출하기' → 계산 후 '수정하기/다음 단계' 분할 모드
+  - Phase 2 [수행계획]: '이전 단계/다음 단계' 네비게이션
+  - Phase 3 [공고작성]: '이전 단계' + '공고작성완료' (disabled)
+  - 다운로드 버튼: 모든 Phase에서 항상 좌측 고정 표시
+- **Multi-Action Container**: Flexbox 레이아웃 (gap-3)
 
 ## Previous Changes (December 3, 2024)
 - Added Conditional Workflow for chat commands
