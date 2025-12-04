@@ -2,10 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
-import { analyzeProject } from './services/geminiService';
-import { generateRFP } from './services/rfpService';
+import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
 import { parseAnalysisResponse } from './services/responseParser';
-import { generateInsight, InsightParams } from './services/insightService';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -124,8 +122,6 @@ app.post('/api/chat', async (req, res) => {
     const { history, currentModules, modelSettings } = req.body;
     
     console.log('[Chat] Using model settings:', modelSettings || 'default');
-    
-    const { streamChatResponse } = await import('./services/chatService');
     
     await streamChatResponse(history, currentModules, (chunk: string) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);

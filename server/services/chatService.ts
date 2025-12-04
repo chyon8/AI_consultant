@@ -5,7 +5,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 // ===== AI-BASED CONTEXT LOCKING POLICY =====
 // Dynamic judgment instead of hardcoded keywords
 
-interface ProjectContext {
+export interface ProjectContext {
   projectTitle: string;
   moduleNames: string[];
   coreModules: string[];
@@ -75,7 +75,7 @@ Reply with exactly one word: RELATED, NEW_PROJECT, or GENERAL`;
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
-async function classifyUserIntent(
+export async function classifyUserIntent(
   userMessage: string,
   projectContext: ProjectContext,
   modelId?: string
@@ -174,7 +174,7 @@ function isCommonModule(moduleName: string): boolean {
   return COMMON_MODULE_KEYWORDS.some(keyword => lowerName.includes(keyword.toLowerCase()));
 }
 
-function extractProjectContext(modules: ModuleItem[]): ProjectContext {
+export function extractProjectContext(modules: ModuleItem[]): ProjectContext {
   const moduleNames = modules.map(m => m.name);
   
   const coreModules = modules
