@@ -2,6 +2,69 @@ import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
+// ===== CONTEXT LOCKING POLICY =====
+// Root Project Theme Keywords (LMS/교육 플랫폼 관련)
+const ROOT_PROJECT_KEYWORDS = [
+  'lms', '학습', '교육', '강의', '강좌', '수강', '학생', '강사', '수업', '커리큘럼',
+  '온라인 교육', '이러닝', 'e-learning', '학습 관리', '진도', '퀴즈', '시험', '과제',
+  '인증', '결제', '회원', '관리자', '대시보드', '통계', '리포트', '알림', '채팅',
+  '영상', '동영상', 'vod', '스트리밍', 'zoom', '화상', '멀티미디어', '플레이어',
+  '모듈', '기능', '추가', '삭제', '변경', '수정', '비용', '견적', '예산', '일정',
+  'api', '서버', '인프라', 'cdn', '데이터베이스', '백엔드', '프론트엔드'
+];
+
+// New Project Trigger Keywords (완전히 새로운 프로젝트 시도)
+const NEW_PROJECT_TRIGGERS = [
+  '소개팅', '데이팅', '매칭', '만남',
+  '게임', '게이밍', 'mmorpg', 'fps',
+  '부동산', '중개', '매물',
+  '배달', '음식 주문', '푸드테크',
+  '가상화폐', '암호화폐', '코인 거래소', 'nft 마켓',
+  '주식 거래', '증권', '트레이딩',
+  '헬스케어', '병원 예약', '의료',
+  '여행', '숙박', '항공권',
+  'sns', '소셜 네트워크', '인스타그램 같은', '틱톡 같은',
+  '쇼핑몰', '이커머스', '마켓플레이스',
+  '새 프로젝트', '다른 프로젝트', '프로젝트 변경', '완전히 다른'
+];
+
+// Context Lock Validation Function
+function validateContextLock(userMessage: string): { isValid: boolean; refusalMessage?: string } {
+  const normalizedInput = userMessage.toLowerCase().replace(/\s+/g, ' ').trim();
+  
+  // Check for new project triggers
+  const hasNewProjectIntent = NEW_PROJECT_TRIGGERS.some(trigger => 
+    normalizedInput.includes(trigger.toLowerCase())
+  );
+  
+  // Check for add-on intent (기존 프로젝트 보강)
+  const hasAddOnIntent = ROOT_PROJECT_KEYWORDS.some(keyword =>
+    normalizedInput.includes(keyword.toLowerCase())
+  );
+  
+  // Refusal Trigger: 새 프로젝트 의도 O + 기존 프로젝트 보강 의도 X
+  if (hasNewProjectIntent && !hasAddOnIntent) {
+    return {
+      isValid: false,
+      refusalMessage: `<CHAT>
+⚠️ **Context Lock 정책 적용**
+
+현재 세션은 **[LMS 프로젝트]** 전용입니다.
+
+입력하신 내용이 기존 프로젝트의 기능 보강(Add-on)이 아닌, 완전히 새로운 프로젝트를 정의하려는 시도로 감지되었습니다.
+
+새 프로젝트를 시작하시려면 **[새 채팅]** 버튼을 이용해주세요.
+</CHAT>
+
+<ACTION>
+{"type": "no_action", "intent": "general", "payload": {}}
+</ACTION>`
+    };
+  }
+  
+  return { isValid: true };
+}
+
 const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 당신은 IT 프로젝트 견적 컨설턴트 AI입니다.
 사용자의 질문에 답변하고, 필요시 대시보드(모듈/기능/견적)를 제어합니다.
@@ -199,6 +262,16 @@ export async function streamChatResponse(
     return;
   }
 
+  // ===== CONTEXT LOCKING VALIDATION =====
+  const lastUserMessage = history[history.length - 1];
+  const contextValidation = validateContextLock(lastUserMessage.text);
+  
+  if (!contextValidation.isValid) {
+    // Refusal Trigger: 새 프로젝트 시도 차단
+    onChunk(contextValidation.refusalMessage!);
+    return;
+  }
+
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
   const { totalCost, totalWeeks } = calculateTotals(currentModules);
@@ -215,7 +288,6 @@ ${modulesText}
 
   const fullSystemPrompt = CHAT_SYSTEM_PROMPT + projectState;
 
-  const lastUserMessage = history[history.length - 1];
   const previousHistory = history.slice(0, history.length - 1).map(h => ({
     role: h.role,
     parts: [{ text: h.text }]
