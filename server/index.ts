@@ -54,6 +54,8 @@ app.post('/api/analyze', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
 
   try {
     const { text, fileContents, modelId } = req.body;
@@ -64,6 +66,9 @@ app.post('/api/analyze', async (req, res) => {
     await analyzeProject(text, fileContents, (chunk: string) => {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      if (typeof (res as any).flush === 'function') {
+        (res as any).flush();
+      }
     }, modelId);
 
     console.log('[Analyze] Full response length:', fullResponse.length);
@@ -94,6 +99,8 @@ app.post('/api/rfp', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
 
   try {
     const { modules, summary, modelId } = req.body;
@@ -102,6 +109,9 @@ app.post('/api/rfp', async (req, res) => {
 
     await generateRFP(modules, summary, (chunk: string) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      if (typeof (res as any).flush === 'function') {
+        (res as any).flush();
+      }
     }, modelId);
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
@@ -117,6 +127,8 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
 
   try {
     const { history, currentModules, modelSettings } = req.body;
@@ -125,6 +137,9 @@ app.post('/api/chat', async (req, res) => {
     
     await streamChatResponse(history, currentModules, (chunk: string) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      if (typeof (res as any).flush === 'function') {
+        (res as any).flush();
+      }
     }, modelSettings);
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
