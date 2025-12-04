@@ -1,11 +1,10 @@
 
 
 import React, { useState, useMemo } from 'react';
-import { ModuleItem, PartnerType, EstimationStep, ProjectScale, EstimationSubTab } from '../types';
+import { ModuleItem, PartnerType, EstimationStep, ProjectScale } from '../types';
 import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
-import { ScheduleSection } from './ScheduleSection';
-import { calculateSchedule, getMonthLabels } from '../services/scheduleEngine';
+import { calculateSchedule } from '../services/scheduleEngine';
 
 interface EstimationTabProps {
   modules: ModuleItem[];
@@ -30,7 +29,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   onScaleChange
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
-  const [subTab, setSubTab] = useState<EstimationSubTab>('DETAIL');
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => 
@@ -129,32 +127,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
   const isBlind = estimationStep === 'SCOPE';
 
-  // Sub-tabs UI (visible only in RESULT step)
-  const renderSubTabs = () => {
-    if (isBlind) return null;
-    return (
-      <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-6">
-        {[
-          { id: 'DETAIL' as EstimationSubTab, label: '상세 견적', icon: Icons.File },
-          { id: 'SCHEDULE' as EstimationSubTab, label: '예상 일정', icon: Icons.Calendar }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSubTab(tab.id)}
-            className={`flex-1 py-3 px-4 text-sm font-medium transition-all flex items-center justify-center gap-2 rounded-md ${
-              subTab === tab.id
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <tab.icon size={16} />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-    );
-  };
-
   // Render module list for detail tab (with dropdown like SCOPE step)
   const renderModuleList = () => (
     <div className="space-y-6">
@@ -239,7 +211,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     </div>
   );
 
-  // Sub-tab content renderers
+  // Render detail content (견적/예산)
   const renderDetailTab = () => (
     <div className="space-y-6">
       {/* Partner Type Selector */}
@@ -253,106 +225,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       {renderModuleList()}
     </div>
   );
-
-  const renderScheduleTab = () => {
-    const { rawMM, teamSize, productivityCoeff, totalDuration, totalMonths, phases, coordinationBuffer } = scheduleResult;
-    const monthLabels = getMonthLabels(totalMonths);
-
-    const phaseDurationSum = phases.reduce((sum, p) => sum + p.duration, 0);
-    const isValid = Math.abs(phaseDurationSum - totalDuration) < 0.01;
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">투입 인원</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">{teamSize}명</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">생산성 계수</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">×{productivityCoeff.toFixed(1)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">총 기간</p>
-              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(1)}개월</p>
-            </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-            <p className="text-xs text-slate-400">
-              Duration = {rawMM.toFixed(1)}MM ÷ ({teamSize}명 × {productivityCoeff}) × (1 + {(coordinationBuffer * 100).toFixed(0)}% 버퍼) = <span className="font-semibold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(2)}개월</span>
-              {!isValid && <span className="text-red-500 ml-2">(검증 오류: Phase 합계 불일치)</span>}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800">
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-28">Phase</th>
-                <th className="text-left py-4 px-6 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Task</th>
-                {monthLabels.map(m => (
-                  <th key={m} className="text-center py-4 px-4 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider w-14">{m}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {phases.map((phaseGroup, phaseIdx) => (
-                phaseGroup.tasks.map((task, taskIdx) => (
-                  <tr 
-                    key={`${phaseIdx}-${taskIdx}`} 
-                    className="border-b border-slate-50 dark:border-slate-800/50 last:border-b-0"
-                  >
-                    <td className="py-4 px-6 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {taskIdx === 0 ? phaseGroup.phase : ''}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400">
-                      {task.name}
-                    </td>
-                    {Array.from({ length: totalMonths }, (_, i) => i + 1).map(month => (
-                      <td key={month} className="py-4 px-4 text-center">
-                        <div className="flex justify-center">
-                          <div 
-                            className={`w-3 h-3 rounded-sm transition-colors ${
-                              task.months.includes(month)
-                                ? 'bg-slate-700 dark:bg-slate-300'
-                                : 'bg-slate-100 dark:bg-slate-800'
-                            }`}
-                          />
-                        </div>
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Phase 배분 상세</h4>
-          <div className="space-y-2">
-            {phases.map((phase, idx) => (
-              <div key={idx} className="flex items-center justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400">{phase.phase}</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-slate-500 dark:text-slate-500">M{phase.startMonth} ~ M{phase.endMonth}</span>
-                  <span className="font-medium text-slate-700 dark:text-slate-300 w-20 text-right">{phase.duration.toFixed(2)}개월</span>
-                </div>
-              </div>
-            ))}
-            <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-sm font-semibold">
-              <span className="text-slate-700 dark:text-slate-300">합계</span>
-              <span className={`${isValid ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                {phaseDurationSum.toFixed(2)}개월 {isValid ? '✓' : '✗'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   if (estimationStep === 'REGISTER') {
     return (
@@ -381,16 +253,10 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
-      
+      {/* RESULT step: 상세 견적 content */}
+      {!isBlind && renderDetailTab()}
 
-      {/* Sub-tabs Navigation */}
-      {!isBlind && renderSubTabs()}
-
-      {/* Sub-tab Content */}
-      {!isBlind && subTab === 'DETAIL' && renderDetailTab()}
-      {!isBlind && subTab === 'SCHEDULE' && renderScheduleTab()}
-
-      {/* Module List - Only visible in SCOPE step */}
+      {/* SCOPE step: Module List */}
       {isBlind && <div className="space-y-6">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
            <Icons.Briefcase size={20} />
