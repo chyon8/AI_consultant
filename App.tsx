@@ -68,7 +68,24 @@ const App: React.FC = () => {
 
   // AI Settings Modal State
   const [aiSettingsModalOpen, setAiSettingsModalOpen] = useState(false);
-  const [aiModelSettings, setAiModelSettings] = useState<AIModelSettings>(getDefaultModelSettings());
+  const [aiModelSettings, setAiModelSettings] = useState<AIModelSettings>(() => {
+    const stored = localStorage.getItem('aiModelSettings');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return getDefaultModelSettings();
+      }
+    }
+    return getDefaultModelSettings();
+  });
+
+  // Persist AI model settings to localStorage
+  const handleSaveAiSettings = (settings: AIModelSettings) => {
+    setAiModelSettings(settings);
+    localStorage.setItem('aiModelSettings', JSON.stringify(settings));
+    console.log('[App] AI model settings saved to localStorage:', settings);
+  };
 
   // Load chat history on mount and cleanup ghost sessions
   useEffect(() => {
@@ -831,7 +848,7 @@ const App: React.FC = () => {
       <AiSettingsModal
         isOpen={aiSettingsModalOpen}
         onClose={() => setAiSettingsModalOpen(false)}
-        onSave={setAiModelSettings}
+        onSave={handleSaveAiSettings}
         currentSettings={aiModelSettings}
       />
     </div>
