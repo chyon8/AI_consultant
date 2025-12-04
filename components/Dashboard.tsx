@@ -77,44 +77,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const risk = getRiskLabel();
 
-  // Footer Button Logic
+  // Download Button (Secondary Action - Always Visible)
+  const DownloadButton = () => (
+    <button
+      onClick={() => setIsReportOpen(true)}
+      className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all border border-slate-200 dark:border-slate-800 shadow-lg hover:scale-105 active:scale-95"
+      title="리포트 다운로드"
+    >
+      <Icons.Download size={22} />
+    </button>
+  );
+
+  // Footer Button Logic - Multi-Action Container
   const renderFooter = () => {
     if (estimationStep === 'REGISTER') {
         return (
-            <div className="flex gap-4 w-full">
-              <button 
-                  onClick={() => setIsRFPOpen(true)}
-                  className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-              >
-                  <Icons.File size={18} />
-                  <span>공고문 생성하기</span>
-              </button>
-              <button 
-                  className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
-              >
-                  <Icons.CheckMark size={18} strokeWidth={3} />
-                  <span>등록 완료</span>
-              </button>
+            <div className="flex items-center gap-3 w-full">
+              <DownloadButton />
+              <div className="flex-1 flex gap-3">
+                <button 
+                    onClick={() => setIsRFPOpen(true)}
+                    className="flex-1 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                >
+                    <Icons.File size={18} />
+                    <span>공고문 생성</span>
+                </button>
+                <button 
+                    className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+                >
+                    <Icons.CheckMark size={18} strokeWidth={3} />
+                    <span>등록 완료</span>
+                </button>
+              </div>
             </div>
         );
     }
 
     if (estimationStep === 'RESULT') {
         return (
-           <div className="flex gap-4 w-full">
+           <div className="flex items-center gap-3 w-full">
+              <DownloadButton />
               <button 
                   onClick={() => onStepChange('SCOPE')}
-                  className="flex-1 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
+                  className="h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all"
               >
                   <Icons.Refresh size={18} />
-                  <span>기능/옵션 수정하기</span>
+                  <span>수정하기</span>
               </button>
               <button 
                   onClick={() => onStepChange('REGISTER')}
-                  className="flex-[2] h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
+                  className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
               >
                   <span>이 내용으로 공고 등록</span>
-                  <Icons.CheckMark size={18} strokeWidth={3} />
+                  <Icons.Right size={18} strokeWidth={3} />
               </button>
            </div>
         );
@@ -123,20 +138,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     // Default: SCOPE Step
     return (
         <div className="flex items-center gap-3 w-full">
-            <button
-                onClick={() => setIsReportOpen(true)}
-                className="w-14 h-14 flex items-center justify-center bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 shadow-float hover:scale-105 active:scale-95 backdrop-blur-md"
-                title="리포트 다운로드"
-            >
-                <Icons.Download size={22} />
-            </button>
-
+            <DownloadButton />
             <button 
                 onClick={handleGenerateEstimate}
-                className="flex-1 h-14 bg-slate-900 dark:bg-indigo-500 hover:bg-black dark:hover:bg-indigo-600 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-indigo-900/30 hover:shadow-slate-900/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
+                className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
             >
                 <Icons.PieChart size={18} />
-                <span>견적 산출하기 (Generate Estimate)</span>
+                <span>견적 산출하기</span>
             </button>
         </div>
     );
