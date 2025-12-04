@@ -52,7 +52,11 @@ Before writing any code, you MUST output a plan in this format:
 │   ├── Dashboard.tsx        # Main dashboard with tabs
 │   ├── EstimationTab.tsx    # Estimation/budget tab
 │   ├── CollapsibleSidebar.tsx # Left sidebar (외주/상주/나머지)
+│   ├── SettingsModal.tsx    # Settings menu modal
+│   ├── AiSettingsModal.tsx  # AI model settings modal
 │   └── ... (other UI components)
+├── constants/
+│   └── aiConfig.ts          # AI model configuration (centralized)
 ├── services/
 │   ├── geminiService.ts     # Frontend Gemini service (legacy)
 │   └── apiService.ts        # Frontend API service
@@ -132,6 +136,14 @@ The app uses Gemini 2.5 Flash model for:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (December 4, 2024)
+- **AI Model Settings Management**:
+  - Created centralized configuration in `constants/aiConfig.ts`
+  - Available models: Gemini 2.5 Flash, Gemini 3 Pro Preview, Claude 4.5 Opus
+  - 5 AI functions mapped: analyzeProject, generateRFP, classifyUserIntent, streamChatResponse, generateInsight
+  - New components: AiSettingsModal.tsx for per-function model selection
+  - SettingsModal.tsx updated as gateway to AI settings
+  - Settings gear icon in header replaces refresh button
+  - Dark mode toggle remains in header for quick access
 - **Information Architecture Redesign**: Hierarchy Flattening
   - Removed sub-tabs from '견적/예산' tab
   - Created 3 top-level tabs: [견적/예산], [수행계획], [공고작성]
