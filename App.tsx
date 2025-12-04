@@ -90,11 +90,12 @@ const App: React.FC = () => {
         modules,
         partnerType: currentPartnerType,
         projectScale: currentScale,
-        estimationStep
+        estimationStep,
+        projectSummaryContent
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent]);
 
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
@@ -104,6 +105,7 @@ const App: React.FC = () => {
     setModules(INITIAL_MODULES);
     setCurrentView('landing');
     setEstimationStep('SCOPE');
+    setProjectSummaryContent('');
   };
 
   // Handle delete session - show confirmation modal
@@ -155,12 +157,14 @@ const App: React.FC = () => {
           setCurrentPartnerType(session.dashboardState.partnerType);
           setCurrentScale(session.dashboardState.projectScale);
           setEstimationStep(session.dashboardState.estimationStep);
+          setProjectSummaryContent(session.dashboardState.projectSummaryContent || '');
         } else {
           // Legacy session without dashboard state - reset to defaults
           setModules(INITIAL_MODULES);
           setCurrentPartnerType('STUDIO');
           setCurrentScale('STANDARD');
           setEstimationStep('SCOPE');
+          setProjectSummaryContent('');
         }
         
         setCurrentView('detail');
