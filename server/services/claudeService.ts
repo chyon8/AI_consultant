@@ -461,7 +461,7 @@ ${modulesText}
   const fullSystemPrompt = CHAT_SYSTEM_PROMPT + projectState;
 
   const messages = history.map(h => ({
-    role: h.role as 'user' | 'assistant',
+    role: (h.role === 'model' ? 'assistant' : h.role) as 'user' | 'assistant',
     content: h.text
   }));
 
