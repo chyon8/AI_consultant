@@ -79,13 +79,15 @@ async function classifyUserIntent(
         judgment,
         shouldBlock: true,
         refusalMessage: `<CHAT>
-⚠️ **Context Lock 정책 적용**
+⚠️ **새 프로젝트 감지 - 새 채팅 필요**
 
-현재 세션은 **[${projectContext.projectTitle || '현재 프로젝트'}]** 전용입니다.
+현재 세션은 **[${projectContext.projectTitle || '현재 프로젝트'}]** 분석 전용입니다.
 
-입력하신 내용이 기존 프로젝트의 기능 보강(Add-on)이 아닌, 완전히 새로운 프로젝트를 정의하려는 시도로 감지되었습니다.
+입력하신 내용은 현재 프로젝트와 다른 새로운 프로젝트로 판단됩니다.
 
-새 프로젝트를 시작하시려면 좌측 사이드바의 **[+ 새 프로젝트]** 버튼을 이용해주세요.
+**→ 좌측 사이드바에서 [+ 새 프로젝트]를 클릭하여 새 채팅을 시작해주세요.**
+
+현재 프로젝트의 기능 추가/수정은 계속 가능합니다.
 </CHAT>
 
 <ACTION>
