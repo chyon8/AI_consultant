@@ -4,15 +4,11 @@ import { Icons } from './Icons';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
-  onClose,
-  isDarkMode,
-  onToggleDarkMode
+  onClose
 }) => {
   if (!isOpen) return null;
 
@@ -34,35 +30,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
         
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {isDarkMode ? <Icons.Moon size={20} className="text-indigo-500" /> : <Icons.Sun size={20} className="text-amber-500" />}
-              <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">다크 모드</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">화면 테마를 변경합니다</p>
-              </div>
-            </div>
-            <button
-              onClick={onToggleDarkMode}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                isDarkMode ? 'bg-indigo-500' : 'bg-slate-200'
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                  isDarkMode ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
-            <div className="flex items-center gap-3 text-slate-400">
-              <Icons.Help size={20} />
-              <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">버전 정보</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Wishket Estimate v1.0.0</p>
-              </div>
+          <div className="flex items-center gap-3 text-slate-400">
+            <Icons.Help size={20} />
+            <div>
+              <p className="text-sm font-medium text-slate-900 dark:text-white">버전 정보</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Wishket Estimate v1.0.0</p>
             </div>
           </div>
         </div>

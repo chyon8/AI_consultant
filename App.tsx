@@ -717,6 +717,13 @@ const App: React.FC = () => {
         {/* Right Section */}
         <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
               <button 
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                title="Toggle Dark Mode"
+              >
+                {isDarkMode ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
+              </button>
+              <button 
                 onClick={() => setSettingsModalOpen(true)}
                 className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 title="Settings"
@@ -805,8 +812,6 @@ const App: React.FC = () => {
       <SettingsModal
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
       />
     </div>
   );
