@@ -50,6 +50,7 @@ export interface SimilarProject {
 }
 
 export enum TabView {
+  PROJECT_SUMMARY = 'PROJECT_SUMMARY',
   ESTIMATION = 'ESTIMATION',
   EXECUTION_PLAN = 'EXECUTION_PLAN',
   RFP = 'RFP',

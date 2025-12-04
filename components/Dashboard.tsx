@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale } from '../types';
 import { Icons } from './Icons';
+import { ProjectSummaryTab } from './ProjectSummaryTab';
 import { EstimationTab } from './EstimationTab';
 import { ExecutionPlanTab } from './ExecutionPlanTab';
 import { RFPTab } from './RFPTab';
@@ -77,6 +78,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const tabs = [
+    { id: TabView.PROJECT_SUMMARY, label: '프로젝트 요약', icon: Icons.Dashboard },
     { id: TabView.ESTIMATION, label: '견적/예산', icon: Icons.Wallet },
     { id: TabView.EXECUTION_PLAN, label: '수행계획', icon: Icons.Calendar },
     { id: TabView.RFP, label: '공고작성', icon: Icons.File },
@@ -250,6 +252,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div ref={contentRef} className="flex-1 overflow-y-auto px-6 lg:px-10 py-6 pb-40 scroll-smooth"> 
         <div className="max-w-4xl mx-auto">
           <div key={activeTab} className="animate-fade-in-up">
+            {activeTab === TabView.PROJECT_SUMMARY && (
+              <ProjectSummaryTab />
+            )}
             {activeTab === TabView.ESTIMATION && (
               <EstimationTab 
                 modules={modules} 
