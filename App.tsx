@@ -31,6 +31,9 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('landing');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  
+  // Project Summary Content (STEP 1 from Gemini analysis)
+  const [projectSummaryContent, setProjectSummaryContent] = useState<string>('');
 
   // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
@@ -459,7 +462,8 @@ const App: React.FC = () => {
     console.log('[App] handleAnalysisComplete called with:', result ? {
       projectTitle: result.projectTitle,
       modulesCount: result.modules?.length || 0,
-      hasEstimates: !!result.estimates
+      hasEstimates: !!result.estimates,
+      hasRawMarkdown: !!result.rawMarkdown
     } : 'null');
     
     if (result && result.modules && result.modules.length > 0) {
@@ -482,6 +486,12 @@ const App: React.FC = () => {
       }));
       console.log('[App] Setting modules:', convertedModules.length, 'items');
       setModules(convertedModules);
+      
+      // Store project summary content (rawMarkdown from STEP 1)
+      if (result.rawMarkdown) {
+        console.log('[App] Setting projectSummaryContent, length:', result.rawMarkdown.length);
+        setProjectSummaryContent(result.rawMarkdown);
+      }
     } else {
       console.warn('[App] No valid modules in result');
     }
@@ -736,6 +746,7 @@ const App: React.FC = () => {
                 onStepChange={setEstimationStep}
                 currentScale={currentScale}
                 onScaleChange={handleScaleChange}
+                projectSummaryContent={projectSummaryContent}
               />
             </div>
           </>
