@@ -51,20 +51,16 @@ export async function generateInsight(params: InsightParams): Promise<string> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: prompt,
       config: {
         temperature: 0.7,
-        maxOutputTokens: 500,
+        maxOutputTokens: 2000,
       },
     });
 
-    const candidate = response.candidates?.[0];
-    console.log("[InsightService] Candidate:", JSON.stringify(candidate, null, 2));
+    console.log("[InsightService] response.text:", response.text?.substring(0, 100));
     
-    const text = candidate?.content?.parts?.[0]?.text || "";
-    console.log("[InsightService] Extracted text:", text.substring(0, 100));
-    
-    return text.trim();
+    return (response.text || "").trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
     return "불러오지 못했습니다.";
