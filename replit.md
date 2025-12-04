@@ -41,7 +41,7 @@ Before writing any code, you MUST output a plan in this format:
 - **Build Tool**: Vite 6.2.0
 - **Language**: TypeScript 5.8.2
 - **Backend**: Express.js
-- **AI Service**: Google Gemini AI (@google/genai)
+- **AI Providers**: Google Gemini AI (@google/genai), Anthropic Claude (@anthropic-ai/sdk)
 - **UI Icons**: Lucide React
 
 ### Project Structure
@@ -63,7 +63,11 @@ Before writing any code, you MUST output a plan in this format:
 ├── server/
 │   ├── index.ts             # Express server entry
 │   └── services/
+│       ├── aiRouter.ts      # Unified AI router (dispatches to Gemini/Claude)
 │       ├── geminiService.ts # Backend Gemini PART 1 (분석)
+│       ├── claudeService.ts # Backend Claude API integration
+│       ├── chatService.ts   # Chat response + context lock logic
+│       ├── insightService.ts # AI insight generation
 │       └── rfpService.ts    # Backend Gemini PART 2 (공고문)
 ├── App.tsx                  # Main application component
 ├── constants.ts             # Application constants
@@ -92,8 +96,9 @@ Before writing any code, you MUST output a plan in this format:
 ## Configuration
 
 ### Environment Variables
-The application requires a Gemini API key to function:
-- `GEMINI_API_KEY`: Your Google Gemini API key (stored as Replit secret)
+The application requires API keys for AI providers:
+- `GEMINI_API_KEY`: Your Google Gemini API key (stored as Replit secret) - Required for Gemini models
+- `ANTHROPIC_API_KEY`: Your Anthropic Claude API key (stored as Replit secret) - Required for Claude models
 
 ### Ports
 - **Frontend (Vite)**: 5000 (required for Replit webview)
@@ -120,10 +125,29 @@ The "Start application" workflow runs `npm run dev` which uses concurrently to r
 
 ## AI Integration
 
-### Gemini AI Service
-The app uses Gemini 2.5 Flash model for:
-- PART 1: Project planning, estimation, WBS generation
-- PART 2: RFP (입찰 공고문) generation
+### AI Router Architecture
+The app uses a unified AI Router pattern (`server/services/aiRouter.ts`) that:
+- Routes AI calls to the correct provider (Google Gemini or Anthropic Claude) based on selected model
+- Provides consistent interface for all AI functions regardless of provider
+- Handles provider-specific configurations and API differences
+
+### Supported AI Providers
+- **Google Gemini**: Gemini 2.5 Flash, Gemini 3 Pro Preview
+- **Anthropic Claude**: Claude 4.5 Opus
+
+### AI Functions
+5 AI functions are mapped to configurable models:
+- `analyzeProject`: PART 1 analysis (planning/estimation/WBS)
+- `generateRFP`: PART 2 RFP document generation
+- `classifyUserIntent`: Context lock validation (NEW_PROJECT blocking)
+- `streamChatResponse`: Chat response streaming
+- `generateInsight`: AI insight generation
+
+### Context Lock Security
+Both Gemini and Claude chat paths share the same context-lock guard:
+1. User message is analyzed via `classifyUserIntent`
+2. NEW_PROJECT requests are blocked with refusal message
+3. RELATED and GENERAL requests proceed to chat streaming
 
 ### Prompt Structure
 - **PART 1** (기획/견적/WBS):
@@ -184,5 +208,6 @@ The app uses Gemini 2.5 Flash model for:
 - All components are in Korean language
 - Budget calculations are in Korean Won (KRW)
 - Gemini API key is required and stored as a Replit secret
+- Anthropic API key is optional, stored as a Replit secret (ANTHROPIC_API_KEY)
 - API key is only accessed server-side for security
 - The frontend proxies /api requests to the backend server
