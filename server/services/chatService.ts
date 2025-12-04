@@ -2,67 +2,137 @@ import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
-// ===== CONTEXT LOCKING POLICY =====
-// Root Project Theme Keywords (LMS/교육 플랫폼 관련)
-const ROOT_PROJECT_KEYWORDS = [
-  'lms', '학습', '교육', '강의', '강좌', '수강', '학생', '강사', '수업', '커리큘럼',
-  '온라인 교육', '이러닝', 'e-learning', '학습 관리', '진도', '퀴즈', '시험', '과제',
-  '인증', '결제', '회원', '관리자', '대시보드', '통계', '리포트', '알림', '채팅',
-  '영상', '동영상', 'vod', '스트리밍', 'zoom', '화상', '멀티미디어', '플레이어',
-  '모듈', '기능', '추가', '삭제', '변경', '수정', '비용', '견적', '예산', '일정',
-  'api', '서버', '인프라', 'cdn', '데이터베이스', '백엔드', '프론트엔드'
-];
+// ===== AI-BASED CONTEXT LOCKING POLICY =====
+// Dynamic judgment instead of hardcoded keywords
 
-// New Project Trigger Keywords (완전히 새로운 프로젝트 시도)
-const NEW_PROJECT_TRIGGERS = [
-  '소개팅', '데이팅', '매칭', '만남',
-  '게임', '게이밍', 'mmorpg', 'fps',
-  '부동산', '중개', '매물',
-  '배달', '음식 주문', '푸드테크',
-  '가상화폐', '암호화폐', '코인 거래소', 'nft 마켓',
-  '주식 거래', '증권', '트레이딩',
-  '헬스케어', '병원 예약', '의료',
-  '여행', '숙박', '항공권',
-  'sns', '소셜 네트워크', '인스타그램 같은', '틱톡 같은',
-  '쇼핑몰', '이커머스', '마켓플레이스',
-  '새 프로젝트', '다른 프로젝트', '프로젝트 변경', '완전히 다른'
-];
+interface ProjectContext {
+  projectTitle: string;
+  moduleNames: string[];
+  projectDescription: string;
+}
 
-// Context Lock Validation Function
-function validateContextLock(userMessage: string): { isValid: boolean; refusalMessage?: string } {
-  const normalizedInput = userMessage.toLowerCase().replace(/\s+/g, ' ').trim();
-  
-  // Check for new project triggers
-  const hasNewProjectIntent = NEW_PROJECT_TRIGGERS.some(trigger => 
-    normalizedInput.includes(trigger.toLowerCase())
-  );
-  
-  // Check for add-on intent (기존 프로젝트 보강)
-  const hasAddOnIntent = ROOT_PROJECT_KEYWORDS.some(keyword =>
-    normalizedInput.includes(keyword.toLowerCase())
-  );
-  
-  // Refusal Trigger: 새 프로젝트 의도 O + 기존 프로젝트 보강 의도 X
-  if (hasNewProjectIntent && !hasAddOnIntent) {
-    return {
-      isValid: false,
-      refusalMessage: `<CHAT>
+type ContextJudgment = 'RELATED' | 'NEW_PROJECT' | 'GENERAL';
+
+const CONTEXT_CLASSIFIER_PROMPT = `# ROLE
+You are a Context Lock Classifier for an IT project estimation tool.
+
+# TASK
+Determine if the user's message is:
+- RELATED: Request related to the current project (feature changes, module additions, questions about the project)
+- NEW_PROJECT: Attempt to start a completely different/unrelated project
+- GENERAL: General conversation, greetings, or questions not specific to any project
+
+# CURRENT PROJECT CONTEXT
+Title: {{PROJECT_TITLE}}
+Modules: {{MODULE_NAMES}}
+Description: {{PROJECT_DESCRIPTION}}
+
+# USER MESSAGE
+"{{USER_MESSAGE}}"
+
+# JUDGMENT CRITERIA
+- RELATED: Adding features to current project, modifying existing modules, asking about costs/timeline, technical questions about the project
+- NEW_PROJECT: Requests for completely different domains (e.g., dating app when working on LMS, game when working on e-commerce, etc.)
+- GENERAL: "Hello", "Thanks", "How are you", general IT questions not tied to a specific project
+
+# RESPONSE
+Reply with exactly one word: RELATED, NEW_PROJECT, or GENERAL`;
+
+async function classifyUserIntent(
+  userMessage: string,
+  projectContext: ProjectContext
+): Promise<{ judgment: ContextJudgment; shouldBlock: boolean; refusalMessage?: string }> {
+  if (!GEMINI_API_KEY) {
+    return { judgment: 'GENERAL', shouldBlock: false };
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    
+    const prompt = CONTEXT_CLASSIFIER_PROMPT
+      .replace('{{PROJECT_TITLE}}', projectContext.projectTitle || '미정')
+      .replace('{{MODULE_NAMES}}', projectContext.moduleNames.join(', ') || '없음')
+      .replace('{{PROJECT_DESCRIPTION}}', projectContext.projectDescription || '프로젝트 분석 중')
+      .replace('{{USER_MESSAGE}}', userMessage);
+
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        temperature: 0,
+        maxOutputTokens: 10
+      }
+    });
+
+    const responseText = (result as any).text || '';
+    const response = responseText.trim().toUpperCase();
+    
+    console.log('[Context Classifier] Raw response:', responseText);
+    
+    let judgment: ContextJudgment = 'GENERAL';
+    if (response.includes('RELATED')) judgment = 'RELATED';
+    else if (response.includes('NEW_PROJECT')) judgment = 'NEW_PROJECT';
+    else if (response.includes('GENERAL')) judgment = 'GENERAL';
+
+    if (judgment === 'NEW_PROJECT') {
+      return {
+        judgment,
+        shouldBlock: true,
+        refusalMessage: `<CHAT>
 ⚠️ **Context Lock 정책 적용**
 
-현재 세션은 **[LMS 프로젝트]** 전용입니다.
+현재 세션은 **[${projectContext.projectTitle || '현재 프로젝트'}]** 전용입니다.
 
 입력하신 내용이 기존 프로젝트의 기능 보강(Add-on)이 아닌, 완전히 새로운 프로젝트를 정의하려는 시도로 감지되었습니다.
 
-새 프로젝트를 시작하시려면 **[새 채팅]** 버튼을 이용해주세요.
+새 프로젝트를 시작하시려면 좌측 사이드바의 **[+ 새 프로젝트]** 버튼을 이용해주세요.
 </CHAT>
 
 <ACTION>
 {"type": "no_action", "intent": "general", "payload": {}}
 </ACTION>`
-    };
+      };
+    }
+
+    return { judgment, shouldBlock: false };
+
+  } catch (error) {
+    console.error('[Context Classifier] Error:', error);
+    return { judgment: 'GENERAL', shouldBlock: false };
+  }
+}
+
+function extractProjectContext(modules: ModuleItem[]): ProjectContext {
+  const moduleNames = modules.map(m => m.name);
+  const description = `${moduleNames.slice(0, 3).join(', ')} 등 ${modules.length}개 모듈로 구성된 프로젝트`;
+  
+  return {
+    projectTitle: inferProjectTitle(modules),
+    moduleNames,
+    projectDescription: description
+  };
+}
+
+function inferProjectTitle(modules: ModuleItem[]): string {
+  const keywords = modules.flatMap(m => [m.name, m.description]).join(' ').toLowerCase();
+  
+  if (keywords.includes('학습') || keywords.includes('강의') || keywords.includes('교육') || keywords.includes('lms')) {
+    return 'LMS/교육 플랫폼';
+  }
+  if (keywords.includes('쇼핑') || keywords.includes('결제') || keywords.includes('상품') || keywords.includes('주문')) {
+    return '이커머스 플랫폼';
+  }
+  if (keywords.includes('에이전트') || keywords.includes('mdm') || keywords.includes('엔드포인트')) {
+    return '엔드포인트 관리 시스템';
+  }
+  if (keywords.includes('iot') || keywords.includes('센서') || keywords.includes('디바이스')) {
+    return 'IoT 플랫폼';
+  }
+  if (keywords.includes('관리자') || keywords.includes('대시보드') || keywords.includes('통계')) {
+    return '관리 시스템';
   }
   
-  return { isValid: true };
+  return modules[0]?.name ? `${modules[0].name} 기반 시스템` : 'IT 프로젝트';
 }
 
 const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
@@ -262,12 +332,18 @@ export async function streamChatResponse(
     return;
   }
 
-  // ===== CONTEXT LOCKING VALIDATION =====
+  // ===== AI-BASED CONTEXT LOCKING VALIDATION =====
   const lastUserMessage = history[history.length - 1];
-  const contextValidation = validateContextLock(lastUserMessage.text);
+  const projectContext = extractProjectContext(currentModules);
   
-  if (!contextValidation.isValid) {
-    // Refusal Trigger: 새 프로젝트 시도 차단
+  console.log('[Context Lock] Classifying user intent for:', lastUserMessage.text.substring(0, 50));
+  console.log('[Context Lock] Project context:', projectContext.projectTitle);
+  
+  const contextValidation = await classifyUserIntent(lastUserMessage.text, projectContext);
+  
+  console.log('[Context Lock] Judgment:', contextValidation.judgment);
+  
+  if (contextValidation.shouldBlock) {
     onChunk(contextValidation.refusalMessage!);
     return;
   }
@@ -279,6 +355,7 @@ export async function streamChatResponse(
   
   const projectState = `
 === 현재 프로젝트 상태 ===
+프로젝트: ${projectContext.projectTitle}
 총 예상 비용: ${(totalCost / 10000).toLocaleString()}만원
 총 예상 기간: 약 ${Math.ceil(totalWeeks / 4)}개월 (${totalWeeks}주)
 
