@@ -1,0 +1,81 @@
+import React from 'react';
+import { Icons } from './Icons';
+
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+}
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
+  isDarkMode,
+  onToggleDarkMode
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fade-in">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">설정</h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <Icons.Close size={20} />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {isDarkMode ? <Icons.Moon size={20} className="text-indigo-500" /> : <Icons.Sun size={20} className="text-amber-500" />}
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">다크 모드</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">화면 테마를 변경합니다</p>
+              </div>
+            </div>
+            <button
+              onClick={onToggleDarkMode}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                isDarkMode ? 'bg-indigo-500' : 'bg-slate-200'
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                  isDarkMode ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+            <div className="flex items-center gap-3 text-slate-400">
+              <Icons.Help size={20} />
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">버전 정보</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Wishket Estimate v1.0.0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

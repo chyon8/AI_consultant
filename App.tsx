@@ -9,6 +9,7 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { SettingsModal } from './components/SettingsModal';
 import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 import { 
@@ -59,6 +60,9 @@ const App: React.FC = () => {
   // Delete Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<{id: string, title: string} | null>(null);
+
+  // Settings Modal State
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // Load chat history on mount and cleanup ghost sessions
   useEffect(() => {
@@ -713,25 +717,11 @@ const App: React.FC = () => {
         {/* Right Section */}
         <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
               <button 
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={() => setSettingsModalOpen(true)}
                 className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                title="Toggle Dark Mode"
+                title="Settings"
               >
-                {isDarkMode ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
-              </button>
-              
-              <button 
-                onClick={() => { 
-                    setModules(INITIAL_MODULES); 
-                    setCurrentPartnerType('STUDIO'); 
-                    setEstimationStep('SCOPE');
-                    setCurrentView('landing');
-                    setMessages(INITIAL_MESSAGES);
-                }}
-                className="p-2 text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-                title="Reset"
-              >
-                <Icons.Refresh size={16} />
+                <Icons.Settings size={20} />
               </button>
               <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-300 border border-slate-100 dark:border-slate-700">
                 KM
@@ -809,6 +799,14 @@ const App: React.FC = () => {
         sessionTitle={sessionToDelete?.title || ''}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
       />
     </div>
   );

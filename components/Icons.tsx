@@ -46,7 +46,8 @@ import {
   Paperclip,
   X,
   Copy,
-  Trash2
+  Trash2,
+  Settings
 } from 'lucide-react';
 
 export const Icons = {
@@ -97,5 +98,6 @@ export const Icons = {
   Close: X,
   FileText: FileText,
   Copy: Copy,
-  Trash: Trash2
+  Trash: Trash2,
+  Settings: Settings
 };
