@@ -10,6 +10,8 @@ import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { SettingsModal } from './components/SettingsModal';
+import { AiSettingsModal } from './components/AiSettingsModal';
+import { AIModelSettings, getDefaultModelSettings } from './constants/aiConfig';
 import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 import { 
@@ -63,6 +65,10 @@ const App: React.FC = () => {
 
   // Settings Modal State
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+
+  // AI Settings Modal State
+  const [aiSettingsModalOpen, setAiSettingsModalOpen] = useState(false);
+  const [aiModelSettings, setAiModelSettings] = useState<AIModelSettings>(getDefaultModelSettings());
 
   // Load chat history on mount and cleanup ghost sessions
   useEffect(() => {
@@ -812,6 +818,15 @@ const App: React.FC = () => {
       <SettingsModal
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
+        onOpenAiSettings={() => setAiSettingsModalOpen(true)}
+      />
+
+      {/* AI Settings Modal */}
+      <AiSettingsModal
+        isOpen={aiSettingsModalOpen}
+        onClose={() => setAiSettingsModalOpen(false)}
+        onSave={setAiModelSettings}
+        currentSettings={aiModelSettings}
       />
     </div>
   );
