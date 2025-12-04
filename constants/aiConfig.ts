@@ -24,8 +24,8 @@ export const AI_AVAILABLE_MODELS: AIModel[] = [
     provider: 'google'
   },
   {
-    id: 'claude-4.5-opus',
-    name: 'Claude 4.5 Opus',
+    id: 'claude-opus-4-20250514',
+    name: 'Claude Opus 4',
     provider: 'anthropic'
   }
 ];
