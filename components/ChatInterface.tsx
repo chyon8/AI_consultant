@@ -185,6 +185,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (done) break;
 
         const chunk = decoder.decode(value);
+        console.log('[Stream] Received chunk:', chunk.length, 'bytes');
         const lines = chunk.split('\n');
 
         for (const line of lines) {
@@ -194,6 +195,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               
               if (data.chunk) {
                 fullResponseText += data.chunk;
+                console.log('[Stream] Text chunk:', data.chunk.substring(0, 50));
                 const displayText = extractDisplayText(fullResponseText);
                 
                 setMessages(prev => prev.map(msg => 
