@@ -83,58 +83,50 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   // --- UI Renders ---
 
   const renderAnalysisGraph = () => {
-    const maxVal = totalCost;
+    const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'Type A' : 
+                         currentPartnerType === 'STUDIO' ? 'Type B' : 'Type C';
+    
     return (
-      <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 mb-8 border border-slate-100 dark:border-slate-800 animate-slide-up">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-           <Icons.PieChart className="text-indigo-500" size={20} />
-           견적 상세 분석 리포트
-        </h3>
-        <div className="flex items-center justify-between mb-2">
-           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">PARTNER TYPE: {currentPartnerType}</span>
-           <span className="text-2xl font-bold text-slate-900 dark:text-white">{(totalCost / 10000).toLocaleString()}만원</span>
-        </div>
-        
-        {/* Bar Chart */}
-        <div className="h-6 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex mb-4">
-           <div style={{ width: `${(devCost/totalCost)*100}%` }} className="h-full bg-indigo-500" title="개발비"></div>
-           {pmCost > 0 && <div style={{ width: `${(pmCost/totalCost)*100}%` }} className="h-full bg-emerald-500" title="PM/기획"></div>}
-           {qaCost > 0 && <div style={{ width: `${(qaCost/totalCost)*100}%` }} className="h-full bg-orange-500" title="QA/테스트"></div>}
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
+        <div className="flex items-baseline justify-between mb-8">
+          <div>
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-1">{partnerLabel} 기준</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {(totalCost / 10000).toLocaleString()}<span className="text-lg font-medium text-slate-400 ml-1">만원</span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-1">예상 기간</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {finalMonths.toFixed(1)}<span className="text-lg font-medium text-slate-400 ml-1">개월</span>
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 text-xs">
-           <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-              <span className="text-slate-600 dark:text-slate-300">순수 개발비 ({(devCost/10000).toLocaleString()}만)</span>
-           </div>
-           {pmCost > 0 && (
-             <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                <span className="text-slate-600 dark:text-slate-300">PM/기획 ({(pmCost/10000).toLocaleString()}만)</span>
-             </div>
-           )}
-           {qaCost > 0 && (
-             <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <span className="text-slate-600 dark:text-slate-300">QA/테스트 ({(qaCost/10000).toLocaleString()}만)</span>
-             </div>
-           )}
+        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex mb-6">
+          <div style={{ width: `${(devCost/totalCost)*100}%` }} className="h-full bg-slate-900 dark:bg-white"></div>
+          {pmCost > 0 && <div style={{ width: `${(pmCost/totalCost)*100}%` }} className="h-full bg-slate-400 dark:bg-slate-500"></div>}
+          {qaCost > 0 && <div style={{ width: `${(qaCost/totalCost)*100}%` }} className="h-full bg-slate-300 dark:bg-slate-600"></div>}
         </div>
-        
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-           <div>
-              <p className="text-xs text-slate-400 uppercase font-bold">Estimated Duration</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-white">{finalMonths.toFixed(1)}개월</p>
-           </div>
-           <div className="text-right">
-              <p className="text-xs text-slate-400">파트너 특성 반영</p>
-              <p className="text-sm font-medium text-indigo-500">
-                {currentPartnerType === 'AGENCY' ? '안정화 기간 포함' : 
-                 currentPartnerType === 'AI_NATIVE' ? 'AI 가속 적용됨' : '표준 기간'}
-              </p>
-           </div>
+
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white"></div>
+            <span className="text-slate-500 dark:text-slate-400">개발 {(devCost/10000).toLocaleString()}만</span>
+          </div>
+          {pmCost > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500"></div>
+              <span className="text-slate-500 dark:text-slate-400">PM {(pmCost/10000).toLocaleString()}만</span>
+            </div>
+          )}
+          {qaCost > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+              <span className="text-slate-500 dark:text-slate-400">QA {(qaCost/10000).toLocaleString()}만</span>
+            </div>
+          )}
         </div>
-        
       </div>
     );
   };
