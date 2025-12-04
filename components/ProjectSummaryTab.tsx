@@ -177,9 +177,25 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, a
               프로젝트 인사이트
             </span>
           </div>
-          <div className="px-5 py-4 prose prose-sm dark:prose-invert max-w-none prose-headings:text-slate-800 dark:prose-headings:text-slate-200 prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-strong:text-slate-700 dark:prose-strong:text-slate-200">
+          <div className="px-5 py-5 prose prose-sm dark:prose-invert max-w-none
+            prose-headings:text-slate-800 dark:prose-headings:text-slate-100
+            prose-headings:font-semibold prose-headings:tracking-tight
+            prose-h2:text-base prose-h2:mt-6 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-200 dark:prose-h2:border-slate-700
+            prose-h3:text-sm prose-h3:mt-5 prose-h3:mb-2
+            prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-p:my-2
+            prose-ul:my-2 prose-ul:space-y-1
+            prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-li:leading-relaxed prose-li:my-0
+            prose-strong:text-slate-800 dark:prose-strong:text-slate-100 prose-strong:font-semibold
+            prose-hr:my-4 prose-hr:border-slate-200 dark:prose-hr:border-slate-700
+          ">
             {aiInsight ? (
-              <ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  h2: ({children}) => <h2 className="flex items-center gap-2"><span className="w-1 h-4 bg-emerald-500 rounded-full" />{children}</h2>,
+                  h3: ({children}) => <h3 className="text-emerald-600 dark:text-emerald-400">{children}</h3>,
+                  li: ({children}) => <li className="relative pl-4 before:absolute before:left-0 before:top-2 before:w-1.5 before:h-1.5 before:bg-slate-300 dark:before:bg-slate-600 before:rounded-full">{children}</li>,
+                }}
+              >
                 {aiInsight}
               </ReactMarkdown>
             ) : (
