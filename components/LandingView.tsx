@@ -36,15 +36,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
 
   if (isLoading) {
     return (
-      <div 
-        className="flex-1 flex flex-col items-center justify-center transition-colors duration-300 px-6"
-        style={{ backgroundColor: 'var(--theme-bg-light)' }}
-      >
+      <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-300 px-6">
         <div className="text-center">
-          <div 
-            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-8 shadow-xl animate-pulse"
-            style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}
-          >
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-8 shadow-xl shadow-indigo-500/20 animate-pulse">
             <Icons.Bot size={40} className="text-white" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
@@ -54,9 +48,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
             AI가 모듈 구조, 견적, 일정을 분석 중입니다...
           </p>
           <div className="flex items-center justify-center gap-2">
-            <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--theme-primary)', animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--theme-primary)', animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--theme-primary)', animationDelay: '300ms' }}></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
           </div>
         </div>
       </div>
@@ -64,13 +58,10 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center transition-colors duration-300 px-6">
+    <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-300 px-6">
       <div className="w-full max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <div 
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 shadow-xl"
-            style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}
-          >
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-6 shadow-xl shadow-indigo-500/20">
             <Icons.Bot size={32} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
@@ -137,10 +128,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
               disabled={isLoading || (!inputText.trim() && attachedFiles.length === 0)}
               className={`p-3 rounded-xl transition-all ${
                 inputText.trim() || attachedFiles.length > 0
-                  ? 'text-white shadow-lg'
+                  ? 'bg-slate-900 dark:bg-indigo-500 text-white hover:bg-black dark:hover:bg-indigo-600 shadow-lg'
                   : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
               }`}
-              style={inputText.trim() || attachedFiles.length > 0 ? { backgroundColor: 'var(--theme-primary)' } : {}}
             >
               {isLoading ? (
                 <Icons.Refresh size={22} className="animate-spin" />

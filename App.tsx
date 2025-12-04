@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS, THEMES } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, ThemeType } from './types';
+import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -9,7 +9,6 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
-import { ThemeSelector } from './components/ThemeSelector';
 import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 import { 
@@ -47,8 +46,7 @@ const App: React.FC = () => {
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
   const [currentScale, setCurrentScale] = useState<ProjectScale>('STANDARD');
 
-  // Theme State
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>('cyberpunk');
+  // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Collapsible Sidebar State
@@ -189,26 +187,14 @@ const App: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Apply Theme and Dark Mode
+  // Apply Dark Mode
   useEffect(() => {
-    const theme = THEMES[currentTheme];
-    const root = document.documentElement;
-    
-    root.style.setProperty('--theme-primary', theme.primary);
-    root.style.setProperty('--theme-secondary', theme.secondary);
-    root.style.setProperty('--theme-accent', theme.accent);
-    root.style.setProperty('--theme-bg-light', theme.bgLight);
-    root.style.setProperty('--theme-bg-dark', theme.bgDark);
-    
-    // Apply background color to body
-    document.body.style.backgroundColor = isDarkMode ? theme.bgDark : theme.bgLight;
-    
     if (isDarkMode) {
-      root.classList.add('dark');
+      document.documentElement.classList.add('dark');
     } else {
-      root.classList.remove('dark');
+      document.documentElement.classList.remove('dark');
     }
-  }, [currentTheme, isDarkMode]);
+  }, [isDarkMode]);
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -675,10 +661,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div 
-      className="h-screen w-screen flex flex-col font-sans overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300"
-      style={{ backgroundColor: isDarkMode ? 'var(--theme-bg-dark)' : 'var(--theme-bg-light)' }}
-    >
+    <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
       
       {/* Error Notification */}
       {analysisError && (
@@ -713,14 +696,11 @@ const App: React.FC = () => {
       )}
 
       {/* Minimal Header */}
-      <header 
-        className="h-16 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0 relative transition-colors duration-300"
-        style={{ backgroundColor: isDarkMode ? 'var(--theme-bg-dark)' : 'var(--theme-bg-light)' }}
-      >
+      <header className="h-16 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0 relative transition-colors duration-300">
         {/* Left: Brand Only */}
         <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'var(--theme-primary)' }}></div>
+            <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>
             <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">Wishket Estimate</span>
           </div>
         </div>
@@ -732,11 +712,6 @@ const App: React.FC = () => {
 
         {/* Right Section */}
         <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
-              <ThemeSelector 
-                currentTheme={currentTheme}
-                onThemeChange={setCurrentTheme}
-              />
-              
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"

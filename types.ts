@@ -138,16 +138,3 @@ export interface ChatSession {
   isLoading?: boolean;
   dashboardState?: DashboardState;
 }
-
-// Theme System
-export type ThemeType = 'cyberpunk' | 'lavender' | 'ocean' | 'sunset';
-
-export interface ThemeColors {
-  primary: string;
-  secondary: string;
-  accent: string;
-  bgLight: string;
-  bgDark: string;
-  name: string;
-  emoji: string;
-}

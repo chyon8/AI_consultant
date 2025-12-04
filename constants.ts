@@ -1,46 +1,6 @@
 
 
-import { ModuleItem, SimilarProject, PartnerConfig, PartnerType, PresetType, PresetDetail, ThemeType, ThemeColors } from './types';
-
-// Theme Color Schemes
-export const THEMES: Record<ThemeType, ThemeColors> = {
-  cyberpunk: {
-    primary: '#FF006E',
-    secondary: '#00F5FF',
-    accent: '#FFD60A',
-    bgLight: '#F8F9FA',
-    bgDark: '#0A0E27',
-    name: 'Cyberpunk Neon',
-    emoji: '🌆'
-  },
-  lavender: {
-    primary: '#9D4EDD',
-    secondary: '#C77DFF',
-    accent: '#E0AAFF',
-    bgLight: '#FEFCFF',
-    bgDark: '#1A0F2E',
-    name: 'Lavender Dream',
-    emoji: '💜'
-  },
-  ocean: {
-    primary: '#006D77',
-    secondary: '#83C5BE',
-    accent: '#EDF6F9',
-    bgLight: '#FDFEFF',
-    bgDark: '#0F1C1E',
-    name: 'Ocean Breeze',
-    emoji: '🌊'
-  },
-  sunset: {
-    primary: '#FF5A5F',
-    secondary: '#FFB400',
-    accent: '#FF8B94',
-    bgLight: '#FFFBF7',
-    bgDark: '#1A0F0A',
-    name: 'Sunset Glow',
-    emoji: '🌅'
-  }
-};
+import { ModuleItem, SimilarProject, PartnerConfig, PartnerType, PresetType, PresetDetail } from './types';
 
 export const INITIAL_MODULES: ModuleItem[] = [
   {
