@@ -54,11 +54,16 @@ export async function generateInsight(params: InsightParams): Promise<string> {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         temperature: 0.7,
-        maxOutputTokens: 300,
+        maxOutputTokens: 500,
       },
     });
 
-    const text = response.text || "";
+    console.log("[InsightService] Response object keys:", Object.keys(response));
+    console.log("[InsightService] Response:", JSON.stringify(response, null, 2).substring(0, 500));
+    
+    const text = response.text || 
+                 response.candidates?.[0]?.content?.parts?.[0]?.text || 
+                 "";
     return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
