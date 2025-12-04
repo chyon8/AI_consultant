@@ -33,7 +33,7 @@ export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ curren
             <button
               key={type}
               onClick={() => onSelect(type)}
-              className={`group relative p-5 text-left transition-all duration-200 border ${
+              className={`group relative p-5 text-left transition-all duration-200 border rounded-xl ${
                 isSelected
                   ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
