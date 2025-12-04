@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction } from './types';
+import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS, THEMES } from './constants';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, ThemeType } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -9,6 +9,7 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { ThemeSelector } from './components/ThemeSelector';
 import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
 import { 
@@ -46,7 +47,8 @@ const App: React.FC = () => {
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
   const [currentScale, setCurrentScale] = useState<ProjectScale>('STANDARD');
 
-  // Dark Mode State
+  // Theme State
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>('cyberpunk');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Collapsible Sidebar State
@@ -187,14 +189,23 @@ const App: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Apply Dark Mode
+  // Apply Theme and Dark Mode
   useEffect(() => {
+    const theme = THEMES[currentTheme];
+    const root = document.documentElement;
+    
+    root.style.setProperty('--theme-primary', theme.primary);
+    root.style.setProperty('--theme-secondary', theme.secondary);
+    root.style.setProperty('--theme-accent', theme.accent);
+    root.style.setProperty('--theme-bg-light', theme.bgLight);
+    root.style.setProperty('--theme-bg-dark', theme.bgDark);
+    
     if (isDarkMode) {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
-  }, [isDarkMode]);
+  }, [currentTheme, isDarkMode]);
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -712,6 +723,11 @@ const App: React.FC = () => {
 
         {/* Right Section */}
         <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
+              <ThemeSelector 
+                currentTheme={currentTheme}
+                onThemeChange={setCurrentTheme}
+              />
+              
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
