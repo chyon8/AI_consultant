@@ -482,11 +482,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                             sub.isSelected 
                               ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800' 
                               : 'bg-white dark:bg-slate-900 border-transparent'
-                          } ${isBlind ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800' : ''}`}
+                          } ${isBlind && !module.required ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800' : ''}`}
                           onClick={(e) => {
                              if (!isBlind) return; // Read-only
                              e.stopPropagation();
-                             if(module.required && sub.id.endsWith('1')) return;
+                             if(module.required) return; // 필수 모듈의 하위 기능은 변경 불가
                              onToggleSubFeature(module.id, sub.id);
                           }}
                         >
@@ -495,7 +495,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                                 sub.isSelected 
                                   ? 'bg-indigo-500 border-indigo-500 text-white' 
                                   : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
-                              } ${(!isBlind || (module.required && sub.id.endsWith('1'))) ? 'opacity-50' : ''}`}>
+                              } ${(!isBlind || module.required) ? 'opacity-50' : ''}`}>
                                   {sub.isSelected && <Icons.CheckMark size={12} strokeWidth={3} />}
                               </div>
                               <span className={`text-sm font-medium ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
