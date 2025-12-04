@@ -50,11 +50,14 @@ export async function generateInsight(params: InsightParams): Promise<string> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         temperature: 0.7,
-        maxOutputTokens: 2000,
+        maxOutputTokens: 8000,
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
       },
     });
 
@@ -70,6 +73,6 @@ export async function generateInsight(params: InsightParams): Promise<string> {
     return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
-    return "불러오지 못했습니다.";
+    return "오류입니다. 다시 시도해주세요.";
   }
 }
