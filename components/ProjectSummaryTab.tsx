@@ -5,6 +5,12 @@ interface ProjectSummaryTabProps {
   content: string;
 }
 
+interface ProjectInfo {
+  name: string;
+  goals: string;
+  coreValues: string[];
+}
+
 interface TechItem {
   layer: string;
   items: string[];
@@ -16,6 +22,7 @@ interface ModuleData {
 }
 
 interface ParsedData {
+  projectInfo: ProjectInfo | null;
   overview: string;
   techStack: TechItem[];
   modules: ModuleData[];
@@ -41,6 +48,7 @@ function cleanTechItem(item: string): string {
 
 function parseStep1Content(content: string): ParsedData {
   const result: ParsedData = {
+    projectInfo: null,
     overview: '',
     techStack: [],
     modules: []
@@ -54,6 +62,25 @@ function parseStep1Content(content: string): ParsedData {
   if (step2Index > 0) endIndex = Math.min(endIndex, step2Index);
   if (jsonIndex > 0) endIndex = Math.min(endIndex, jsonIndex);
   const step1 = content.substring(0, endIndex);
+
+  const nameMatch = step1.match(/프로젝트\s*(?:명|이름)[:\s]*["']?([^"'\n]+?)["']?(?:\n|$)/i) ||
+                    step1.match(/프로젝트[:\s]*["']?([^"'\n]+?)["']?(?:\n|비즈니스|목표|$)/i);
+  
+  const goalsMatch = step1.match(/(?:비즈니스\s*)?목표[:\s]*([^\n]+)/i) ||
+                     step1.match(/목적[:\s]*([^\n]+)/i);
+  
+  const coreValuesMatch = step1.match(/핵심\s*(?:가치|기능|요소)[:\s]*([^\n]+)/i) ||
+                          step1.match(/주요\s*(?:가치|기능|특징)[:\s]*([^\n]+)/i);
+
+  if (nameMatch || goalsMatch || coreValuesMatch) {
+    result.projectInfo = {
+      name: nameMatch ? stripMarkdown(nameMatch[1]).trim() : '',
+      goals: goalsMatch ? stripMarkdown(goalsMatch[1]).trim() : '',
+      coreValues: coreValuesMatch 
+        ? coreValuesMatch[1].split(/[,،、]/).map(v => stripMarkdown(v).trim()).filter(v => v.length > 0)
+        : []
+    };
+  }
 
   const overviewMatch = step1.match(/프로젝트\s*개요[:\s]*([\s\S]*?)(?=\n\s*(?:###|##|\*\s*시스템|시스템\s*아키텍처|기술\s*스택|기능\s*명세))/i);
   if (overviewMatch) {
@@ -126,9 +153,63 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content })
   const totalFeatures = parsedData.modules.reduce((sum, m) => sum + m.features.length, 0);
   const hasModules = parsedData.modules.length > 0;
   const hasTech = parsedData.techStack.length > 0;
+  const hasProjectInfo = parsedData.projectInfo && (parsedData.projectInfo.name || parsedData.projectInfo.goals);
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
+      {/* Project Info Card */}
+      {hasProjectInfo && (
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase">
+            Project
+          </h3>
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+            {/* Project Name */}
+            {parsedData.projectInfo?.name && (
+              <div className="px-5 py-4 border-b border-slate-50 dark:border-slate-800/50">
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-1">
+                  프로젝트명
+                </div>
+                <div className="text-lg font-medium text-slate-900 dark:text-white">
+                  {parsedData.projectInfo.name}
+                </div>
+              </div>
+            )}
+            
+            {/* Business Goals */}
+            {parsedData.projectInfo?.goals && (
+              <div className="px-5 py-4 border-b border-slate-50 dark:border-slate-800/50">
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-1">
+                  비즈니스 목표
+                </div>
+                <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {parsedData.projectInfo.goals}
+                </div>
+              </div>
+            )}
+            
+            {/* Core Values */}
+            {parsedData.projectInfo?.coreValues && parsedData.projectInfo.coreValues.length > 0 && (
+              <div className="px-5 py-4">
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-3">
+                  핵심 가치
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {parsedData.projectInfo.coreValues.map((value, idx) => (
+                    <span 
+                      key={idx}
+                      className="px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg"
+                    >
+                      {value}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Metrics */}
       {hasModules && (
         <div className="grid grid-cols-2 gap-4">
@@ -276,7 +357,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content })
       )}
 
       {/* Empty State */}
-      {!hasModules && !hasTech && !parsedData.overview && (
+      {!hasModules && !hasTech && !parsedData.overview && !hasProjectInfo && (
         <div className="min-h-[300px] flex items-center justify-center">
           <div className="text-center">
             <Icons.Dashboard size={32} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
