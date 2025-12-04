@@ -58,9 +58,16 @@ export async function generateInsight(params: InsightParams): Promise<string> {
       },
     });
 
-    console.log("[InsightService] response.text:", response.text?.substring(0, 100));
+    // 전체 response 구조 디버깅
+    console.log("[InsightService] Full response:", JSON.stringify(response, null, 2).substring(0, 1500));
     
-    return (response.text || "").trim();
+    // 여러 경로 시도
+    const text = response.text ?? 
+                 (response as any).candidates?.[0]?.content?.parts?.[0]?.text ??
+                 "";
+    console.log("[InsightService] Extracted text length:", text.length);
+    
+    return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
     return "불러오지 못했습니다.";
