@@ -83,49 +83,45 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   // --- UI Renders ---
 
   const renderAnalysisGraph = () => {
-    const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'Type A' : 
-                         currentPartnerType === 'STUDIO' ? 'Type B' : 'Type C';
+    const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE A' : 
+                         currentPartnerType === 'STUDIO' ? 'TYPE B' : 'TYPE C';
     
+    const costItems = [
+      { label: '개발', value: devCost, show: true },
+      { label: 'PM', value: pmCost, show: pmCost > 0 },
+      { label: 'QA', value: qaCost, show: qaCost > 0 }
+    ].filter(item => item.show);
+
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
-        <div className="flex items-baseline justify-between mb-8">
+        <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
-            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-1">{partnerLabel} 기준</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {(totalCost / 10000).toLocaleString()}<span className="text-lg font-medium text-slate-400 ml-1">만원</span>
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">{partnerLabel} 기준</p>
+            <p className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {(totalCost / 10000).toLocaleString()}
+              <span className="text-base font-normal text-slate-400 ml-1">만원</span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-1">예상 기간</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {finalMonths.toFixed(1)}<span className="text-lg font-medium text-slate-400 ml-1">개월</span>
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">예상 기간</p>
+            <p className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {finalMonths.toFixed(1)}
+              <span className="text-base font-normal text-slate-400 ml-1">개월</span>
             </p>
           </div>
         </div>
 
-        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex mb-6">
-          <div style={{ width: `${(devCost/totalCost)*100}%` }} className="h-full bg-slate-900 dark:bg-white"></div>
-          {pmCost > 0 && <div style={{ width: `${(pmCost/totalCost)*100}%` }} className="h-full bg-slate-400 dark:bg-slate-500"></div>}
-          {qaCost > 0 && <div style={{ width: `${(qaCost/totalCost)*100}%` }} className="h-full bg-slate-300 dark:bg-slate-600"></div>}
-        </div>
-
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white"></div>
-            <span className="text-slate-500 dark:text-slate-400">개발 {(devCost/10000).toLocaleString()}만</span>
+        <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-6">
+            {costItems.map((item, idx) => (
+              <div key={item.label} className="flex items-center gap-3">
+                <span className="text-xs text-slate-400">{item.label}</span>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {(item.value / 10000).toLocaleString()}만
+                </span>
+              </div>
+            ))}
           </div>
-          {pmCost > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500"></div>
-              <span className="text-slate-500 dark:text-slate-400">PM {(pmCost/10000).toLocaleString()}만</span>
-            </div>
-          )}
-          {qaCost > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-              <span className="text-slate-500 dark:text-slate-400">QA {(qaCost/10000).toLocaleString()}만</span>
-            </div>
-          )}
         </div>
       </div>
     );
