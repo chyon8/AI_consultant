@@ -222,7 +222,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                       key={sub.id} 
                       className={`flex items-center justify-between py-3 px-4 rounded-lg transition-all duration-200 border ${
                         sub.isSelected 
-                          ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900/30' 
+                          ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800' 
                           : 'bg-white dark:bg-slate-900 border-transparent opacity-50'
                       }`}
                     >
@@ -499,7 +499,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                           key={sub.id} 
                           className={`flex items-center justify-between py-3 px-4 rounded-lg transition-all duration-200 border ${
                             sub.isSelected 
-                              ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900/30' 
+                              ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800' 
                               : 'bg-white dark:bg-slate-900 border-transparent'
                           } ${isBlind ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800' : ''}`}
                           onClick={(e) => {
