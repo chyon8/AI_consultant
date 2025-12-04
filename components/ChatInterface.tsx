@@ -1,7 +1,12 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message, ModuleItem, ChatAction } from '../types';
 import { Icons } from './Icons';
+
+function getWebSocketUrl(): string {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws/chat`;
+}
 
 interface ChatModelSettings {
   classifyUserIntent?: string;
@@ -158,66 +163,78 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     let fullResponseText = '';
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          history: [...messages, userMsg].map(m => ({
-            role: m.role,
-            text: m.text
-          })),
-          currentModules: modules,
-          modelSettings: modelSettings,
-        }),
+      const ws = new WebSocket(getWebSocketUrl());
+      
+      await new Promise<void>((resolve, reject) => {
+        ws.onopen = () => {
+          console.log('[WebSocket] Connected');
+          ws.send(JSON.stringify({
+            type: 'chat',
+            history: [...messages, userMsg].map(m => ({
+              role: m.role,
+              text: m.text
+            })),
+            currentModules: modules,
+            modelSettings: modelSettings,
+          }));
+          resolve();
+        };
+        
+        ws.onerror = (error) => {
+          console.error('[WebSocket] Connection error:', error);
+          reject(error);
+        };
+        
+        setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
       });
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        throw new Error('No reader available');
-      }
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        console.log('[Stream] Received chunk:', chunk.length, 'bytes');
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
+      await new Promise<void>((resolve, reject) => {
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('[WebSocket] Received:', data.type);
+            
+            if (data.type === 'chunk' && data.chunk) {
+              fullResponseText += data.chunk;
+              console.log('[WebSocket] Text chunk:', data.chunk.substring(0, 50));
+              const displayText = extractDisplayText(fullResponseText);
               
-              if (data.chunk) {
-                fullResponseText += data.chunk;
-                console.log('[Stream] Text chunk:', data.chunk.substring(0, 50));
-                const displayText = extractDisplayText(fullResponseText);
-                
-                setMessages(prev => prev.map(msg => 
-                  msg.id === aiMsgId 
-                    ? { ...msg, text: displayText } 
-                    : msg
-                ));
-              }
-              
-              if (data.error) {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === aiMsgId 
-                    ? { ...msg, text: data.error, isStreaming: false } 
-                    : msg
-                ));
-              }
-            } catch (e) {
-              console.warn('JSON parse error:', e);
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMsgId 
+                  ? { ...msg, text: displayText } 
+                  : msg
+              ));
             }
+            
+            if (data.type === 'done') {
+              console.log('[WebSocket] Stream complete');
+              ws.close();
+              resolve();
+            }
+            
+            if (data.type === 'error') {
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMsgId 
+                  ? { ...msg, text: data.error || 'AI 서비스 오류', isStreaming: false } 
+                  : msg
+              ));
+              ws.close();
+              reject(new Error(data.error));
+            }
+          } catch (e) {
+            console.warn('[WebSocket] JSON parse error:', e);
           }
-        }
-      }
+        };
+        
+        ws.onclose = () => {
+          console.log('[WebSocket] Connection closed');
+        };
+        
+        ws.onerror = (error) => {
+          console.error('[WebSocket] Error:', error);
+          reject(error);
+        };
+      });
 
       const { chatText, action } = parseAIResponse(fullResponseText);
       

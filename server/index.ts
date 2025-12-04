@@ -2,11 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import { createServer } from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
 import { parseAnalysisResponse } from './services/responseParser';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const server = createServer(app);
+const wss = new WebSocketServer({ server, path: '/ws/chat' });
 
 app.use(cors());
 app.use(express.json());
@@ -124,11 +128,16 @@ app.post('/api/rfp', async (req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('Transfer-Encoding', 'chunked');
   res.flushHeaders();
+
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 100);
 
   try {
     const { history, currentModules, modelSettings } = req.body;
@@ -136,17 +145,19 @@ app.post('/api/chat', async (req, res) => {
     console.log('[Chat] Using model settings:', modelSettings || 'default');
     
     await streamChatResponse(history, currentModules, (chunk: string) => {
-      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-      if (typeof (res as any).flush === 'function') {
-        (res as any).flush();
-      }
+      const padding = ' '.repeat(2048);
+      res.write(`data: ${JSON.stringify({ chunk })}${padding}\n\n`);
     }, modelSettings);
+    
+    clearInterval(heartbeat);
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   } catch (error) {
+    clearInterval(heartbeat);
     console.error('Chat error:', error);
     res.write(`data: ${JSON.stringify({ error: 'Chat failed' })}\n\n`);
   } finally {
+    clearInterval(heartbeat);
     res.end();
   }
 });
@@ -170,7 +181,43 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
+wss.on('connection', (ws: WebSocket) => {
+  console.log('[WebSocket] Client connected');
+  
+  ws.on('message', async (message: Buffer) => {
+    try {
+      const data = JSON.parse(message.toString());
+      console.log('[WebSocket] Received message type:', data.type);
+      
+      if (data.type === 'chat') {
+        const { history, currentModules, modelSettings } = data;
+        
+        console.log('[WebSocket Chat] Using model settings:', modelSettings || 'default');
+        
+        await streamChatResponse(history, currentModules, (chunk: string) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'chunk', chunk }));
+          }
+        }, modelSettings);
+        
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'done' }));
+        }
+      }
+    } catch (error) {
+      console.error('[WebSocket Error]:', error);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'error', error: 'Chat failed' }));
+      }
+    }
+  });
+  
+  ws.on('close', () => {
+    console.log('[WebSocket] Client disconnected');
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
