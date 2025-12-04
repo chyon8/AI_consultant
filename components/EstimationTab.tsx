@@ -174,14 +174,10 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
           >
             {/* Header Row */}
             <div 
-              className="p-6 flex items-start gap-5 cursor-pointer select-none" 
+              className="p-6 flex items-start gap-4 cursor-pointer select-none" 
               onClick={() => toggleExpand(module.id)}
             >
-              <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-md bg-indigo-600 border-indigo-600 text-white flex items-center justify-center">
-                <Icons.CheckMark size={14} strokeWidth={3} />
-              </div>
-
-              <div className="flex-1 pt-0.5">
+              <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
                   <h5 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                     {module.name}
@@ -216,35 +212,20 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
               className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}
             >
               <div className="px-6 pb-6 pt-2 border-t border-slate-50 dark:border-slate-800/50">
-                <div className="grid gap-2 pl-11">
-                  {module.subFeatures.map((sub) => (
+                <div className="grid gap-1">
+                  {module.subFeatures.filter(sub => sub.isSelected).map((sub) => (
                     <div 
                       key={sub.id} 
-                      className={`flex items-center justify-between py-3 px-4 rounded-lg transition-all duration-200 border ${
-                        sub.isSelected 
-                          ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800' 
-                          : 'bg-white dark:bg-slate-900 border-transparent opacity-50'
-                      }`}
+                      className="flex items-center justify-between py-2.5 px-4"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                          sub.isSelected 
-                            ? 'bg-indigo-500 border-indigo-500 text-white' 
-                            : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
-                        }`}>
-                          {sub.isSelected && <Icons.CheckMark size={12} strokeWidth={3} />}
-                        </div>
-                        <span className={`text-sm font-medium ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
+                        <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
                           {sub.name}
                         </span>
-                        {sub.isNew && (
-                          <span className="text-[9px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-1.5 py-0.5 rounded-full">
-                            New
-                          </span>
-                        )}
                       </div>
                       
-                      <span className={`text-sm font-bold w-20 text-right ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'}`}>
+                      <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
                         +{(sub.price / 10000).toLocaleString()}만
                       </span>
                     </div>
