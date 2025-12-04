@@ -8,6 +8,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 interface ProjectContext {
   projectTitle: string;
   moduleNames: string[];
+  coreModules: string[];
+  commonModules: string[];
   projectDescription: string;
 }
 
@@ -18,22 +20,55 @@ You are a Context Lock Classifier for an IT project estimation tool.
 
 # TASK
 Determine if the user's message is:
-- RELATED: Request related to the current project (feature changes, module additions, questions about the project)
-- NEW_PROJECT: Attempt to start a completely different/unrelated project
+- RELATED: Request related to the current project (feature additions, minor changes, questions)
+- NEW_PROJECT: Attempt to change the CORE technology/architecture of the project
 - GENERAL: General conversation, greetings, or questions not specific to any project
 
 # CURRENT PROJECT CONTEXT
 Title: {{PROJECT_TITLE}}
-Modules: {{MODULE_NAMES}}
+Core Domain Modules: {{CORE_MODULES}}
+Common Modules (IGNORE these): {{COMMON_MODULES}}
 Description: {{PROJECT_DESCRIPTION}}
 
 # USER MESSAGE
 "{{USER_MESSAGE}}"
 
-# JUDGMENT CRITERIA
-- RELATED: Adding features to current project, modifying existing modules, asking about costs/timeline, technical questions about the project
-- NEW_PROJECT: Requests for completely different domains (e.g., dating app when working on LMS, game when working on e-commerce, etc.)
-- GENERAL: "Hello", "Thanks", "How are you", general IT questions not tied to a specific project
+# ⚠️ CRITICAL: JUDGMENT CRITERIA
+
+## Step 1: Identify Common Modules (IGNORE these in judgment)
+These utility modules exist in almost every project and should NOT affect your judgment:
+- 회원/인증/로그인/소셜로그인 (authentication)
+- 알림/푸시 (notifications)
+- 파일 업로드/미디어 저장 (file storage)
+- 관리자 대시보드/통계 (admin analytics)
+- 결제/정산 (payment processing)
+
+## Step 2: Focus ONLY on Core Domain Modules
+Core domain modules define the project's identity and CANNOT be changed within the same project:
+- AI 챗봇, RAG, LLM 연동, GPT/Claude → "AI 기반 프로젝트"
+- 시나리오 엔진, 룰 기반 챗봇, 분기 로직 → "시나리오 기반 프로젝트"  
+- 강의/학습/수강/진도/LMS → "교육 플랫폼"
+- 매칭/소개팅/프로필/스와이프 → "소셜/매칭 앱"
+- 상품/재고/주문/장바구니/배송/커머스 → "이커머스 플랫폼"
+- IoT/센서/디바이스/엔드포인트 → "IoT 플랫폼"
+- 게임/퀘스트/레벨/캐릭터 → "게임 플랫폼"
+
+## Step 3: Apply Judgment Rules
+
+| User Request | Judgment | Reason |
+|--------------|----------|--------|
+| "결제 기능 추가해줘" | RELATED | Common module addition |
+| "로그인 방식 바꿔줘" | RELATED | Common module change |
+| "AI 대신 시나리오 기반으로" | NEW_PROJECT | Core tech stack change (AI→Rule-based) |
+| "소개팅 앱으로 바꿔" | NEW_PROJECT | Completely different domain |
+| "GPT 대신 Claude 써줘" | RELATED | Same tech stack (LLM→LLM) |
+| "챗봇 응답 속도 개선해줘" | RELATED | Optimization of existing module |
+
+## Key Principle
+"바꿔줘/변경해줘/대신" keywords do NOT automatically mean NEW_PROJECT.
+→ Check if the CORE TECHNOLOGY STACK changes.
+→ AI↔시나리오, 웹↔네이티브, LMS↔커머스 = NEW_PROJECT
+→ 카카오페이↔네이버페이, GPT↔Claude, MySQL↔PostgreSQL = RELATED
 
 # RESPONSE
 Reply with exactly one word: RELATED, NEW_PROJECT, or GENERAL`;
@@ -51,7 +86,8 @@ async function classifyUserIntent(
     
     const prompt = CONTEXT_CLASSIFIER_PROMPT
       .replace('{{PROJECT_TITLE}}', projectContext.projectTitle || '미정')
-      .replace('{{MODULE_NAMES}}', projectContext.moduleNames.join(', ') || '없음')
+      .replace('{{CORE_MODULES}}', projectContext.coreModules.join(', ') || '없음')
+      .replace('{{COMMON_MODULES}}', projectContext.commonModules.join(', ') || '없음')
       .replace('{{PROJECT_DESCRIPTION}}', projectContext.projectDescription || '프로젝트 분석 중')
       .replace('{{USER_MESSAGE}}', userMessage);
 
@@ -104,13 +140,54 @@ async function classifyUserIntent(
   }
 }
 
+const COMMON_MODULE_KEYWORDS = [
+  '회원', '인증', '로그인', '소셜로그인', '권한', 'auth', 'authentication',
+  '알림', '푸시', 'notification', 'push',
+  '파일', '업로드', 'storage', 'file',
+  '관리자', '어드민', 'admin', '대시보드', 'dashboard', '통계', 'analytics',
+  '결제', 'payment', '정산'
+];
+
+const CORE_DOMAIN_KEYWORDS = [
+  'ai', '챗봇', 'rag', 'llm', '자연어', 'gpt', 'claude', 'gemini',
+  '시나리오', '룰기반', '분기', '스크립트',
+  '강의', '학습', 'lms', '교육', '수강', '진도',
+  '매칭', '소개팅', '프로필', '스와이프',
+  '상품', '재고', '주문', '장바구니', '배송', '커머스', 'commerce',
+  'iot', '센서', '디바이스', '엔드포인트', 'mdm',
+  '게임', '퀘스트', '레벨', '캐릭터'
+];
+
+function isCommonModule(moduleName: string): boolean {
+  const lowerName = moduleName.toLowerCase();
+  
+  if (CORE_DOMAIN_KEYWORDS.some(keyword => lowerName.includes(keyword.toLowerCase()))) {
+    return false;
+  }
+  
+  return COMMON_MODULE_KEYWORDS.some(keyword => lowerName.includes(keyword.toLowerCase()));
+}
+
 function extractProjectContext(modules: ModuleItem[]): ProjectContext {
   const moduleNames = modules.map(m => m.name);
-  const description = `${moduleNames.slice(0, 3).join(', ')} 등 ${modules.length}개 모듈로 구성된 프로젝트`;
+  
+  const coreModules = modules
+    .filter(m => !isCommonModule(m.name))
+    .map(m => m.name);
+  
+  const commonModules = modules
+    .filter(m => isCommonModule(m.name))
+    .map(m => m.name);
+  
+  const description = coreModules.length > 0
+    ? `핵심 도메인: ${coreModules.slice(0, 3).join(', ')} 기반 프로젝트`
+    : `${moduleNames.slice(0, 3).join(', ')} 등 ${modules.length}개 모듈로 구성된 프로젝트`;
   
   return {
     projectTitle: inferProjectTitle(modules),
     moduleNames,
+    coreModules,
+    commonModules,
     projectDescription: description
   };
 }
@@ -141,6 +218,24 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 당신은 IT 프로젝트 견적 컨설턴트 AI입니다.
 사용자의 질문에 답변하고, 필요시 대시보드(모듈/기능/견적)를 제어합니다.
 
+# ⚠️ CRITICAL: 모듈 분류 이해 (반드시 숙지)
+
+## 공통 모듈 (Common Modules) - 모든 프로젝트에 존재하는 유틸리티
+- 회원/인증/로그인/소셜로그인 (authentication)
+- 알림/푸시 (notifications)
+- 파일 업로드/미디어 저장 (file storage)
+- 관리자 대시보드/통계 (admin analytics)
+- 결제/정산 (payment processing)
+
+## 핵심 도메인 모듈 (Core Domain Modules) - 프로젝트 정체성 결정
+- AI 챗봇, RAG, LLM 연동, GPT/Claude → "AI 기반 프로젝트"
+- 시나리오 엔진, 룰 기반 챗봇, 분기 로직 → "시나리오 기반 프로젝트"
+- 강의/학습/수강/진도/LMS → "교육 플랫폼"
+- 매칭/소개팅/프로필/스와이프 → "소셜/매칭 앱"
+- 상품/재고/주문/장바구니/배송/커머스 → "이커머스 플랫폼"
+- IoT/센서/디바이스/엔드포인트 → "IoT 플랫폼"
+- 게임/퀘스트/레벨/캐릭터 → "게임 플랫폼"
+
 # INTENT CLASSIFICATION (의도 분류) - 필수
 사용자의 입력을 먼저 분류하세요:
 - **command**: 모듈/기능 추가, 삭제, 변경, 규모 조정 등 대시보드 데이터를 수정하는 요청
@@ -148,10 +243,30 @@ const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
 - **general**: 단순 질문, 설명 요청, 비용 문의, 일반 대화
   예: "이 모듈이 뭐야?", "비용이 얼마야?", "추천해줘", "감사합니다"
 
-# 🌳 DECISION TREE: 기능 추가 요청 처리 (필수)
-사용자가 기능 추가를 요청하면 다음 판단 로직을 따르세요:
+# 🌳 DECISION TREE: 요청 처리 (필수)
 
-## Step 1: 통합 가능성 평가
+## Step 0: 요청 유형 분류 (가장 먼저 수행)
+| 요청 패턴 | 분류 | 처리 |
+|----------|------|------|
+| "~추가해줘", "~넣어줘" | ADD | Step 1로 이동 |
+| "~빼줘", "~삭제해줘" | REMOVE | toggle_module/toggle_feature 사용 |
+| "A 대신 B로", "A 말고 B", "A 안 쓰고 B로" | REPLACE | Step 0-1로 이동 |
+| "~로 바꿔", "~로 변경" | CHANGE | Step 0-1로 이동 |
+
+## Step 0-1: REPLACE/CHANGE 요청 세부 판단
+**핵심 질문: "변경 대상이 공통 모듈인가, 핵심 도메인 모듈인가?"**
+
+| 변경 대상 | 변경 내용 | 판정 | 예시 |
+|----------|----------|------|------|
+| 공통 모듈 | 방식 변경 | RELATED (처리 가능) | "카카오페이→네이버페이", "이메일→카카오 로그인" |
+| 핵심 도메인 | 같은 기술 스택 | RELATED (처리 가능) | "GPT→Claude", "MySQL→PostgreSQL" |
+| 핵심 도메인 | 다른 기술 스택 | ❌ 처리 불가 | "AI 챗봇→시나리오 챗봇", "웹→네이티브 앱" |
+| 프로젝트 전체 | 완전히 다른 서비스 | ❌ 처리 불가 | "LMS→소개팅앱", "쇼핑몰→게임" |
+
+**❌ 처리 불가인 경우 응답:**
+CHAT에서 "해당 요청은 프로젝트의 핵심 기술 스택을 변경하는 것으로, 새 프로젝트로 진행해야 합니다. 좌측 사이드바에서 [+ 새 프로젝트]를 클릭해주세요." 안내 후 no_action 사용.
+
+## Step 1: 통합 가능성 평가 (ADD 요청일 때)
 요청한 기능이 기존 모듈의 카테고리(backend/frontend/infra/etc)와 일치하거나 확장 가능한가?
 - ✅ 일치/확장 가능 → **기존 모듈에 병합 (Merge)** → add_feature 액션 사용
 - ❌ 불일치/독립적 → **신규 모듈 생성 (Create New)** → create_module 액션 사용
