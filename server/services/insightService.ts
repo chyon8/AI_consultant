@@ -20,11 +20,6 @@ const INSIGHT_PROMPT = `
 
 ## 작성 지침
 - 가장 중요한 질문들은 표시해주세요
-- 프로젝트 도메인 및 성격 분석 포함
-- 규모에 대한 평가 (모듈/기능 수 기반)
-- 성공을 위한 핵심 포인트 언급
-- 예상 개발 기간 범위 (4-6개월 사이로)
-- 전문적이면서도 이해하기 쉬운 어조
 
 응답은 오직 인사이트 문단만 출력하세요. 다른 설명은 포함하지 마세요.`;
 
@@ -62,14 +57,18 @@ export async function generateInsight(params: InsightParams): Promise<string> {
     });
 
     // 전체 response 구조 디버깅
-    console.log("[InsightService] Full response:", JSON.stringify(response, null, 2).substring(0, 1500));
-    
+    console.log(
+      "[InsightService] Full response:",
+      JSON.stringify(response, null, 2).substring(0, 1500),
+    );
+
     // 여러 경로 시도
-    const text = response.text ?? 
-                 (response as any).candidates?.[0]?.content?.parts?.[0]?.text ??
-                 "";
+    const text =
+      response.text ??
+      (response as any).candidates?.[0]?.content?.parts?.[0]?.text ??
+      "";
     console.log("[InsightService] Extracted text length:", text.length);
-    
+
     return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);

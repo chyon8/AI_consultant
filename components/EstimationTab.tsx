@@ -290,9 +290,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                   }}
                   className={`mt-1 flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
                     isSelected
-                      ? 'bg-indigo-600 border-indigo-600 text-white' 
+                      ? 'bg-slate-800 dark:bg-slate-200 border-slate-800 dark:border-slate-200 text-white dark:text-slate-900' 
                       : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
-                  } ${(!isBlind || module.required) ? 'cursor-not-allowed opacity-70' : 'hover:border-indigo-400'}`}
+                  } ${(!isBlind || module.required) ? 'cursor-not-allowed opacity-70' : 'hover:border-slate-500'}`}
                 >
                   {isSelected && <Icons.CheckMark size={14} strokeWidth={3} />}
                 </div>
@@ -359,7 +359,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                            <div className="flex items-center gap-3">
                               <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                                 sub.isSelected 
-                                  ? 'bg-indigo-500 border-indigo-500 text-white' 
+                                  ? 'bg-slate-700 dark:bg-slate-300 border-slate-700 dark:border-slate-300 text-white dark:text-slate-900' 
                                   : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
                               } ${(!isBlind || module.required) ? 'opacity-50' : ''}`}>
                                   {sub.isSelected && <Icons.CheckMark size={12} strokeWidth={3} />}
