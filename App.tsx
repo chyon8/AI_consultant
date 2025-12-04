@@ -711,7 +711,7 @@ const App: React.FC = () => {
         {/* Left: Brand Only */}
         <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'var(--theme-primary)' }}></div>
             <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">Wishket Estimate</span>
           </div>
         </div>

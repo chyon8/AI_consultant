@@ -57,7 +57,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto">
           <div className="py-2">
-            <div className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-indigo-600 dark:text-indigo-400">
+            <div className="w-full flex items-center gap-3 px-3 py-2.5 text-left" style={{ color: 'var(--theme-primary)' }}>
               <Icons.External size={16} className="flex-shrink-0" />
               <span className="text-sm font-medium">외주</span>
             </div>
@@ -78,7 +78,10 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                 <Icons.Clock size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                 <span className="flex-1 text-sm text-slate-600 dark:text-slate-300">프로젝트</span>
                 {sessionCount > 0 && (
-                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">
+                  <span 
+                    className="text-xs px-1.5 py-0.5 rounded text-white"
+                    style={{ backgroundColor: 'var(--theme-primary)' }}
+                  >
                     {sessionCount}
                   </span>
                 )}
@@ -114,7 +117,10 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                       }`}>
                         {session.isLoading ? (
                           <span className="flex items-center gap-2">
-                            <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                            <span 
+                              className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin"
+                              style={{ borderColor: 'var(--theme-primary)', borderTopColor: 'transparent' }}
+                            />
                             <span>생성 중...</span>
                           </span>
                         ) : (
