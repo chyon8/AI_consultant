@@ -39,18 +39,13 @@ export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ curren
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
               }`}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <span className={`text-[10px] font-medium tracking-wide px-2 py-1 rounded-md ${
                   isSelected 
                     ? 'bg-slate-700 dark:bg-slate-200 text-slate-300 dark:text-slate-600' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                 }`}>
                   {label}
-                </span>
-                <span className={`text-[11px] font-mono ${
-                  isSelected ? 'text-slate-400 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'
-                }`}>
-                  ×{config.costMultiplier}  {config.durationMultiplier}mo
                 </span>
               </div>
 
