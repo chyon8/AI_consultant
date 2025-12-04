@@ -431,10 +431,26 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
             >
               {/* Header Row */}
               <div 
-                 className="p-6 flex items-start gap-4 cursor-pointer select-none" 
+                 className="p-6 flex items-start gap-5 cursor-pointer select-none" 
                  onClick={() => toggleExpand(module.id)}
               >
-                <div className="flex-1">
+                {/* Checkbox (Interactive in Step 1, Disabled in Step 2) */}
+                <div
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (!isBlind) return; // Read-only in Step 2
+                    if (!module.required) onToggleModule(module.id); 
+                  }}
+                  className={`mt-1 flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-indigo-600 border-indigo-600 text-white' 
+                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
+                  } ${(!isBlind || module.required) ? 'cursor-not-allowed opacity-70' : 'hover:border-indigo-400'}`}
+                >
+                  {isSelected && <Icons.CheckMark size={14} strokeWidth={3} />}
+                </div>
+
+                <div className="flex-1 pt-0.5">
                   <div className="flex items-center gap-3 mb-1">
                     <h5 className={`text-lg font-bold tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                       {module.name}
