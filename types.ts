@@ -83,8 +83,6 @@ export interface PresetDetail {
 export type EstimationStep = 'SCOPE' | 'RESULT' | 'REGISTER';
 export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
-export type EstimationSubTab = 'DETAIL' | 'PARTNER' | 'SCHEDULE';
-
 export interface DashboardState {
   modules: ModuleItem[];
   partnerType: PartnerType;

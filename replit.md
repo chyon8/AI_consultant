@@ -79,8 +79,8 @@ Before writing any code, you MUST output a plan in this format:
 - Interactive chat interface with Gemini AI consultant
 - Project module and feature selection
 - Budget optimization suggestions
-- Partner type presets (AGENCY, STUDIO, AI_NATIVE)
-- Estimation, Partner Type, Similar Cases tabs
+- Partner type presets (TYPE A/AI_NATIVE, TYPE B/STUDIO, TYPE C/AGENCY)
+- **3 Top-level Tabs**: 견적/예산, 수행계획, 공고작성
 - Dark mode support
 - Resizable sidebar interface
 - SSE streaming for AI responses
@@ -131,7 +131,17 @@ The app uses Gemini 2.5 Flash model for:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (December 3, 2024)
+## Recent Changes (December 4, 2024)
+- **Information Architecture Redesign**: Hierarchy Flattening
+  - Removed sub-tabs from '견적/예산' tab
+  - Created 3 top-level tabs: [견적/예산], [수행계획], [공고작성]
+  - Data binding: 상세견적 → 견적/예산 tab, 예상일정 → 수행계획 tab
+- New components:
+  - ExecutionPlanTab.tsx - WBS/Schedule display
+  - RFPTab.tsx - RFP generation interface
+- Required module protection: All sub-features of required modules are now locked
+
+## Previous Changes (December 3, 2024)
 - Added Conditional Workflow for chat commands
   - Intent Classification: command vs general in AI response
   - Confirmation UI: "추가 시 재산정이 필요합니다. 진행하시겠습니까?"
