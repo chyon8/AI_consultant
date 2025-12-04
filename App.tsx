@@ -34,6 +34,9 @@ const App: React.FC = () => {
   
   // Project Summary Content (STEP 1 from Gemini analysis)
   const [projectSummaryContent, setProjectSummaryContent] = useState<string>('');
+  
+  // AI Insight for Project Summary
+  const [aiInsight, setAiInsight] = useState<string>('');
 
   // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
@@ -91,11 +94,12 @@ const App: React.FC = () => {
         partnerType: currentPartnerType,
         projectScale: currentScale,
         estimationStep,
-        projectSummaryContent
+        projectSummaryContent,
+        aiInsight
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight]);
 
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
@@ -106,6 +110,7 @@ const App: React.FC = () => {
     setCurrentView('landing');
     setEstimationStep('SCOPE');
     setProjectSummaryContent('');
+    setAiInsight('');
   };
 
   // Handle delete session - show confirmation modal
@@ -158,6 +163,7 @@ const App: React.FC = () => {
           setCurrentScale(session.dashboardState.projectScale);
           setEstimationStep(session.dashboardState.estimationStep);
           setProjectSummaryContent(session.dashboardState.projectSummaryContent || '');
+          setAiInsight(session.dashboardState.aiInsight || '');
         } else {
           // Legacy session without dashboard state - reset to defaults
           setModules(INITIAL_MODULES);
@@ -165,6 +171,7 @@ const App: React.FC = () => {
           setCurrentScale('STANDARD');
           setEstimationStep('SCOPE');
           setProjectSummaryContent('');
+          setAiInsight('');
         }
         
         setCurrentView('detail');
@@ -496,8 +503,46 @@ const App: React.FC = () => {
         console.log('[App] Setting projectSummaryContent, length:', result.rawMarkdown.length);
         setProjectSummaryContent(result.rawMarkdown);
       }
+      
+      // Generate AI insight
+      const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
+      generateAiInsight({
+        projectName: result.projectTitle || '',
+        businessGoals: '',
+        coreValues: [],
+        moduleCount: convertedModules.length,
+        featureCount: totalFeatures
+      });
     } else {
       console.warn('[App] No valid modules in result');
+    }
+  };
+  
+  // Generate AI Insight via API
+  const generateAiInsight = async (params: {
+    projectName: string;
+    businessGoals: string;
+    coreValues: string[];
+    moduleCount: number;
+    featureCount: number;
+  }) => {
+    try {
+      console.log('[App] Generating AI insight for:', params.projectName);
+      const response = await fetch('/api/insight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.insight) {
+          console.log('[App] AI insight generated:', data.insight.substring(0, 100));
+          setAiInsight(data.insight);
+        }
+      }
+    } catch (error) {
+      console.error('[App] Failed to generate AI insight:', error);
     }
   };
 
@@ -751,6 +796,7 @@ const App: React.FC = () => {
                 currentScale={currentScale}
                 onScaleChange={handleScaleChange}
                 projectSummaryContent={projectSummaryContent}
+                aiInsight={aiInsight}
               />
             </div>
           </>

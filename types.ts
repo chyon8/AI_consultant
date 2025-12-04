@@ -90,6 +90,7 @@ export interface DashboardState {
   projectScale: ProjectScale;
   estimationStep: EstimationStep;
   projectSummaryContent?: string;
+  aiInsight?: string;
 }
 
 export type ChatActionType = 

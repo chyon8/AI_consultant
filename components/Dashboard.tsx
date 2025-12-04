@@ -23,6 +23,7 @@ interface DashboardProps {
   currentScale: ProjectScale;
   onScaleChange: (scale: ProjectScale) => void;
   projectSummaryContent: string;
+  aiInsight?: string;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -37,7 +38,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onStepChange,
   currentScale,
   onScaleChange,
-  projectSummaryContent
+  projectSummaryContent,
+  aiInsight
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -255,7 +257,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="max-w-4xl mx-auto">
           <div key={activeTab} className="animate-fade-in-up">
             {activeTab === TabView.PROJECT_SUMMARY && (
-              <ProjectSummaryTab content={projectSummaryContent} />
+              <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} />
             )}
             {activeTab === TabView.ESTIMATION && (
               <EstimationTab 

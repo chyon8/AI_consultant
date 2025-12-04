@@ -5,6 +5,7 @@ import path from 'path';
 import { analyzeProject } from './services/geminiService';
 import { generateRFP } from './services/rfpService';
 import { parseAnalysisResponse } from './services/responseParser';
+import { generateInsight, InsightParams } from './services/insightService';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -132,6 +133,21 @@ app.post('/api/chat', async (req, res) => {
     res.write(`data: ${JSON.stringify({ error: 'Chat failed' })}\n\n`);
   } finally {
     res.end();
+  }
+});
+
+app.post('/api/insight', async (req, res) => {
+  try {
+    const params: InsightParams = req.body;
+    console.log('[Insight] Generating insight for:', params.projectName);
+    
+    const insight = await generateInsight(params);
+    console.log('[Insight] Generated:', insight.substring(0, 100));
+    
+    res.json({ success: true, insight });
+  } catch (error) {
+    console.error('Insight generation error:', error);
+    res.status(500).json({ success: false, error: 'Insight generation failed' });
   }
 });
 
