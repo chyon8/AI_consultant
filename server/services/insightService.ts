@@ -31,8 +31,13 @@ export interface InsightParams {
   featureCount: number;
 }
 
-export async function generateInsight(params: InsightParams): Promise<string> {
+const DEFAULT_MODEL = "gemini-2.5-flash";
+
+export async function generateInsight(params: InsightParams, modelId?: string): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const model = modelId || DEFAULT_MODEL;
+  
+  console.log('[insightService] generateInsight using model:', model);
 
   const prompt = INSIGHT_PROMPT.replace(
     "{projectName}",
@@ -45,7 +50,7 @@ export async function generateInsight(params: InsightParams): Promise<string> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: model,
       contents: prompt,
       config: {
         temperature: 0.7,

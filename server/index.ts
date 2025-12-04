@@ -58,15 +58,15 @@ app.post('/api/analyze', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const { text, fileContents } = req.body;
+    const { text, fileContents, modelId } = req.body;
     let fullResponse = '';
 
-    console.log('[Analyze] Starting analysis for:', text?.substring(0, 100));
+    console.log('[Analyze] Starting analysis for:', text?.substring(0, 100), 'with model:', modelId || 'default');
 
     await analyzeProject(text, fileContents, (chunk: string) => {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-    });
+    }, modelId);
 
     console.log('[Analyze] Full response length:', fullResponse.length);
     console.log('[Analyze] Response contains json:modules?', fullResponse.includes('```json:modules'));
@@ -98,11 +98,13 @@ app.post('/api/rfp', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const { modules, summary } = req.body;
+    const { modules, summary, modelId } = req.body;
+
+    console.log('[RFP] Generating RFP with model:', modelId || 'default');
 
     await generateRFP(modules, summary, (chunk: string) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-    });
+    }, modelId);
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   } catch (error) {
@@ -119,13 +121,15 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const { history, currentModules } = req.body;
+    const { history, currentModules, modelSettings } = req.body;
+    
+    console.log('[Chat] Using model settings:', modelSettings || 'default');
     
     const { streamChatResponse } = await import('./services/chatService');
     
     await streamChatResponse(history, currentModules, (chunk: string) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-    });
+    }, modelSettings);
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   } catch (error) {
@@ -138,10 +142,10 @@ app.post('/api/chat', async (req, res) => {
 
 app.post('/api/insight', async (req, res) => {
   try {
-    const params: InsightParams = req.body;
-    console.log('[Insight] Generating insight for:', params.projectName);
+    const { modelId, ...params } = req.body as InsightParams & { modelId?: string };
+    console.log('[Insight] Generating insight for:', params.projectName, 'with model:', modelId || 'default');
     
-    const insight = await generateInsight(params);
+    const insight = await generateInsight(params, modelId);
     console.log('[Insight] Generated:', insight.substring(0, 100));
     
     res.json({ success: true, insight });

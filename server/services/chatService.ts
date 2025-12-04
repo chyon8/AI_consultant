@@ -73,9 +73,12 @@ Core domain modules define the project's identity and CANNOT be changed within t
 # RESPONSE
 Reply with exactly one word: RELATED, NEW_PROJECT, or GENERAL`;
 
+const DEFAULT_MODEL = 'gemini-2.5-flash';
+
 async function classifyUserIntent(
   userMessage: string,
-  projectContext: ProjectContext
+  projectContext: ProjectContext,
+  modelId?: string
 ): Promise<{ judgment: ContextJudgment; shouldBlock: boolean; refusalMessage?: string }> {
   if (!GEMINI_API_KEY) {
     return { judgment: 'GENERAL', shouldBlock: false };
@@ -83,6 +86,9 @@ async function classifyUserIntent(
 
   try {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const model = modelId || DEFAULT_MODEL;
+    
+    console.log('[chatService] classifyUserIntent using model:', model);
     
     const prompt = CONTEXT_CLASSIFIER_PROMPT
       .replace('{{PROJECT_TITLE}}', projectContext.projectTitle || '미정')
@@ -92,7 +98,7 @@ async function classifyUserIntent(
       .replace('{{USER_MESSAGE}}', userMessage);
 
     const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: model,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         temperature: 0,
@@ -439,10 +445,16 @@ function calculateTotals(modules: ModuleItem[]): { totalCost: number; totalWeeks
   return { totalCost, totalWeeks };
 }
 
+export interface ChatModelSettings {
+  classifyUserIntent?: string;
+  streamChatResponse?: string;
+}
+
 export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  modelSettings?: ChatModelSettings
 ): Promise<void> {
   if (!GEMINI_API_KEY) {
     onChunk("<CHAT>\nAPI Key가 설정되지 않았습니다. GEMINI_API_KEY 환경 변수를 설정해주세요.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
@@ -456,7 +468,11 @@ export async function streamChatResponse(
   console.log('[Context Lock] Classifying user intent for:', lastUserMessage.text.substring(0, 50));
   console.log('[Context Lock] Project context:', projectContext.projectTitle);
   
-  const contextValidation = await classifyUserIntent(lastUserMessage.text, projectContext);
+  const contextValidation = await classifyUserIntent(
+    lastUserMessage.text, 
+    projectContext,
+    modelSettings?.classifyUserIntent
+  );
   
   console.log('[Context Lock] Judgment:', contextValidation.judgment);
   
@@ -466,6 +482,9 @@ export async function streamChatResponse(
   }
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const model = modelSettings?.streamChatResponse || DEFAULT_MODEL;
+  
+  console.log('[chatService] streamChatResponse using model:', model);
 
   const { totalCost, totalWeeks } = calculateTotals(currentModules);
   const modulesText = formatModulesForPrompt(currentModules);
@@ -494,7 +513,7 @@ ${modulesText}
 
   try {
     const result = await ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
+      model: model,
       contents: contents,
       config: {
         systemInstruction: fullSystemPrompt

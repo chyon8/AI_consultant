@@ -87,12 +87,18 @@ interface ModuleInfo {
   subFeatures: { name: string; isSelected: boolean }[];
 }
 
+const DEFAULT_MODEL = 'gemini-3-pro-preview';
+
 export async function generateRFP(
   modules: ModuleInfo[],
   summary: string,
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => void,
+  modelId?: string
 ): Promise<void> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const model = modelId || DEFAULT_MODEL;
+  
+  console.log('[rfpService] generateRFP using model:', model);
 
   const selectedModules = modules
     .filter(m => m.isSelected)
@@ -116,7 +122,7 @@ ${modulesSummary}
 `;
 
   const response = await ai.models.generateContentStream({
-    model: 'gemini-3-pro-preview',
+    model: model,
     contents: [
       { role: 'user', parts: [{ text: PART2_PROMPT + '\n\n---\n\n' + userContent }] }
     ],

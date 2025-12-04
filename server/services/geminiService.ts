@@ -85,12 +85,18 @@ const PART1_PROMPT = `# PROMPT METADATA
 응답은 한국어로 작성하고, 마크다운 형식으로 구조화해주세요.
 JSON 블록은 반드시 응답 마지막에 포함하세요.`;
 
+const DEFAULT_MODEL = 'gemini-3-pro-preview';
+
 export async function analyzeProject(
   userInput: string,
   fileContents: string[],
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => void,
+  modelId?: string
 ): Promise<void> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const model = modelId || DEFAULT_MODEL;
+  
+  console.log('[geminiService] analyzeProject using model:', model);
 
   const combinedInput = [
     userInput,
@@ -98,7 +104,7 @@ export async function analyzeProject(
   ].join('');
 
   const response = await ai.models.generateContentStream({
-    model: 'gemini-3-pro-preview',
+    model: model,
     contents: [
       { role: 'user', parts: [{ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + combinedInput }] }
     ],

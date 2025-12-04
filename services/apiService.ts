@@ -68,14 +68,15 @@ export async function analyzeProject(
   fileContents: string[],
   onChunk: (chunk: string) => void,
   onComplete?: (result: ParsedAnalysisResult | null) => void,
-  onError?: (error: string) => void
+  onError?: (error: string) => void,
+  modelId?: string
 ): Promise<ParsedAnalysisResult | null> {
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, fileContents }),
+    body: JSON.stringify({ text, fileContents, modelId }),
   });
 
   if (!response.ok) {
@@ -166,14 +167,15 @@ export async function generateRFP(
   modules: any[],
   summary: string,
   onChunk: (chunk: string) => void,
-  onError?: (error: string) => void
+  onError?: (error: string) => void,
+  modelId?: string
 ): Promise<void> {
   const response = await fetch('/api/rfp', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ modules, summary }),
+    body: JSON.stringify({ modules, summary, modelId }),
   });
 
   if (!response.ok) {
