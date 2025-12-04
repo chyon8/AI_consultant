@@ -8,6 +8,64 @@ function getWebSocketUrl(): string {
   return `${protocol}//${window.location.host}/ws/chat`;
 }
 
+class TypingEffectManager {
+  private buffer = '';
+  private displayed = '';
+  private isTyping = false;
+  private callback: ((text: string) => void) | null = null;
+  private speed = 10;
+  private timerId: NodeJS.Timeout | null = null;
+
+  startTyping(onUpdate: (text: string) => void, speed: number = 10) {
+    this.callback = onUpdate;
+    this.speed = speed;
+    
+    if (!this.isTyping) {
+      this.isTyping = true;
+      this.typeNextChars();
+    }
+  }
+
+  private typeNextChars = () => {
+    if (this.displayed.length < this.buffer.length) {
+      const remaining = this.buffer.length - this.displayed.length;
+      const charsToAdd = Math.min(2, remaining);
+      this.displayed = this.buffer.substring(0, this.displayed.length + charsToAdd);
+      
+      if (this.callback) {
+        this.callback(this.displayed);
+      }
+      
+      this.timerId = setTimeout(this.typeNextChars, this.speed);
+    } else {
+      this.isTyping = false;
+    }
+  }
+
+  addToBuffer(text: string) {
+    this.buffer += text;
+    if (!this.isTyping && this.callback) {
+      this.isTyping = true;
+      this.typeNextChars();
+    }
+  }
+
+  reset() {
+    if (this.timerId) {
+      clearTimeout(this.timerId);
+    }
+    this.buffer = '';
+    this.displayed = '';
+    this.isTyping = false;
+  }
+
+  getFullText() {
+    return this.buffer;
+  }
+}
+
+const typingManager = new TypingEffectManager();
+
 interface ChatModelSettings {
   classifyUserIntent?: string;
   streamChatResponse?: string;
@@ -160,6 +218,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
     setMessages(prev => [...prev, aiMsg]);
 
+    typingManager.reset();
     let fullResponseText = '';
 
     try {
@@ -188,28 +247,31 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
       });
 
+      const updateDisplay = (displayedText: string) => {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, text: displayedText } 
+            : msg
+        ));
+      };
+
+      typingManager.startTyping(updateDisplay, 10);
+
       await new Promise<void>((resolve, reject) => {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('[WebSocket] Received:', data.type);
             
             if (data.type === 'chunk' && data.chunk) {
               fullResponseText += data.chunk;
-              console.log('[WebSocket] Text chunk:', data.chunk.substring(0, 50));
               const displayText = extractDisplayText(fullResponseText);
-              
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMsgId 
-                  ? { ...msg, text: displayText } 
-                  : msg
-              ));
+              typingManager.addToBuffer(extractDisplayText(data.chunk));
             }
             
             if (data.type === 'done') {
               console.log('[WebSocket] Stream complete');
               ws.close();
-              resolve();
+              setTimeout(() => resolve(), 500);
             }
             
             if (data.type === 'error') {
