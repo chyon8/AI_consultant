@@ -200,6 +200,9 @@ const App: React.FC = () => {
     root.style.setProperty('--theme-bg-light', theme.bgLight);
     root.style.setProperty('--theme-bg-dark', theme.bgDark);
     
+    // Apply background color to body
+    document.body.style.backgroundColor = isDarkMode ? theme.bgDark : theme.bgLight;
+    
     if (isDarkMode) {
       root.classList.add('dark');
     } else {
@@ -672,7 +675,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen w-screen flex flex-col font-sans bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300`}>
+    <div 
+      className="h-screen w-screen flex flex-col font-sans overflow-hidden text-slate-900 dark:text-slate-50 transition-colors duration-300"
+      style={{ backgroundColor: isDarkMode ? 'var(--theme-bg-dark)' : 'var(--theme-bg-light)' }}
+    >
       
       {/* Error Notification */}
       {analysisError && (
@@ -707,7 +713,10 @@ const App: React.FC = () => {
       )}
 
       {/* Minimal Header */}
-      <header className="h-16 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0 relative transition-colors duration-300">
+      <header 
+        className="h-16 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0 relative transition-colors duration-300"
+        style={{ backgroundColor: isDarkMode ? 'var(--theme-bg-dark)' : 'var(--theme-bg-light)' }}
+      >
         {/* Left: Brand Only */}
         <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
           <div className="flex items-center gap-2 flex-shrink-0">

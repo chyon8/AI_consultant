@@ -36,7 +36,10 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-300 px-6">
+      <div 
+        className="flex-1 flex flex-col items-center justify-center transition-colors duration-300 px-6"
+        style={{ backgroundColor: 'var(--theme-bg-light)' }}
+      >
         <div className="text-center">
           <div 
             className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-8 shadow-xl animate-pulse"
@@ -61,7 +64,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-950 transition-colors duration-300 px-6">
+    <div className="flex-1 flex flex-col items-center justify-center transition-colors duration-300 px-6">
       <div className="w-full max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <div 

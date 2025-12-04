@@ -36,9 +36,10 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
   return (
     <div 
-      className={`h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col transition-all duration-300 ${
+      className={`h-full border-r border-slate-100 dark:border-slate-800 flex flex-col transition-all duration-300 ${
         isCollapsed ? 'w-14' : 'w-56'
       }`}
+      style={{ backgroundColor: 'var(--theme-bg-light)' }}
     >
       <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
         {!isCollapsed && (
