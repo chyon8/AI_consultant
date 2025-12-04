@@ -1,9 +1,10 @@
 
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { ModuleItem, PartnerType } from '../types';
 import { Icons } from './Icons';
 import { calculateSchedule } from '../services/scheduleEngine';
+import { generateRFP } from '../services/apiService';
 
 interface RFPTabProps {
   modules: ModuleItem[];
@@ -16,6 +17,12 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   currentPartnerType,
   onGenerateRFP
 }) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [rfpContent, setRfpContent] = useState('');
+  const [showResult, setShowResult] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const selectedModules = modules.filter(m => m.isSelected);
   
   const baseDevCost = selectedModules.reduce((acc, m) => 
@@ -41,6 +48,42 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   const totalFeatures = selectedModules.reduce((acc, m) => 
     acc + m.subFeatures.filter(s => s.isSelected).length
   , 0);
+
+  const handleGenerateRFP = async () => {
+    setIsGenerating(true);
+    setRfpContent('');
+    setShowResult(true);
+    setCopied(false);
+
+    const projectSummary = `총 ${selectedModules.length}개 모듈, 예상 비용 ${(totalCost / 10000).toLocaleString()}만원, 예상 기간 ${scheduleResult.totalDuration.toFixed(1)}개월`;
+
+    try {
+      await generateRFP(
+        selectedModules,
+        projectSummary,
+        (chunk) => {
+          setRfpContent(prev => prev + chunk);
+        },
+        (error) => {
+          console.error('RFP generation error:', error);
+        }
+      );
+    } catch (error) {
+      console.error('RFP generation failed:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(rfpContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">
@@ -102,12 +145,65 @@ export const RFPTab: React.FC<RFPTabProps> = ({
           위 내용을 기반으로 입찰 공고문을 자동 생성합니다. 프로젝트 개요, 과업 범위, 기술 스택, 일정 등이 포함됩니다.
         </p>
         <button
-          onClick={onGenerateRFP}
-          className="w-full py-4 bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all"
+          onClick={handleGenerateRFP}
+          disabled={isGenerating}
+          className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+            isGenerating 
+              ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed' 
+              : 'bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900'
+          }`}
         >
-          <Icons.File size={18} />
-          공고문 생성하기
+          {isGenerating ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>생성 중...</span>
+            </>
+          ) : (
+            <>
+              <Icons.File size={18} />
+              <span>공고문 생성하기</span>
+            </>
+          )}
         </button>
+
+        {showResult && (
+          <div className="mt-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <h5 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Icons.File size={16} />
+                생성된 공고문
+              </h5>
+              <button
+                onClick={handleCopy}
+                disabled={!rfpContent || isGenerating}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  copied 
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Icons.CheckMark size={14} />
+                    <span>복사됨</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.Copy size={14} />
+                    <span>복사</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <textarea
+              ref={textareaRef}
+              value={rfpContent}
+              onChange={(e) => setRfpContent(e.target.value)}
+              placeholder={isGenerating ? "공고문을 생성하고 있습니다..." : "생성된 공고문이 여기에 표시됩니다."}
+              className="w-full h-96 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
