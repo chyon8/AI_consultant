@@ -58,12 +58,12 @@ export async function generateInsight(params: InsightParams): Promise<string> {
       },
     });
 
-    console.log("[InsightService] Response object keys:", Object.keys(response));
-    console.log("[InsightService] Response:", JSON.stringify(response, null, 2).substring(0, 500));
+    const candidate = response.candidates?.[0];
+    console.log("[InsightService] Candidate:", JSON.stringify(candidate, null, 2));
     
-    const text = response.text || 
-                 response.candidates?.[0]?.content?.parts?.[0]?.text || 
-                 "";
+    const text = candidate?.content?.parts?.[0]?.text || "";
+    console.log("[InsightService] Extracted text:", text.substring(0, 100));
+    
     return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
