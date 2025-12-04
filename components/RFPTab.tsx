@@ -52,9 +52,10 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   const handleGenerateRFP = async () => {
     setIsGenerating(true);
     setRfpContent('');
-    setShowResult(true);
+    setShowResult(false);
     setCopied(false);
 
+    let content = '';
     const projectSummary = `총 ${selectedModules.length}개 모듈, 예상 비용 ${(totalCost / 10000).toLocaleString()}만원, 예상 기간 ${scheduleResult.totalDuration.toFixed(1)}개월`;
 
     try {
@@ -62,12 +63,14 @@ export const RFPTab: React.FC<RFPTabProps> = ({
         selectedModules,
         projectSummary,
         (chunk) => {
-          setRfpContent(prev => prev + chunk);
+          content += chunk;
         },
         (error) => {
           console.error('RFP generation error:', error);
         }
       );
+      setRfpContent(content);
+      setShowResult(true);
     } catch (error) {
       console.error('RFP generation failed:', error);
     } finally {
@@ -166,8 +169,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
           )}
         </button>
 
-        {showResult && (
-          <div className="mt-6 space-y-3">
+        {showResult && !isGenerating && rfpContent && (
+          <div className="mt-6 space-y-3 animate-fade-in">
             <div className="flex items-center justify-between">
               <h5 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 <Icons.File size={16} />
@@ -175,7 +178,7 @@ export const RFPTab: React.FC<RFPTabProps> = ({
               </h5>
               <button
                 onClick={handleCopy}
-                disabled={!rfpContent || isGenerating}
+                disabled={!rfpContent}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   copied 
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
@@ -199,8 +202,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
               ref={textareaRef}
               value={rfpContent}
               onChange={(e) => setRfpContent(e.target.value)}
-              placeholder={isGenerating ? "공고문을 생성하고 있습니다..." : "생성된 공고문이 여기에 표시됩니다."}
-              className="w-full h-96 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+              className="w-full min-h-96 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+              style={{ resize: 'vertical' }}
             />
           </div>
         )}
