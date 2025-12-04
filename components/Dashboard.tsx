@@ -41,12 +41,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isRFPOpen, setIsRFPOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Phase 1 Action: Calculate estimate and transition to Phase 2
+  // Phase 1 Action: Calculate estimate (NO routing - stay on current tab)
   const handleGenerateEstimate = () => {
     onStepChange('RESULT');
-    // After calculation, immediately switch to 수행계획 tab
+    // Scroll to top to show calculation results - NO TAB NAVIGATION
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Phase 1 → Phase 2 Navigation: Move to 수행계획 tab
+  const handleNextToExecutionPlan = () => {
+    setActiveTab(TabView.EXECUTION_PLAN);
     setTimeout(() => {
-      setActiveTab(TabView.EXECUTION_PLAN);
       contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
   };
@@ -158,9 +163,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       );
     }
 
-    // Phase 1: [Tab: 견적/예산] - Initial or Post-Calculation State
-    if (estimationStep === 'RESULT') {
-      // Post-calculation: Show split mode (이전/다음)
+    // Phase 1: [Tab: 견적/예산] - Post-Calculation State (estimationStep === 'RESULT')
+    // Constraint: 산출 결과가 화면에 표시된 후에만 다음 단계로 이동 가능
+    if (estimationStep === 'RESULT' && activeTab === TabView.ESTIMATION) {
       return (
         <div className="flex items-center gap-3 w-full">
           <DownloadButton />
@@ -172,7 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span>수정하기</span>
           </button>
           <button 
-            onClick={() => setActiveTab(TabView.EXECUTION_PLAN)}
+            onClick={handleNextToExecutionPlan}
             className="flex-1 h-14 bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition-all"
           >
             <span>다음 단계</span>
