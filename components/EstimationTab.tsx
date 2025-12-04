@@ -162,7 +162,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
         <Icons.Briefcase size={20} />
         선택된 기능 명세
       </h3>
-      {modules.filter(m => m.isSelected).map((module) => {
+      {modules.filter(m => m.isSelected && m.subFeatures.some(s => s.isSelected)).map((module) => {
         const isExpanded = expandedIds.includes(module.id);
         const selectedSubs = module.subFeatures.filter(s => s.isSelected);
         const moduleTotalCost = module.baseCost + selectedSubs.reduce((sum, s) => sum + s.price, 0);
