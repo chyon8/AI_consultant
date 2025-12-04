@@ -3,6 +3,7 @@ import { Icons } from './Icons';
 
 interface ProjectSummaryTabProps {
   content: string;
+  aiInsight?: string;
 }
 
 interface ProjectInfo {
@@ -31,10 +32,12 @@ interface ParsedData {
 function stripMarkdown(text: string): string {
   return text
     .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^\*\s+/gm, '')
+    .replace(/\*([^*\s][^*]*[^*\s])\*/g, '$1')
+    .replace(/\*([^*\s])\*/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/^#+\s*/gm, '')
-    .replace(/^[-*•]\s*/gm, '')
+    .replace(/^[-•]\s*/gm, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .trim();
 }
@@ -43,6 +46,7 @@ function cleanTechItem(item: string): string {
   return stripMarkdown(item)
     .replace(/^[\s:,]+/, '')
     .replace(/[\s:,]+$/, '')
+    .replace(/^\*+\s*/, '')
     .trim();
 }
 
@@ -101,7 +105,7 @@ function parseStep1Content(content: string): ParsedData {
       const items = rawItems
         .split(/[,،、\/]/)
         .map(cleanTechItem)
-        .filter(item => item.length > 0 && item.length < 50 && !item.includes('*'));
+        .filter(item => item.length > 0 && item.length < 50 && !item.match(/^\*+$/));
       
       if (items.length > 0) {
         result.techStack.push({ layer: key, items });
@@ -132,7 +136,7 @@ function parseStep1Content(content: string): ParsedData {
   return result;
 }
 
-export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content }) => {
+export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, aiInsight }) => {
   const parsedData = useMemo(() => parseStep1Content(content), [content]);
 
   if (!content) {
@@ -157,6 +161,38 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content })
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
+      {/* AI Assistant Section */}
+      <div className="space-y-3">
+        <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          AI Assistant
+        </h3>
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+              <Icons.Bot size={16} className="text-white" />
+            </div>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              프로젝트 인사이트
+            </span>
+          </div>
+          <div className="px-5 py-4">
+            {aiInsight ? (
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {aiInsight}
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                본 프로젝트는 <span className="font-medium text-slate-700 dark:text-slate-200">B2C 이커머스</span> 도메인에 속하며, 모바일 우선 전략이 핵심입니다. 
+                총 <span className="font-medium text-slate-700 dark:text-slate-200">{parsedData.modules.length}개 모듈</span>과 <span className="font-medium text-slate-700 dark:text-slate-200">{totalFeatures}개 기능</span>으로 구성되어 있으며, 
+                결제 시스템과 사용자 경험 최적화가 프로젝트 성공의 핵심 요소입니다. 
+                예상 개발 기간은 파트너 유형에 따라 4~6개월로 산정됩니다.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Project Info Card */}
       {hasProjectInfo && (
         <div className="space-y-3">
