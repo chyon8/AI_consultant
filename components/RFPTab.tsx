@@ -202,8 +202,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
               ref={textareaRef}
               value={rfpContent}
               onChange={(e) => setRfpContent(e.target.value)}
-              className="w-full min-h-96 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
-              style={{ resize: 'vertical' }}
+              className="w-full p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+              style={{ resize: 'both', minHeight: '384px', maxHeight: '800px', overflow: 'auto' }}
             />
           </div>
         )}
