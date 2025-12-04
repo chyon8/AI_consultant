@@ -62,6 +62,6 @@ export async function generateInsight(params: InsightParams): Promise<string> {
     return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
-    return `본 프로젝트는 ${params.moduleCount}개 모듈과 ${params.featureCount}개 기능으로 구성된 프로젝트입니다. 파트너 유형에 따라 4~6개월의 개발 기간이 예상됩니다.`;
+    return "불러오지 못했습니다.";
   }
 }
