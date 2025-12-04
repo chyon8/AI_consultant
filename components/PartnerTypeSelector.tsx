@@ -10,9 +10,9 @@ interface PartnerTypeSelectorProps {
 
 export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ currentType, onSelect }) => {
   const typeLabels: Record<PartnerType, { label: string; subtitle: string }> = {
-    AI_NATIVE: { label: 'Type A', subtitle: 'AI 네이티브' },
-    STUDIO: { label: 'Type B', subtitle: '스튜디오' },
-    AGENCY: { label: 'Type C', subtitle: '전문 개발사' }
+    AI_NATIVE: { label: 'TYPE A', subtitle: 'AI 네이티브' },
+    STUDIO: { label: 'TYPE B', subtitle: '스튜디오' },
+    AGENCY: { label: 'TYPE C', subtitle: '전문 개발사' }
   };
 
   const descriptions: Record<PartnerType, string> = {
@@ -39,41 +39,32 @@ export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ curren
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
               }`}
             >
-              <div className="flex items-baseline justify-between mb-3">
-                <span className={`text-[10px] font-medium tracking-[0.2em] uppercase ${
-                  isSelected ? 'text-slate-400 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'
+              <div className="flex items-center justify-between mb-4">
+                <span className={`text-[10px] font-medium tracking-wide px-2 py-1 rounded-md ${
+                  isSelected 
+                    ? 'bg-slate-700 dark:bg-slate-200 text-slate-300 dark:text-slate-600' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                 }`}>
                   {label}
                 </span>
-                <div className="flex gap-2">
-                  <span className={`text-[10px] font-mono ${
-                    isSelected ? 'text-slate-400 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'
-                  }`}>
-                    ×{config.costMultiplier}
-                  </span>
-                  <span className={`text-[10px] font-mono ${
-                    isSelected ? 'text-slate-400 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'
-                  }`}>
-                    {config.durationMultiplier}mo
-                  </span>
-                </div>
+                <span className={`text-[11px] font-mono ${
+                  isSelected ? 'text-slate-400 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'
+                }`}>
+                  ×{config.costMultiplier}  {config.durationMultiplier}mo
+                </span>
               </div>
 
-              <h3 className={`text-base font-semibold mb-2 ${
+              <h3 className={`text-base font-bold mb-2 ${
                 isSelected ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'
               }`}>
                 {subtitle}
               </h3>
 
               <p className={`text-xs leading-relaxed ${
-                isSelected ? 'text-slate-300 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'
+                isSelected ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'
               }`}>
                 {descriptions[type]}
               </p>
-
-              {isSelected && (
-                <div className="absolute top-4 right-4 w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-900" />
-              )}
             </button>
           );
         })}
