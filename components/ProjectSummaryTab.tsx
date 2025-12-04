@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Icons } from './Icons';
 
 interface ProjectSummaryTabProps {
@@ -176,11 +177,11 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, a
               프로젝트 인사이트
             </span>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-5 py-4 prose prose-sm dark:prose-invert max-w-none prose-headings:text-slate-800 dark:prose-headings:text-slate-200 prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-strong:text-slate-700 dark:prose-strong:text-slate-200">
             {aiInsight ? (
-              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <ReactMarkdown>
                 {aiInsight}
-              </p>
+              </ReactMarkdown>
             ) : (
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 본 프로젝트는 <span className="font-medium text-slate-700 dark:text-slate-200">B2C 이커머스</span> 도메인에 속하며, 모바일 우선 전략이 핵심입니다. 
