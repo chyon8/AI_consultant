@@ -156,6 +156,81 @@ const App: React.FC = () => {
     }
   }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles]);
 
+  // Handle visibility change - check job status when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && currentJobId) {
+        console.log('[App] Tab became visible, checking job status:', currentJobId);
+        const status = await fetchJobStatus(currentJobId);
+        
+        if (status) {
+          const expectedSession = pendingSessionIdRef.current;
+          
+          if (status.status === 'completed' && status.result) {
+            console.log('[App] Job completed while tab was hidden');
+            
+            // Stop polling
+            if (jobPollingRef.current) {
+              clearInterval(jobPollingRef.current);
+              jobPollingRef.current = null;
+            }
+            
+            // Only apply if on correct session
+            if (sessionSandbox.getCurrentSession() === expectedSession) {
+              handleAnalysisComplete(status.result);
+              
+              const userMsg = pendingUserMsgRef.current || {
+                id: Date.now().toString(),
+                role: 'user' as const,
+                text: '프로젝트 분석 요청',
+                timestamp: new Date(),
+              };
+              const aiMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'model',
+                text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다.',
+                timestamp: new Date(),
+              };
+              
+              const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
+              setMessages(newMessages);
+              setCurrentView('detail');
+              
+              if (expectedSession) {
+                const title = status.result.projectTitle || userMsg.text.substring(0, 20);
+                updateSessionTitle(expectedSession, title.substring(0, 30).trim());
+                updateSessionMessages(expectedSession, newMessages);
+                
+                const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
+                saveChatHistory(sessions);
+                setChatSessions(sessions);
+                
+                await sessionSandbox.deleteSnapshot(expectedSession);
+              }
+            }
+            
+            setCurrentJobId(null);
+            setIsAnalyzing(false);
+            pendingUserMsgRef.current = null;
+            pendingSessionIdRef.current = null;
+            
+          } else if (status.status === 'failed') {
+            if (jobPollingRef.current) {
+              clearInterval(jobPollingRef.current);
+              jobPollingRef.current = null;
+            }
+            setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+            setCurrentJobId(null);
+            setIsAnalyzing(false);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [currentJobId]);
+
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
     // Simply reset to landing view - a new session will be created when analysis starts
@@ -230,23 +305,70 @@ const App: React.FC = () => {
     
     if (snapshot?.pendingJobId) {
       console.log(`[App] Found pending job ${snapshot.pendingJobId} for session ${sessionId}`);
+      
+      // IMPORTANT: Update refs BEFORE checking job status
+      pendingSessionIdRef.current = sessionId;
+      
       const jobStatus = await fetchJobStatus(snapshot.pendingJobId);
       
       if (jobStatus) {
         if (jobStatus.status === 'completed' && jobStatus.result) {
-          console.log(`[App] Job completed, applying result`);
+          console.log(`[App] Job completed, applying result to session ${sessionId}`);
           handleAnalysisComplete(jobStatus.result);
+          
+          // Update session with completed state
+          const userMsg: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            text: snapshot.inputText || '프로젝트 분석 요청',
+            timestamp: new Date(),
+          };
+          const aiMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'model',
+            text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다.',
+            timestamp: new Date(),
+          };
+          const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
+          setMessages(newMessages);
+          updateSessionMessages(sessionId, newMessages);
+          
+          // Update session title
+          if (jobStatus.result.projectTitle) {
+            updateSessionTitle(sessionId, jobStatus.result.projectTitle.substring(0, 30).trim());
+          }
+          
+          // Remove loading state
+          const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
+          saveChatHistory(sessions);
+          setChatSessions(sessions);
+          
+          // Clean up
+          await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
           setIsAnalyzing(false);
+          pendingSessionIdRef.current = null;
+          setCurrentView('detail');
+          
         } else if (jobStatus.status === 'running' || jobStatus.status === 'pending') {
-          console.log(`[App] Job still running, resuming polling`);
+          console.log(`[App] Job still running, resuming polling for session ${sessionId}`);
           setCurrentJobId(snapshot.pendingJobId);
           setIsAnalyzing(true);
+          setCurrentView('landing'); // Stay on landing while analyzing
           startJobPolling(snapshot.pendingJobId);
+          
         } else if (jobStatus.status === 'failed') {
           setAnalysisError(jobStatus.error || '분석이 실패했습니다.');
+          await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
           setIsAnalyzing(false);
+          pendingSessionIdRef.current = null;
+          
+        } else if (jobStatus.status === 'cancelled') {
+          await sessionSandbox.deleteSnapshot(sessionId);
+          setCurrentJobId(null);
+          setIsAnalyzing(false);
+          pendingSessionIdRef.current = null;
         }
       }
     }
