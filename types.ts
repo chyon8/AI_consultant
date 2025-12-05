@@ -50,6 +50,21 @@ export interface FileValidationError {
   details?: string;
 }
 
+export interface InputSource {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  extractedText?: string;
+  wordCount?: number;
+  pageCount?: number;
+  createdAt: Date;
+}
+
+export interface ReferencedFilesState {
+  files: InputSource[];
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -120,6 +135,7 @@ export interface DashboardState {
   estimationStep: EstimationStep;
   projectSummaryContent?: string;
   aiInsight?: string;
+  referencedFiles?: InputSource[];
 }
 
 export type ChatActionType = 

@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -13,7 +13,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { AiSettingsModal } from './components/AiSettingsModal';
 import { AIModelSettings, getDefaultModelSettings } from './constants/aiConfig';
 import { deleteSession } from './services/chatHistoryService';
-import { analyzeProject, readFileAsData, FileData, ParsedAnalysisResult } from './services/apiService';
+import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo } from './services/apiService';
 import { 
   getChatHistory, 
   saveChatHistory, 
@@ -80,6 +80,9 @@ const App: React.FC = () => {
     return getDefaultModelSettings();
   });
 
+  // Referenced files state - tracks source documents used for analysis
+  const [referencedFiles, setReferencedFiles] = useState<InputSource[]>([]);
+
   // Persist AI model settings to localStorage
   const handleSaveAiSettings = (settings: AIModelSettings) => {
     setAiModelSettings(settings);
@@ -122,11 +125,12 @@ const App: React.FC = () => {
         projectScale: currentScale,
         estimationStep,
         projectSummaryContent,
-        aiInsight
+        aiInsight,
+        referencedFiles
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles]);
 
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
@@ -138,6 +142,7 @@ const App: React.FC = () => {
     setEstimationStep('SCOPE');
     setProjectSummaryContent('');
     setAiInsight('');
+    setReferencedFiles([]);
   };
 
   // Handle delete session - show confirmation modal
@@ -191,6 +196,7 @@ const App: React.FC = () => {
           setEstimationStep(session.dashboardState.estimationStep);
           setProjectSummaryContent(session.dashboardState.projectSummaryContent || '');
           setAiInsight(session.dashboardState.aiInsight || '');
+          setReferencedFiles(session.dashboardState.referencedFiles || []);
         } else {
           // Legacy session without dashboard state - reset to defaults
           setModules(INITIAL_MODULES);
@@ -199,12 +205,14 @@ const App: React.FC = () => {
           setEstimationStep('SCOPE');
           setProjectSummaryContent('');
           setAiInsight('');
+          setReferencedFiles([]);
         }
         
         setCurrentView('detail');
       } else {
         setMessages(INITIAL_MESSAGES);
         setModules(INITIAL_MODULES);
+        setReferencedFiles([]);
         setCurrentView('landing');
       }
     }
@@ -577,6 +585,7 @@ const App: React.FC = () => {
   const handleAnalyze = async (text: string, files: File[]) => {
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setReferencedFiles([]);
     
     // Always create a NEW session for each analysis (add to history, don't overwrite)
     const newSession = createNewSession();
@@ -606,10 +615,35 @@ const App: React.FC = () => {
     };
     
     try {
-      // Read file contents first (stay on landing page during analysis)
-      const fileDataList = await Promise.all(
-        files.map(file => readFileAsData(file))
-      );
+      let fileDataList: FileData[] = [];
+      
+      // Upload files and extract text server-side (stay on landing page during analysis)
+      if (files.length > 0) {
+        console.log('[App] Uploading and extracting files server-side...');
+        const { uploadResponse, fileDataList: extractedData } = await uploadAndExtractFiles(files);
+        
+        if (!uploadResponse.success) {
+          throw new Error(uploadResponse.error?.message || '파일 업로드에 실패했습니다.');
+        }
+        
+        fileDataList = extractedData;
+        
+        // Track referenced files for badge display
+        if (uploadResponse.files) {
+          const inputSources: InputSource[] = uploadResponse.files.map(f => ({
+            id: f.id,
+            filename: f.filename,
+            originalName: f.originalName,
+            mimeType: f.mimeType,
+            extractedText: f.extraction?.text,
+            wordCount: f.extraction?.wordCount,
+            pageCount: f.extraction?.pageCount,
+            createdAt: new Date()
+          }));
+          setReferencedFiles(inputSources);
+          console.log('[App] Referenced files tracked:', inputSources.map(s => s.originalName));
+        }
+      }
       
       // Call analyze API - stay on landing page, show loading there
       const parsedResult = await analyzeProject(
@@ -686,6 +720,7 @@ const App: React.FC = () => {
     setMessages(INITIAL_MESSAGES);
     setModules(INITIAL_MODULES);
     setEstimationStep('SCOPE');
+    setReferencedFiles([]);
   };
 
   return (
@@ -823,6 +858,7 @@ const App: React.FC = () => {
                 projectSummaryContent={projectSummaryContent}
                 aiInsight={aiInsight}
                 rfpModelId={aiModelSettings.generateRFP}
+                referencedFiles={referencedFiles}
               />
             </div>
           </>

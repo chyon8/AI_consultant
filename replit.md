@@ -54,6 +54,7 @@ Before writing any code, you MUST output a plan in this format:
 │   ├── CollapsibleSidebar.tsx # Left sidebar (외주/상주/나머지)
 │   ├── SettingsModal.tsx    # Settings menu modal
 │   ├── AiSettingsModal.tsx  # AI model settings modal
+│   ├── InputSourcesBadge.tsx # Referenced files badge component
 │   └── ... (other UI components)
 ├── constants/
 │   └── aiConfig.ts          # AI model configuration (centralized)
@@ -68,7 +69,8 @@ Before writing any code, you MUST output a plan in this format:
 │       ├── claudeService.ts # Backend Claude API integration
 │       ├── chatService.ts   # Chat response + context lock logic
 │       ├── insightService.ts # AI insight generation
-│       └── rfpService.ts    # Backend Gemini PART 2 (공고문)
+│       ├── rfpService.ts    # Backend Gemini PART 2 (공고문)
+│       └── textExtractor.ts # Server-side document text extraction
 ├── App.tsx                  # Main application component
 ├── constants.ts             # Application constants
 ├── types.ts                 # TypeScript type definitions
@@ -160,6 +162,22 @@ Both Gemini and Claude chat paths share the same context-lock guard:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (December 5, 2024)
+- **Server-Side Text Extraction Pipeline**:
+  - New `textExtractor.ts` service for PDF, DOCX, and text file parsing
+  - Uses `pdf-parse` for PDF extraction (dynamic import for ES module compatibility)
+  - Uses `mammoth` for DOCX extraction
+  - Max 100K characters per file with truncation handling
+  - Word count and page count tracking
+- **Input Processing Trigger Architecture**:
+  - File uploads auto-extract text and trigger AI analysis
+  - Extracted text passed directly to Gemini/Claude APIs
+  - No client-side fallback for document parsing (prevents token explosion)
+- **Referenced Files State & Badge**:
+  - New `InputSource` type in types.ts
+  - `referencedFiles` state tracked in App.tsx
+  - Persisted in session history (`DashboardState.referencedFiles`)
+  - Restored when navigating to historical sessions
+  - New `InputSourcesBadge` component displays "기반 문서: [파일명]" in Dashboard header
 - **Multi-File Attachment with Drag & Drop**:
   - New file validation utility (`utils/fileValidation.ts`) with comprehensive checks
   - Support for up to 10 files at once (documents + images)

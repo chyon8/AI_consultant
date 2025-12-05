@@ -6,6 +6,7 @@ import fs from 'fs';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
+import { extractTextFromFile, isExtractableDocument, ExtractionResult } from './services/textExtractor';
 import { parseAnalysisResponse } from './services/responseParser';
 
 const app = express();
@@ -116,7 +117,7 @@ const handleUploadError = (err: any, req: express.Request, res: express.Response
   });
 };
 
-app.post('/api/upload', upload.array('files', MAX_FILES), (req, res) => {
+app.post('/api/upload', upload.array('files', MAX_FILES), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
     
@@ -145,15 +146,30 @@ app.post('/api/upload', upload.array('files', MAX_FILES), (req, res) => {
       });
     }
     
-    const fileInfos = files.map(f => ({
-      id: f.filename.split('.')[0],
-      filename: f.filename,
-      originalName: f.originalname,
-      path: f.path,
-      size: f.size,
-      type: getFileType(f.originalname),
-      mimeType: f.mimetype,
-      url: `/uploads/${f.filename}`
+    const fileInfos = await Promise.all(files.map(async (f) => {
+      const fileInfo: any = {
+        id: f.filename.split('.')[0],
+        filename: f.filename,
+        originalName: f.originalname,
+        path: f.path,
+        size: f.size,
+        type: getFileType(f.originalname),
+        mimeType: f.mimetype,
+        url: `/uploads/${f.filename}`
+      };
+      
+      if (isExtractableDocument(f.mimetype, f.originalname)) {
+        console.log(`[Upload] Extracting text from: ${f.originalname}`);
+        const extraction = await extractTextFromFile(f.path, f.mimetype);
+        fileInfo.extraction = extraction;
+        if (extraction.success) {
+          console.log(`[Upload] Extracted ${extraction.wordCount} words from ${f.originalname}`);
+        } else {
+          console.log(`[Upload] Extraction failed for ${f.originalname}: ${extraction.error}`);
+        }
+      }
+      
+      return fileInfo;
     }));
     
     res.json({ success: true, files: fileInfos });
