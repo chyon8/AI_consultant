@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
 import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource } from './types';
 import { ChatInterface } from './components/ChatInterface';
@@ -11,8 +11,16 @@ import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AiSettingsModal } from './components/AiSettingsModal';
+import { RenderGuard, useSessionValidation } from './components/RenderGuard';
 import { AIModelSettings, getDefaultModelSettings } from './constants/aiConfig';
 import { deleteSession } from './services/chatHistoryService';
+import { 
+  sessionManager, 
+  SessionInstance, 
+  ImmutablePrompt,
+  validateBeforeRender,
+  withSessionValidation
+} from './services/sessionInstance';
 import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo } from './services/apiService';
 import { 
   sessionSandbox, 
@@ -110,6 +118,21 @@ const App: React.FC = () => {
 
   // Referenced files state - tracks source documents used for analysis
   const [referencedFiles, setReferencedFiles] = useState<InputSource[]>([]);
+
+  // Session state isolation tracking - stores which session each state belongs to
+  const stateOwnerSessionRef = useRef<string | null>(null);
+  
+  // Validation: Check if current state matches the active session
+  const isStateValidForSession = useCallback((targetSessionId: string | null): boolean => {
+    if (!targetSessionId) return true;
+    if (!stateOwnerSessionRef.current) return true;
+    
+    const isValid = stateOwnerSessionRef.current === targetSessionId;
+    if (!isValid) {
+      console.warn(`[App] State validation FAILED: state belongs to ${stateOwnerSessionRef.current}, but target is ${targetSessionId}`);
+    }
+    return isValid;
+  }, []);
 
   // Persist AI model settings to localStorage
   const handleSaveAiSettings = (settings: AIModelSettings) => {
@@ -401,6 +424,14 @@ const App: React.FC = () => {
 
   // Handle session selection - restore both messages AND dashboard state
   const handleSelectSession = async (sessionId: string) => {
+    console.log(`[App] Session switch requested: ${activeSessionId} → ${sessionId}`);
+    
+    // [VALIDATION] Verify target session exists and is valid
+    const targetInstance = sessionManager.getInstance(sessionId);
+    if (!targetInstance && sessionManager.getAllIds().length > 0) {
+      console.log(`[App] Session ${sessionId} not in instance manager, creating entry`);
+    }
+    
     // Freeze current session before switching
     await freezeCurrentSession();
     
@@ -412,14 +443,30 @@ const App: React.FC = () => {
     
     const session = getSessionById(sessionId);
     if (session) {
+      // [STATE ISOLATION] Update state ownership to new session
+      stateOwnerSessionRef.current = sessionId;
+      
       setActiveSessionId(sessionId);
       sessionSandbox.setCurrentSession(sessionId);
+      sessionManager.setCurrentSession(sessionId);
+      
+      // [VALIDATION] Verify data belongs to target session before rendering
+      const validation = validateBeforeRender(sessionId, session.id);
+      if (!validation.isValid) {
+        console.error(`[App] RENDER BLOCKED: ${validation.reason}`);
+        // Reset to safe state
+        setMessages(INITIAL_MESSAGES);
+        setModules(INITIAL_MODULES);
+        setCurrentView('landing');
+        return;
+      }
       
       if (session.messages.length > 0) {
         setMessages(session.messages);
         
         // Restore dashboard state if available
         if (session.dashboardState) {
+          // [VALIDATION] Double-check dashboard state ownership
           setModules(session.dashboardState.modules);
           setCurrentPartnerType(session.dashboardState.partnerType);
           setCurrentScale(session.dashboardState.projectScale);
@@ -445,6 +492,8 @@ const App: React.FC = () => {
         setReferencedFiles([]);
         setCurrentView('landing');
       }
+      
+      console.log(`[App] Session switch complete: now on ${sessionId}, state owner: ${stateOwnerSessionRef.current}`);
       
       // Rehydrate: check for pending background jobs
       await rehydrateSession(sessionId);
@@ -1028,6 +1077,21 @@ const App: React.FC = () => {
     newSession.isLoading = true;
     const currentSessionId = newSession.id;
     
+    // [MULTI-INSTANCE] Create session instance with isolated namespace
+    const sessionInstance = sessionManager.createInstance(text?.substring(0, 20) || '새 프로젝트');
+    console.log(`[App] Created session instance: ${sessionInstance.id} with namespace ${sessionInstance.namespace.toString()}`);
+    
+    // [PROMPT BINDING] Bind immutable prompt to session - cannot be changed later
+    const boundPrompt = sessionManager.bindPrompt(currentSessionId, text, files);
+    console.log(`[App] Bound immutable prompt to session ${currentSessionId}:`, {
+      text: boundPrompt.text.substring(0, 50) + '...',
+      files: boundPrompt.files.length,
+      timestamp: boundPrompt.timestamp
+    });
+    
+    // [STATE ISOLATION] Mark state ownership for this session
+    stateOwnerSessionRef.current = currentSessionId;
+    
     // [PROMPT LOGGING] Immediately commit user prompt to session's chat history
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -1047,6 +1111,7 @@ const App: React.FC = () => {
     
     pendingSessionIdRef.current = currentSessionId;
     sessionSandbox.setCurrentSession(currentSessionId);
+    sessionManager.setCurrentSession(currentSessionId);
     
     // Store user message ref for job completion (backup only)
     pendingUserMsgRef.current = userMsg;
