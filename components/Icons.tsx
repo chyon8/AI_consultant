@@ -47,7 +47,9 @@ import {
   X,
   Copy,
   Trash2,
-  Settings
+  Settings,
+  Image,
+  Upload
 } from 'lucide-react';
 
 export const Icons = {
@@ -99,5 +101,7 @@ export const Icons = {
   FileText: FileText,
   Copy: Copy,
   Trash: Trash2,
-  Settings: Settings
+  Settings: Settings,
+  Image: Image,
+  Upload: Upload
 };

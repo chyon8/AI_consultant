@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, ModuleItem, ChatAction } from '../types';
+import { Message, ModuleItem, ChatAction, FileAttachment, FileValidationError } from '../types';
 import { Icons } from './Icons';
+import { FileAttachmentError } from './FileAttachmentError';
+import { validateFiles, createFileAttachment, createImageThumbnailUrl, isImageFile, FILE_CONSTANTS } from '../utils/fileValidation';
 
 function getWebSocketUrl(): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -126,9 +128,23 @@ function extractDisplayText(text: string): string {
   return displayText;
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 interface PendingAction {
   action: ChatAction;
   messageId: string;
+}
+
+interface AttachedFileWithPreview {
+  file: File;
+  id: string;
+  previewUrl?: string;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -142,7 +158,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFileWithPreview[]>([]);
+  const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -151,6 +174,108 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const handleGlobalDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const handleGlobalDrop = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    
+    document.addEventListener('dragover', handleGlobalDragOver);
+    document.addEventListener('drop', handleGlobalDrop);
+    
+    return () => {
+      document.removeEventListener('dragover', handleGlobalDragOver);
+      document.removeEventListener('drop', handleGlobalDrop);
+    };
+  }, []);
+
+  const addFiles = useCallback(async (newFiles: File[]) => {
+    const existingFileObjects = attachedFiles.map(af => af.file);
+    const { validFiles, errors } = validateFiles(newFiles, existingFileObjects);
+    
+    if (errors.length > 0) {
+      setValidationErrors(prev => [...prev, ...errors]);
+    }
+    
+    if (validFiles.length > 0) {
+      const filesWithPreviews: AttachedFileWithPreview[] = await Promise.all(
+        validFiles.map(async (file) => {
+          const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          let previewUrl: string | undefined;
+          
+          if (isImageFile(file)) {
+            try {
+              previewUrl = await createImageThumbnailUrl(file);
+            } catch (e) {
+              console.warn('Failed to create thumbnail:', e);
+            }
+          }
+          
+          return { file, id, previewUrl };
+        })
+      );
+      
+      setAttachedFiles(prev => [...prev, ...filesWithPreviews]);
+    }
+  }, [attachedFiles]);
+
+  const removeFile = useCallback((id: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== id));
+  }, []);
+
+  const dismissError = useCallback((index: number) => {
+    setValidationErrors(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => prev + 1);
+    
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => {
+      const newCount = prev - 1;
+      if (newCount === 0) {
+        setIsDragging(false);
+      }
+      return newCount;
+    });
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    setDragCounter(0);
+    
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      addFiles(droppedFiles);
+    }
+  }, [addFiles]);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      addFiles(selectedFiles);
+      e.target.value = '';
+    }
+  }, [addFiles]);
 
   const handleConfirmAction = () => {
     if (pendingAction && onChatAction) {
@@ -162,7 +287,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const confirmMsg: Message = {
           id: Date.now().toString(),
           role: 'model',
-          text: '✅ 변경이 적용되었습니다. 견적이 재산정되었습니다.',
+          text: '변경이 적용되었습니다. 견적이 재산정되었습니다.',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, confirmMsg]);
@@ -170,7 +295,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const errorMsg: Message = {
           id: Date.now().toString(),
           role: 'model',
-          text: `❌ 변경에 실패했습니다: ${result.error || '알 수 없는 오류'}\n\n다시 시도하시거나, 다른 방법으로 요청해 주세요.`,
+          text: `변경에 실패했습니다: ${result.error || '알 수 없는 오류'}\n\n다시 시도하시거나, 다른 방법으로 요청해 주세요.`,
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMsg]);
@@ -186,7 +311,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const cancelMsg: Message = {
         id: Date.now().toString(),
         role: 'model',
-        text: '❌ 변경이 취소되었습니다. 다른 질문이 있으시면 말씀해주세요.',
+        text: '변경이 취소되었습니다. 다른 질문이 있으시면 말씀해주세요.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, cancelMsg]);
@@ -194,18 +319,71 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const uploadFiles = async (files: AttachedFileWithPreview[]): Promise<FileAttachment[]> => {
+    if (files.length === 0) return [];
+    
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f.file));
+    
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        const error = result.error;
+        setValidationErrors(prev => [...prev, {
+          code: error.code || 'UPLOAD_FAILED',
+          message: error.message || '파일 업로드에 실패했습니다.',
+          fileName: error.fileName,
+          details: error.details
+        }]);
+        return [];
+      }
+      
+      return result.files.map((f: any) => ({
+        id: f.id,
+        name: f.originalName,
+        size: f.size,
+        type: f.type,
+        mimeType: f.mimeType,
+        url: f.url,
+        serverPath: f.path
+      }));
+    } catch (error) {
+      console.error('File upload error:', error);
+      setValidationErrors(prev => [...prev, {
+        code: 'UPLOAD_FAILED',
+        message: '네트워크 오류로 파일 업로드에 실패했습니다.',
+        details: '인터넷 연결을 확인하고 다시 시도해주세요.'
+      }]);
+      return [];
+    }
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
+
+    let uploadedAttachments: FileAttachment[] = [];
+    
+    if (attachedFiles.length > 0) {
+      uploadedAttachments = await uploadFiles(attachedFiles);
+    }
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
       text: input,
       timestamp: new Date(),
+      attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setAttachedFiles([]);
     setIsLoading(true);
 
     const aiMsgId = (Date.now() + 1).toString();
@@ -227,14 +405,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       await new Promise<void>((resolve, reject) => {
         ws.onopen = () => {
           console.log('[WebSocket] Connected');
+          
+          const attachmentInfo = uploadedAttachments.length > 0
+            ? `\n\n[첨부파일: ${uploadedAttachments.map(a => a.name).join(', ')}]`
+            : '';
+          
           ws.send(JSON.stringify({
             type: 'chat',
-            history: [...messages, userMsg].map(m => ({
+            history: [...messages, { ...userMsg, text: userMsg.text + attachmentInfo }].map(m => ({
               role: m.role,
               text: m.text
             })),
             currentModules: modules,
             modelSettings: modelSettings,
+            attachments: uploadedAttachments,
           }));
           resolve();
         };
@@ -333,8 +517,53 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setIsLoading(false);
   };
 
+  const renderMessageAttachments = (attachments?: FileAttachment[]) => {
+    if (!attachments || attachments.length === 0) return null;
+    
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        {attachments.map(attachment => (
+          <div
+            key={attachment.id}
+            className="flex items-center gap-2 px-2 py-1.5 bg-white/50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700"
+          >
+            {attachment.type === 'image' ? (
+              <Icons.Image size={14} className="text-blue-500" />
+            ) : (
+              <Icons.FileText size={14} className="text-slate-400" />
+            )}
+            <span className="text-xs text-slate-600 dark:text-slate-400 max-w-[120px] truncate">
+              {attachment.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300">
+    <div 
+      ref={dropZoneRef}
+      className="flex flex-col h-full bg-white dark:bg-slate-950 relative transition-colors duration-300"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-indigo-500/10 dark:bg-indigo-500/20 border-2 border-dashed border-indigo-500 rounded-lg flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <Icons.Upload size={48} className="mx-auto mb-3 text-indigo-500" />
+            <p className="text-lg font-medium text-indigo-600 dark:text-indigo-400">
+              파일을 여기에 놓으세요
+            </p>
+            <p className="text-sm text-indigo-500/70 dark:text-indigo-400/70 mt-1">
+              이미지, PDF, 문서 파일 지원
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 scroll-smooth">
         <div className="text-center py-4">
            <div className="inline-block p-3 bg-slate-50 dark:bg-slate-900 rounded-full mb-2 transition-colors">
@@ -367,6 +596,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2">
                       <ReactMarkdown>{msg.text}</ReactMarkdown>
                     </div>
+                    {isUser && renderMessageAttachments(msg.attachments)}
                     {msg.isStreaming && (
                         <span className="inline-block w-1.5 h-1.5 ml-1 bg-indigo-500 dark:bg-white rounded-full animate-ping"/>
                     )}
@@ -410,10 +640,62 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       <div className="p-6 bg-white dark:bg-slate-950 border-t border-transparent dark:border-slate-800 transition-colors">
+        {attachedFiles.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {attachedFiles.map((af) => (
+              <div
+                key={af.id}
+                className="group relative flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
+              >
+                {af.previewUrl ? (
+                  <img 
+                    src={af.previewUrl} 
+                    alt={af.file.name}
+                    className="w-8 h-8 object-cover rounded"
+                  />
+                ) : (
+                  <Icons.FileText size={16} className="text-slate-400" />
+                )}
+                <div className="flex flex-col">
+                  <span className="text-xs text-slate-700 dark:text-slate-300 max-w-[120px] truncate">
+                    {af.file.name}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {formatFileSize(af.file.size)}
+                  </span>
+                </div>
+                <button
+                  onClick={() => removeFile(af.id)}
+                  className="ml-1 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                >
+                  <Icons.Close size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
         <div className="relative flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".txt,.pdf,.doc,.docx,.md,.jpg,.jpeg,.png,.gif,.webp"
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
           <button
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-            title="첨부파일"
+            onClick={() => fileInputRef.current?.click()}
+            className={`p-2 transition-colors ${
+              attachedFiles.length >= FILE_CONSTANTS.MAX_FILES
+                ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+            title={attachedFiles.length >= FILE_CONSTANTS.MAX_FILES 
+              ? `최대 ${FILE_CONSTANTS.MAX_FILES}개 파일까지 첨부 가능` 
+              : '파일 첨부'
+            }
+            disabled={attachedFiles.length >= FILE_CONSTANTS.MAX_FILES}
           >
             <Icons.Attach size={20} />
           </button>
@@ -421,16 +703,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="예: 결제 모듈 제거해줘, MVP로 줄여줘..."
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            placeholder={attachedFiles.length > 0 
+              ? "파일과 함께 보낼 메시지를 입력하세요..." 
+              : "예: 결제 모듈 제거해줘, MVP로 줄여줘..."
+            }
             className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
             disabled={isLoading || !!pendingAction}
           />
           <button
             onClick={handleSend}
-            disabled={isLoading || !input.trim() || !!pendingAction}
+            disabled={isLoading || (!input.trim() && attachedFiles.length === 0) || !!pendingAction}
             className={`p-2 transition-colors duration-200 ${
-              input.trim() 
+              (input.trim() || attachedFiles.length > 0)
                 ? 'text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400' 
                 : 'text-slate-200 dark:text-slate-700'
             }`}
@@ -439,6 +724,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
         </div>
       </div>
+
+      <FileAttachmentError 
+        errors={validationErrors}
+        onDismiss={dismissError}
+        autoDismissMs={5000}
+      />
     </div>
   );
 };

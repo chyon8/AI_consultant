@@ -22,12 +22,41 @@ export interface ModuleItem {
   subFeatures: SubFeature[];
 }
 
+export type FileAttachmentType = 'image' | 'document';
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: FileAttachmentType;
+  mimeType: string;
+  url?: string;
+  thumbnailUrl?: string;
+  serverPath?: string;
+}
+
+export type FileValidationErrorCode = 
+  | 'FILE_TOO_LARGE'
+  | 'UNSUPPORTED_FORMAT'
+  | 'MAX_FILES_EXCEEDED'
+  | 'DUPLICATE_FILE'
+  | 'EMPTY_FILE'
+  | 'UPLOAD_FAILED';
+
+export interface FileValidationError {
+  code: FileValidationErrorCode;
+  message: string;
+  fileName?: string;
+  details?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'model';
   text: string;
   timestamp: Date;
   isStreaming?: boolean;
+  attachments?: FileAttachment[];
 }
 
 export interface ProjectState {

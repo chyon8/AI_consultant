@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
@@ -15,9 +16,20 @@ const wss = new WebSocketServer({ server, path: '/ws/chat' });
 app.use(cors());
 app.use(express.json());
 
+const UPLOADS_DIR = 'uploads';
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const ALLOWED_DOCUMENT_TYPES = ['.txt', '.pdf', '.doc', '.docx', '.md'];
+const ALLOWED_IMAGE_TYPES = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const ALL_ALLOWED_TYPES = [...ALLOWED_DOCUMENT_TYPES, ...ALLOWED_IMAGE_TYPES];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILES = 10;
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -27,32 +39,135 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: MAX_FILE_SIZE },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.txt', '.pdf', '.doc', '.docx', '.md'];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
+    if (ALL_ALLOWED_TYPES.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      const error = new Error(`UNSUPPORTED_FORMAT:${file.originalname}:지원하지 않는 파일 형식입니다. (${ext})`);
+      cb(error);
     }
   }
 });
 
-app.post('/api/upload', upload.array('files', 10), (req, res) => {
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+function getFileType(filename: string): 'image' | 'document' {
+  const ext = path.extname(filename).toLowerCase();
+  return ALLOWED_IMAGE_TYPES.includes(ext) ? 'image' : 'document';
+}
+
+const handleUploadError = (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'FILE_TOO_LARGE',
+          message: '파일 크기가 10MB를 초과했습니다.',
+          details: `최대 허용 크기: 10MB`
+        }
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MAX_FILES_EXCEEDED',
+          message: `최대 ${MAX_FILES}개의 파일만 업로드할 수 있습니다.`,
+          details: `현재 제한: ${MAX_FILES}개`
+        }
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'UPLOAD_FAILED',
+        message: '파일 업로드 중 오류가 발생했습니다.',
+        details: err.message
+      }
+    });
+  }
+  
+  if (err.message && err.message.startsWith('UNSUPPORTED_FORMAT:')) {
+    const parts = err.message.split(':');
+    const fileName = parts[1];
+    const details = parts[2];
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'UNSUPPORTED_FORMAT',
+        message: details,
+        fileName: fileName,
+        details: `지원 형식: ${ALL_ALLOWED_TYPES.join(', ')}`
+      }
+    });
+  }
+  
+  return res.status(500).json({
+    success: false,
+    error: {
+      code: 'UPLOAD_FAILED',
+      message: '파일 업로드 중 알 수 없는 오류가 발생했습니다.',
+      details: err.message
+    }
+  });
+};
+
+app.post('/api/upload', upload.array('files', MAX_FILES), (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'EMPTY_FILE',
+          message: '업로드할 파일이 없습니다.'
+        }
+      });
+    }
+    
+    const emptyFiles = files.filter(f => f.size === 0);
+    if (emptyFiles.length > 0) {
+      emptyFiles.forEach(f => {
+        try { fs.unlinkSync(f.path); } catch (e) {}
+      });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'EMPTY_FILE',
+          message: '빈 파일은 업로드할 수 없습니다.',
+          fileName: emptyFiles[0].originalname
+        }
+      });
+    }
+    
     const fileInfos = files.map(f => ({
+      id: f.filename.split('.')[0],
       filename: f.filename,
       originalName: f.originalname,
       path: f.path,
-      size: f.size
+      size: f.size,
+      type: getFileType(f.originalname),
+      mimeType: f.mimetype,
+      url: `/uploads/${f.filename}`
     }));
+    
     res.json({ success: true, files: fileInfos });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Upload failed' });
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPLOAD_FAILED',
+        message: '파일 업로드 중 오류가 발생했습니다.',
+        details: error.message
+      }
+    });
   }
-});
+}, handleUploadError);
 
 app.post('/api/analyze', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
