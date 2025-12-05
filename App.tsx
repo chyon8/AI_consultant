@@ -973,7 +973,7 @@ const App: React.FC = () => {
     }
   };
 
-  // [SCOPED STORAGE] Save analysis result to session-specific storage only
+  // [SCOPED STORAGE] Save analysis result to session-specific storage AND atomic unit
   const saveResultToSessionStorage = (targetSessionId: string, result: any, userMsg: Message) => {
     console.log(`[App] Saving result to session storage: ${targetSessionId}`);
     
@@ -1018,12 +1018,30 @@ const App: React.FC = () => {
       referencedFiles: []
     };
     
-    // Commit to session's scoped storage
+    // Commit to session's scoped storage (localStorage)
     updateSessionMessages(targetSessionId, newMessages);
     updateSessionDashboardState(targetSessionId, dashboardState);
     
+    // [CRITICAL] Also update sessionCoupler's atomic unit for consistent data
+    sessionCoupler.backgroundUpdate(targetSessionId, (unit) => {
+      unit.chat.messages = newMessages;
+      unit.dashboard.modules = convertedModules;
+      unit.dashboard.partnerType = dashboardState.partnerType;
+      unit.dashboard.projectScale = dashboardState.projectScale;
+      unit.dashboard.estimationStep = dashboardState.estimationStep;
+      unit.dashboard.projectSummaryContent = dashboardState.projectSummaryContent;
+      unit.dashboard.aiInsight = dashboardState.aiInsight;
+      unit.dashboard.referencedFiles = dashboardState.referencedFiles;
+    });
+    console.log(`[App] Synced atomic unit for session ${targetSessionId} with analysis result`);
+    
     if (result.projectTitle) {
       updateSessionTitle(targetSessionId, result.projectTitle.substring(0, 30).trim());
+      // Also update atomic unit meta
+      const unit = sessionCoupler.getUnit(targetSessionId);
+      if (unit) {
+        unit.meta.title = result.projectTitle.substring(0, 30).trim();
+      }
     }
     
     // Remove loading state
