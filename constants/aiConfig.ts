@@ -15,13 +15,18 @@ export interface AIFunctionConfig {
 export const AI_AVAILABLE_MODELS: AIModel[] = [
   {
     id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
+    name: 'Gemini 2.5 Flash (Fast)',
     provider: 'google'
   },
   {
     id: 'gemini-3-pro-preview',
     name: 'Gemini 3 Pro Preview',
     provider: 'google'
+  },
+  {
+    id: 'claude-sonnet-4-5-20250514',
+    name: 'Claude Sonnet 4.5 (Fast)',
+    provider: 'anthropic'
   },
   {
     id: 'claude-opus-4-20250514',
