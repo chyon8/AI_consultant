@@ -196,6 +196,14 @@ export function cleanupOldJobs(): void {
   }
 }
 
+export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
+
+export interface StagedResult {
+  stage: StageType;
+  data: any;
+  completedAt: number;
+}
+
 export interface JobStatusResponse {
   id: string;
   type: string;
@@ -204,13 +212,15 @@ export interface JobStatusResponse {
   result: any | null;
   error: string | null;
   chunkCount: number;
+  stagedResults?: StagedResult[];
+  completedStages?: StageType[];
 }
 
 export interface ChunkResponse {
   sequence: number;
   text: string;
   timestamp: number;
-  type: 'content' | 'parsed' | 'error';
+  type: 'content' | 'parsed' | 'error' | 'stage';
 }
 
 export async function fetchSessionJobs(sessionId: string): Promise<JobStatusResponse[]> {
@@ -224,9 +234,10 @@ export async function fetchSessionJobs(sessionId: string): Promise<JobStatusResp
   }
 }
 
-export async function fetchJobStatus(jobId: string): Promise<JobStatusResponse | null> {
+export async function fetchJobStatus(jobId: string, acknowledgedStages: string[] = []): Promise<JobStatusResponse | null> {
   try {
-    const response = await fetch(`/api/jobs/${jobId}`);
+    const ackParam = acknowledgedStages.length > 0 ? `?ack=${acknowledgedStages.join(',')}` : '';
+    const response = await fetch(`/api/jobs/${jobId}${ackParam}`);
     const data = await response.json();
     return data.success ? data.job : null;
   } catch (error) {

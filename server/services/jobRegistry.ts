@@ -1,11 +1,18 @@
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type JobType = 'analyze' | 'rfp' | 'chat';
+export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
 
 export interface ChunkLog {
   sequence: number;
   text: string;
   timestamp: number;
-  type: 'content' | 'parsed' | 'error';
+  type: 'content' | 'parsed' | 'error' | 'stage';
+}
+
+export interface StagedResult {
+  stage: StageType;
+  data: any;
+  completedAt: number;
 }
 
 export interface Job {
@@ -18,6 +25,8 @@ export interface Job {
   result: any | null;
   error: string | null;
   chunkLog: ChunkLog[];
+  stagedResults: StagedResult[];
+  completedStages: Set<StageType>;
   createdAt: number;
   updatedAt: number;
   completedAt: number | null;
@@ -41,6 +50,8 @@ class JobRegistry {
       result: null,
       error: null,
       chunkLog: [],
+      stagedResults: [],
+      completedStages: new Set<StageType>(),
       createdAt: now,
       updatedAt: now,
       completedAt: null
@@ -55,6 +66,47 @@ class JobRegistry {
 
     console.log(`[JobRegistry] Created job ${id} for session ${sessionId}`);
     return job;
+  }
+  
+  addStagedResult(jobId: string, stage: StageType, data: any): void {
+    const job = this.jobs.get(jobId);
+    if (!job) return;
+    
+    if (job.completedStages.has(stage)) {
+      console.log(`[JobRegistry] Stage ${stage} already completed for job ${jobId}`);
+      return;
+    }
+    
+    const stagedResult: StagedResult = {
+      stage,
+      data,
+      completedAt: Date.now()
+    };
+    
+    job.stagedResults.push(stagedResult);
+    job.completedStages.add(stage);
+    job.updatedAt = Date.now();
+    
+    this.appendChunk(jobId, JSON.stringify({ stage, data }), 'stage');
+    
+    console.log(`[JobRegistry] Stage ${stage} completed for job ${jobId}`);
+  }
+  
+  getStagedResults(jobId: string): StagedResult[] {
+    const job = this.jobs.get(jobId);
+    return job?.stagedResults || [];
+  }
+  
+  getCompletedStages(jobId: string): StageType[] {
+    const job = this.jobs.get(jobId);
+    return job ? Array.from(job.completedStages) : [];
+  }
+  
+  getNewStagedResults(jobId: string, acknowledgedStages: StageType[]): StagedResult[] {
+    const job = this.jobs.get(jobId);
+    if (!job) return [];
+    
+    return job.stagedResults.filter(sr => !acknowledgedStages.includes(sr.stage));
   }
 
   getJob(jobId: string): Job | undefined {

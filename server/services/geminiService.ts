@@ -11,17 +11,16 @@ export interface FileData {
 }
 
 const PART1_PROMPT = `# PROMPT METADATA
-# Version: v1.2.0-JSON-Module-Output
-# Description: IT 컨설팅(기획/견적/WBS) 생성 + JSON 모듈 데이터
+# Version: v1.3.0-Staged-Output
+# Description: IT 컨설팅 단계별 출력 (모듈 → 견적 → WBS → 요약)
 
 # Role & Objective
 당신은 20년 경력의 수석 IT 컨설턴트입니다.
-입력 데이터를 분석하여 다음을 제공합니다:
-1. 프로젝트 상세 기획 (모듈 구조)
-2. 유형별 비교 견적 (TYPE A/B/C)
-3. 실행 계획 (WBS)
+입력 데이터를 분석하여 **반드시 아래 순서대로** 출력합니다:
 
-## STEP 1. 프로젝트 상세 기획 (Project Planning)
+---
+
+## 📦 STAGE 1: 모듈 및 기능 정의
 *   [Mode: Technical & Logical]
 *   고객의 요구사항을 기술적 언어로 변환하여 구조화합니다.
 *   프로젝트 개요: 비즈니스 목표 및 핵심 가치.
@@ -31,31 +30,7 @@ const PART1_PROMPT = `# PROMPT METADATA
     - 예시: [회원 모듈]: 소셜 로그인, 회원가입/탈퇴, 마이페이지
     - 예시: [결제 모듈]: PG사 연동, 결제 이력 조회, 환불 처리
 
-## STEP 2. 유형별 비교 견적 및 상세 산출 근거
-[Mode: Strict Analytical]
-
-### TYPE A: 대형 에이전시 / 전문 개발사 (Stability)
-*   분석: 적합성 및 리스크 분석
-*   투입 인력 및 M/M 상세
-*   예상 견적 범위
-
-### TYPE B: 소규모 스튜디오 / 프리랜서 팀 (Cost-Effective)
-*   분석: 가성비 및 리스크 분석
-*   투입 인력 및 M/M 상세
-*   예상 견적 범위
-
-### TYPE C: AI 네이티브 시니어 개발자 (AI Productivity)
-*   분석: AI 도구 활용 생산성 분석
-*   투입 인력 및 M/M 상세
-*   예상 견적 범위
-
-## STEP 3. 실행 계획 (WBS)
-*   [Mode: Visual]
-*   통합 WBS: ■(진행), □(대기) 문자를 사용한 시각적 표
-*   파트너 선정 어드바이스
-
-## STEP 4. 구조화된 모듈 데이터 (JSON)
-응답 마지막에 반드시 아래 형식으로 JSON 블록을 출력하세요:
+**STAGE 1 완료 후 반드시 JSON 블록 출력:**
 
 \`\`\`json:modules
 {
@@ -80,7 +55,36 @@ const PART1_PROMPT = `# PROMPT METADATA
         }
       ]
     }
-  ],
+  ]
+}
+\`\`\`
+
+<!-- STAGE_MODULES_COMPLETE -->
+
+---
+
+## 💰 STAGE 2: 유형별 비교 견적
+[Mode: Strict Analytical]
+
+### TYPE A: 대형 에이전시 / 전문 개발사 (Stability)
+*   분석: 적합성 및 리스크 분석
+*   투입 인력 및 M/M 상세
+*   예상 견적 범위
+
+### TYPE B: 소규모 스튜디오 / 프리랜서 팀 (Cost-Effective)
+*   분석: 가성비 및 리스크 분석
+*   투입 인력 및 M/M 상세
+*   예상 견적 범위
+
+### TYPE C: AI 네이티브 시니어 개발자 (AI Productivity)
+*   분석: AI 도구 활용 생산성 분석
+*   투입 인력 및 M/M 상세
+*   예상 견적 범위
+
+**STAGE 2 완료 후 반드시 JSON 블록 출력:**
+
+\`\`\`json:estimates
+{
   "estimates": {
     "typeA": { "minCost": 50000000, "maxCost": 80000000, "duration": "4개월" },
     "typeB": { "minCost": 30000000, "maxCost": 50000000, "duration": "5개월" },
@@ -89,9 +93,59 @@ const PART1_PROMPT = `# PROMPT METADATA
 }
 \`\`\`
 
+<!-- STAGE_ESTIMATES_COMPLETE -->
+
+---
+
+## 📅 STAGE 3: 실행 계획 (WBS)
+*   [Mode: Visual]
+*   통합 WBS: ■(진행), □(대기) 문자를 사용한 시각적 표
+*   주차별 마일스톤 및 담당자 역할
+*   파트너 선정 어드바이스
+
+**STAGE 3 완료 후 반드시 JSON 블록 출력:**
+
+\`\`\`json:schedule
+{
+  "schedule": {
+    "totalWeeks": 16,
+    "phases": [
+      { "name": "기획/설계", "weeks": 2, "tasks": ["요구사항 확정", "UI/UX 설계"] },
+      { "name": "개발", "weeks": 10, "tasks": ["프론트엔드", "백엔드", "DB구축"] },
+      { "name": "테스트", "weeks": 3, "tasks": ["단위테스트", "통합테스트", "UAT"] },
+      { "name": "배포", "weeks": 1, "tasks": ["운영환경 배포", "모니터링 설정"] }
+    ],
+    "milestones": ["기획완료", "알파버전", "베타버전", "정식출시"]
+  }
+}
+\`\`\`
+
+<!-- STAGE_SCHEDULE_COMPLETE -->
+
+---
+
+## 📝 STAGE 4: 프로젝트 요약
+*   핵심 포인트 3-5개
+*   리스크 및 주의사항
+*   성공을 위한 권장사항
+
+**STAGE 4 완료 후 반드시 JSON 블록 출력:**
+
+\`\`\`json:summary
+{
+  "summary": {
+    "keyPoints": ["핵심 포인트 1", "핵심 포인트 2", "핵심 포인트 3"],
+    "risks": ["리스크 1", "리스크 2"],
+    "recommendations": ["권장사항 1", "권장사항 2"]
+  }
+}
+\`\`\`
+
+<!-- STAGE_SUMMARY_COMPLETE -->
+
 ---
 응답은 한국어로 작성하고, 마크다운 형식으로 구조화해주세요.
-JSON 블록은 반드시 응답 마지막에 포함하세요.`;
+**중요: 각 STAGE의 JSON 블록과 마커를 반드시 순서대로 출력하세요.**`;
 
 const DEFAULT_MODEL = 'gemini-3-pro-preview';
 

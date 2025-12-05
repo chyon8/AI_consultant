@@ -184,3 +184,32 @@ export interface ChatSession {
   isLoading?: boolean;
   dashboardState?: DashboardState;
 }
+
+export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
+
+export interface StagedResult {
+  stage: StageType;
+  data: any;
+  completedAt: number;
+}
+
+export interface ParsedSchedule {
+  totalWeeks: number;
+  phases: Array<{ name: string; weeks: number; tasks: string[] }>;
+  milestones: string[];
+}
+
+export interface ParsedSummary {
+  keyPoints: string[];
+  risks: string[];
+  recommendations: string[];
+}
+
+export interface ProgressiveLoadingState {
+  modulesReady: boolean;
+  estimatesReady: boolean;
+  scheduleReady: boolean;
+  summaryReady: boolean;
+  schedule?: ParsedSchedule;
+  summary?: ParsedSummary;
+}

@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
 import { extractTextFromFile, isExtractableDocument, ExtractionResult } from './services/textExtractor';
-import { parseAnalysisResponse } from './services/responseParser';
+import { parseAnalysisResponse, detectCompletedStages, StageType } from './services/responseParser';
 import { jobRegistry, Job } from './services/jobRegistry';
 
 const app = express();
@@ -354,11 +354,14 @@ app.get('/api/jobs/session/:sessionId', (req, res) => {
 
 app.get('/api/jobs/:jobId', (req, res) => {
   const { jobId } = req.params;
+  const acknowledgedStages = (req.query.ack as string)?.split(',').filter(Boolean) || [];
   const job = jobRegistry.getJob(jobId);
   
   if (!job) {
     return res.status(404).json({ success: false, error: 'Job not found' });
   }
+  
+  const newStagedResults = jobRegistry.getNewStagedResults(jobId, acknowledgedStages as StageType[]);
   
   res.json({ 
     success: true, 
@@ -371,6 +374,8 @@ app.get('/api/jobs/:jobId', (req, res) => {
       result: job.result,
       error: job.error,
       chunkCount: job.chunkLog.length,
+      stagedResults: newStagedResults,
+      completedStages: Array.from(job.completedStages),
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
       completedAt: job.completedAt
@@ -438,8 +443,9 @@ app.post('/api/jobs/analyze', async (req, res) => {
     try {
       jobRegistry.updateJobStatus(job.id, 'running');
       let fullResponse = '';
+      const detectedStages = new Set<StageType>();
       
-      console.log(`[Job ${job.id}] Starting analysis in background`);
+      console.log(`[Job ${job.id}] Starting staged analysis in background`);
       
       await analyzeProject(text, fileDataList || [], (chunk: string) => {
         const currentJob = jobRegistry.getJob(job.id);
@@ -450,8 +456,20 @@ app.post('/api/jobs/analyze', async (req, res) => {
         fullResponse += chunk;
         jobRegistry.appendChunk(job.id, chunk, 'content');
         
-        const estimatedProgress = Math.min(90, (fullResponse.length / 5000) * 100);
-        jobRegistry.updateJobProgress(job.id, estimatedProgress);
+        const stageResult = detectCompletedStages(fullResponse, detectedStages);
+        if (stageResult) {
+          console.log(`[Job ${job.id}] Stage detected: ${stageResult.stage}`);
+          detectedStages.add(stageResult.stage);
+          jobRegistry.addStagedResult(job.id, stageResult.stage, stageResult.data);
+          
+          const stageProgress: Record<StageType, number> = {
+            modules: 25,
+            estimates: 50,
+            schedule: 75,
+            summary: 90
+          };
+          jobRegistry.updateJobProgress(job.id, stageProgress[stageResult.stage]);
+        }
       }, modelId);
       
       const parsedData = parseAnalysisResponse(fullResponse);
@@ -460,7 +478,7 @@ app.post('/api/jobs/analyze', async (req, res) => {
       jobRegistry.updateJobProgress(job.id, 100);
       jobRegistry.updateJobStatus(job.id, 'completed');
       
-      console.log(`[Job ${job.id}] Completed successfully`);
+      console.log(`[Job ${job.id}] Completed successfully with ${detectedStages.size} stages`);
       
     } catch (error: any) {
       if (error.message === 'Job cancelled') {

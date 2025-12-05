@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -130,6 +130,16 @@ const App: React.FC = () => {
   // Referenced files state - tracks source documents used for analysis
   const [referencedFiles, setReferencedFiles] = useState<InputSource[]>([]);
 
+  // Progressive Loading State - tracks which stages have loaded
+  const [progressiveState, setProgressiveState] = useState<ProgressiveLoadingState>({
+    modulesReady: false,
+    estimatesReady: false,
+    scheduleReady: false,
+    summaryReady: false,
+  });
+  const processedStagesRef = useRef<Set<string>>(new Set());
+  const acknowledgedStagesPerJob = useRef<Record<string, string[]>>({});
+
   // Session state isolation tracking - stores which session each state belongs to
   const stateOwnerSessionRef = useRef<string | null>(null);
   
@@ -225,7 +235,8 @@ const App: React.FC = () => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && currentJobId) {
         console.log('[App] Tab became visible, checking job status:', currentJobId);
-        const status = await fetchJobStatus(currentJobId);
+        const jobAckStages = acknowledgedStagesPerJob.current[currentJobId] || [];
+        const status = await fetchJobStatus(currentJobId, jobAckStages);
         
         if (status) {
           // [IMMUTABLE MAPPING] Get owner session from registry, NOT from mutable ref
@@ -393,7 +404,8 @@ const App: React.FC = () => {
         return;
       }
       
-      const jobStatus = await fetchJobStatus(snapshot.pendingJobId);
+      const jobAckStages = acknowledgedStagesPerJob.current[snapshot.pendingJobId] || [];
+      const jobStatus = await fetchJobStatus(snapshot.pendingJobId, jobAckStages);
       
       if (jobStatus) {
         if (jobStatus.status === 'completed' && jobStatus.result) {
@@ -1113,7 +1125,7 @@ const App: React.FC = () => {
     return { convertedModules, newMessages, dashboardState };
   };
 
-  // Start polling for job status
+  // Start polling for job status with progressive loading support
   const startJobPolling = (jobId: string) => {
     if (jobPollingRef.current) {
       clearInterval(jobPollingRef.current);
@@ -1121,8 +1133,24 @@ const App: React.FC = () => {
     
     console.log('[App] Starting job polling for:', jobId);
     
+    // Reset progressive state for new job
+    processedStagesRef.current.clear();
+    // Reset acknowledged stages for this job (in-place mutation to preserve reference)
+    if (acknowledgedStagesPerJob.current[jobId]) {
+      acknowledgedStagesPerJob.current[jobId].length = 0;
+    } else {
+      acknowledgedStagesPerJob.current[jobId] = [];
+    }
+    setProgressiveState({
+      modulesReady: false,
+      estimatesReady: false,
+      scheduleReady: false,
+      summaryReady: false,
+    });
+    
     jobPollingRef.current = setInterval(async () => {
-      const status = await fetchJobStatus(jobId);
+      const jobAckStages = acknowledgedStagesPerJob.current[jobId] || [];
+      const status = await fetchJobStatus(jobId, jobAckStages);
       if (!status) return;
       
       // [IMMUTABLE MAPPING] Get owner session from registry, NOT from mutable ref
@@ -1138,6 +1166,92 @@ const App: React.FC = () => {
       
       // [FIX] Get currently active session from REF (not state) to avoid closure issues
       const activeSession = activeSessionIdRef.current;
+      
+      // [PROGRESSIVE LOADING] Process staged results as they arrive
+      if (status.stagedResults && status.stagedResults.length > 0 && ownerSessionId === activeSession) {
+        for (const staged of status.stagedResults) {
+          const stageKey = `${jobId}:${staged.stage}`;
+          if (processedStagesRef.current.has(stageKey)) continue;
+          
+          console.log(`[App] Processing staged result: ${staged.stage}`);
+          processedStagesRef.current.add(stageKey);
+          
+          switch (staged.stage) {
+            case 'modules': {
+              const { projectTitle, modules: parsedModules } = staged.data;
+              const convertedModules = parsedModules.map((m: any) => ({
+                id: m.id || `mod_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                name: m.name,
+                description: m.description || '',
+                baseCost: m.baseCost || 0,
+                baseManMonths: m.baseManMonths || 0,
+                category: m.category || 'etc',
+                isSelected: m.isSelected !== false,
+                required: m.required || false,
+                subFeatures: (m.subFeatures || []).map((f: any) => ({
+                  id: f.id || `feat_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                  name: f.name,
+                  price: f.price || 0,
+                  manWeeks: f.manWeeks || 0,
+                  isSelected: f.isSelected !== false,
+                })),
+              }));
+              
+              setModules(convertedModules);
+              setProgressiveState(prev => ({ ...prev, modulesReady: true }));
+              setCurrentView('detail'); // Show detail view as soon as modules arrive
+              
+              if (projectTitle) {
+                updateSessionTitle(ownerSessionId, projectTitle.substring(0, 30).trim());
+              }
+              console.log(`[App] PROGRESSIVE: Modules loaded (${convertedModules.length} modules)`);
+              break;
+            }
+            case 'estimates': {
+              setProgressiveState(prev => ({ ...prev, estimatesReady: true }));
+              console.log('[App] PROGRESSIVE: Estimates loaded');
+              break;
+            }
+            case 'schedule': {
+              const schedule = staged.data.schedule || staged.data;
+              setProgressiveState(prev => ({ 
+                ...prev, 
+                scheduleReady: true,
+                schedule: {
+                  totalWeeks: schedule.totalWeeks || 0,
+                  phases: schedule.phases || [],
+                  milestones: schedule.milestones || [],
+                }
+              }));
+              console.log('[App] PROGRESSIVE: Schedule loaded');
+              break;
+            }
+            case 'summary': {
+              const summary = staged.data.summary || staged.data;
+              setProgressiveState(prev => ({ 
+                ...prev, 
+                summaryReady: true,
+                summary: {
+                  keyPoints: summary.keyPoints || [],
+                  risks: summary.risks || [],
+                  recommendations: summary.recommendations || [],
+                }
+              }));
+              console.log('[App] PROGRESSIVE: Summary loaded');
+              break;
+            }
+          }
+          
+          // [ACK] Add processed stage to acknowledged list to prevent re-processing
+          if (!acknowledgedStagesPerJob.current[jobId]) {
+            acknowledgedStagesPerJob.current[jobId] = [];
+          }
+          if (!acknowledgedStagesPerJob.current[jobId].includes(staged.stage)) {
+            acknowledgedStagesPerJob.current[jobId].push(staged.stage);
+            console.log(`[App] ACK: Stage ${staged.stage} added to job ${jobId} acknowledged list: [${acknowledgedStagesPerJob.current[jobId].join(', ')}]`);
+          }
+        }
+      }
       
       if (status.status === 'completed') {
         clearInterval(jobPollingRef.current!);
@@ -1167,6 +1281,16 @@ const App: React.FC = () => {
             setMessages(newMessages);
             setCurrentView('detail');
             
+            // Mark all stages as complete
+            setProgressiveState({
+              modulesReady: true,
+              estimatesReady: true,
+              scheduleReady: true,
+              summaryReady: true,
+              schedule: status.result.schedule,
+              summary: status.result.summary,
+            });
+            
             // Generate AI insight for current view
             const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
             generateAiInsight({
@@ -1183,6 +1307,7 @@ const App: React.FC = () => {
         
         // Cleanup
         unregisterJob(jobId);
+        delete acknowledgedStagesPerJob.current[jobId]; // Clean up job-specific ack data
         setCurrentJobId(null);
         setIsAnalyzing(false);
         pendingUserMsgRef.current = null;
@@ -1209,6 +1334,7 @@ const App: React.FC = () => {
         
         // Cleanup
         unregisterJob(jobId);
+        delete acknowledgedStagesPerJob.current[jobId]; // Clean up job-specific ack data
         setCurrentJobId(null);
         setIsAnalyzing(false);
         pendingUserMsgRef.current = null;
@@ -1218,6 +1344,7 @@ const App: React.FC = () => {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         unregisterJob(jobId);
+        delete acknowledgedStagesPerJob.current[jobId]; // Clean up job-specific ack data
         setCurrentJobId(null);
         setIsAnalyzing(false);
         pendingUserMsgRef.current = null;
@@ -1589,6 +1716,8 @@ const App: React.FC = () => {
                 aiInsight={aiInsight}
                 rfpModelId={aiModelSettings.generateRFP}
                 referencedFiles={referencedFiles}
+                progressiveState={progressiveState}
+                isAnalyzing={isAnalyzing}
               />
             </div>
           </>

@@ -1,7 +1,7 @@
 
 
 import React, { useState, useRef } from 'react';
-import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale, InputSource } from '../types';
+import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale, InputSource, ProgressiveLoadingState } from '../types';
 import { Icons } from './Icons';
 import { ProjectSummaryTab } from './ProjectSummaryTab';
 import { EstimationTab } from './EstimationTab';
@@ -10,6 +10,7 @@ import { RFPTab } from './RFPTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
 import { RFPModal } from './RFPModal';
 import { InputSourcesBadge } from './InputSourcesBadge';
+import { TabSkeleton } from './SkeletonLoader';
 
 interface DashboardProps {
   modules: ModuleItem[];
@@ -27,6 +28,8 @@ interface DashboardProps {
   aiInsight?: string;
   rfpModelId?: string;
   referencedFiles?: InputSource[];
+  progressiveState?: ProgressiveLoadingState;
+  isAnalyzing?: boolean;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -44,7 +47,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   projectSummaryContent,
   aiInsight,
   rfpModelId,
-  referencedFiles = []
+  referencedFiles = [],
+  progressiveState,
+  isAnalyzing = false
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -269,7 +274,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="max-w-4xl mx-auto">
           <div key={activeTab} className="animate-fade-in-up">
             {activeTab === TabView.PROJECT_SUMMARY && (
-              <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} />
+              isAnalyzing && progressiveState && !progressiveState.summaryReady ? (
+                <TabSkeleton type="summary" />
+              ) : (
+                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} />
+              )
             )}
             {activeTab === TabView.ESTIMATION && (
               <EstimationTab 
@@ -285,10 +294,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
             {activeTab === TabView.EXECUTION_PLAN && (
-              <ExecutionPlanTab
-                modules={modules}
-                currentPartnerType={currentPartnerType}
-              />
+              isAnalyzing && progressiveState && !progressiveState.scheduleReady ? (
+                <TabSkeleton type="schedule" />
+              ) : (
+                <ExecutionPlanTab
+                  modules={modules}
+                  currentPartnerType={currentPartnerType}
+                />
+              )
             )}
             {activeTab === TabView.RFP && (
               <RFPTab
