@@ -1,12 +1,9 @@
 # Wishket AI Smart Estimation
 
 ## Overview
-This is a React + Vite + TypeScript application that provides an AI-powered project estimation chatbot for IT projects. The app uses Google's Gemini AI to help users optimize project scope and budget by providing insights on modules, features, and cost drivers.
+This React + Vite + TypeScript application provides an AI-powered project estimation chatbot for IT projects. It leverages Google's Gemini AI and Anthropic Claude to optimize project scope and budget by offering insights on modules, features, and cost drivers. The application aims to streamline project planning from initial requirements to RFP generation, ensuring efficient and accurate project estimations.
 
----
-
-## STRICT DEVELOPMENT PROTOCOLS (REPLIT MODE)
-
+## User Preferences
 You are acting strictly as a **Logic Implementation Engine**.
 
 ### 1. VISUAL & UI IMMUTABILITY (Absolute Design Freeze)
@@ -32,238 +29,51 @@ Before writing any code, you MUST output a plan in this format:
 
 **If any check is "YES", STOP and revise your plan.**
 
----
-
-## Project Architecture
+## System Architecture
 
 ### Tech Stack
-- **Frontend Framework**: React 19.2.0
-- **Build Tool**: Vite 6.2.0
-- **Language**: TypeScript 5.8.2
+- **Frontend Framework**: React
+- **Build Tool**: Vite
+- **Language**: TypeScript
 - **Backend**: Express.js
-- **AI Providers**: Google Gemini AI (@google/genai), Anthropic Claude (@anthropic-ai/sdk)
 - **UI Icons**: Lucide React
 
-### Project Structure
-```
-├── components/              # React components
-│   ├── LandingView.tsx      # Main landing page (ChatGPT/Gemini style)
-│   ├── ChatInterface.tsx    # Chat interface with AI
-│   ├── Dashboard.tsx        # Main dashboard with tabs
-│   ├── EstimationTab.tsx    # Estimation/budget tab
-│   ├── CollapsibleSidebar.tsx # Left sidebar (외주/상주/나머지)
-│   ├── SettingsModal.tsx    # Settings menu modal
-│   ├── AiSettingsModal.tsx  # AI model settings modal
-│   ├── InputSourcesBadge.tsx # Referenced files badge component
-│   └── ... (other UI components)
-├── constants/
-│   └── aiConfig.ts          # AI model configuration (centralized)
-├── services/
-│   ├── geminiService.ts     # Frontend Gemini service (legacy)
-│   └── apiService.ts        # Frontend API service
-├── server/
-│   ├── index.ts             # Express server entry
-│   └── services/
-│       ├── aiRouter.ts      # Unified AI router (dispatches to Gemini/Claude)
-│       ├── geminiService.ts # Backend Gemini PART 1 (분석)
-│       ├── claudeService.ts # Backend Claude API integration
-│       ├── chatService.ts   # Chat response + context lock logic
-│       ├── insightService.ts # AI insight generation
-│       ├── rfpService.ts    # Backend Gemini PART 2 (공고문)
-│       └── textExtractor.ts # Server-side document text extraction
-├── App.tsx                  # Main application component
-├── constants.ts             # Application constants
-├── types.ts                 # TypeScript type definitions
-├── index.tsx                # Application entry point
-└── vite.config.ts           # Vite configuration
-```
+### Core Features
+- ChatGPT/Gemini style landing page with file attachment and drag & drop support for multiple file types (txt, pdf, doc, docx, md, jpg, jpeg, png, gif, webp).
+- Interactive chat interface with AI consultant and real-time streaming responses via SSE.
+- Project module and feature selection with budget optimization suggestions.
+- Partner type presets (TYPE A/AI_NATIVE, TYPE B/STUDIO, TYPE C/AGENCY).
+- Three top-level tabs: `견적/예산` (Estimation/Budget), `수행계획` (Execution Plan), `공고작성` (RFP Creation).
+- Dark mode support and a resizable sidebar.
+- Session isolation for managing multiple project estimations without data leakage, using `sessionInstance.ts` and localStorage for persistence.
+- Immutable Constraints System (`constraintValidator.ts`) to enforce business rules like price integrity and essential logic locks.
+- Server-side text extraction for PDF, DOCX, and text files, with auto-triggering of AI analysis upon upload.
+- AI Model Settings Management allowing per-function model selection (e.g., for `analyzeProject`, `generateRFP`).
+- Conditional workflow for chat commands with intent classification and user confirmation for significant actions.
+- WBS (Work Breakdown Structure) calculation using `scheduleEngine.ts` with partner-specific configurations.
+
+### AI Integration & Architecture
+- **Unified AI Router**: `server/services/aiRouter.ts` dispatches AI calls to either Google Gemini or Anthropic Claude based on the selected model, providing a consistent interface.
+- **AI Functions**: Five core AI functions are configurable: `analyzeProject`, `generateRFP`, `classifyUserIntent`, `streamChatResponse`, `generateInsight`.
+- **Context Lock Security**: A context-lock guard ensures that "NEW_PROJECT" requests are blocked during ongoing sessions to prevent accidental resets.
+- **Prompt Structure**: AI prompts are structured for two main parts: PART 1 (Project Planning/Estimation/WBS) and PART 2 (RFP Document Generation).
 
 ### User Flow
-1. **Landing Page** - User enters project requirements or attaches files
-2. **Analysis** - Gemini AI analyzes and generates PART 1 (기획/견적/WBS)
-3. **Detail View** - User reviews and adjusts modules/features
-4. **RFP Generation** - Gemini AI generates PART 2 (입찰 공고문)
+1. **Landing Page**: Users input project requirements or attach relevant files.
+2. **Analysis**: Gemini AI analyzes inputs to generate PART 1 (planning, estimation, WBS).
+3. **Detail View**: Users review and adjust modules/features within the dashboard.
+4. **RFP Generation**: Gemini AI generates PART 2 (RFP document).
 
-### Key Features
-- ChatGPT/Gemini style landing page with file attachment
-- Interactive chat interface with Gemini AI consultant
-- Project module and feature selection
-- Budget optimization suggestions
-- Partner type presets (TYPE A/AI_NATIVE, TYPE B/STUDIO, TYPE C/AGENCY)
-- **3 Top-level Tabs**: 견적/예산, 수행계획, 공고작성
-- Dark mode support
-- Resizable sidebar interface
-- SSE streaming for AI responses
+## External Dependencies
 
-## Configuration
-
-### Environment Variables
-The application requires API keys for AI providers:
-- `GEMINI_API_KEY`: Your Google Gemini API key (stored as Replit secret) - Required for Gemini models
-- `ANTHROPIC_API_KEY`: Your Anthropic Claude API key (stored as Replit secret) - Required for Claude models
-
-### Ports
-- **Frontend (Vite)**: 5000 (required for Replit webview)
-- **Backend (Express)**: 3001
-
-### API Endpoints
-- `POST /api/analyze` - Analyze project (PART 1 - SSE streaming)
-- `POST /api/rfp` - Generate RFP (PART 2 - SSE streaming)
-- `POST /api/upload` - File upload
-- `GET /api/health` - Health check
-
-## Development
-
-### Running Locally
-1. Ensure dependencies are installed: `npm install`
-2. Set your Gemini API key as a Replit secret
-3. Run development server: `npm run dev`
-4. Access at: http://localhost:5000
-
-### Workflow
-The "Start application" workflow runs `npm run dev` which uses concurrently to run both:
-- Frontend: `npm run client` (Vite on port 5000)
-- Backend: `npm run server` (Express on port 3001)
-
-## AI Integration
-
-### AI Router Architecture
-The app uses a unified AI Router pattern (`server/services/aiRouter.ts`) that:
-- Routes AI calls to the correct provider (Google Gemini or Anthropic Claude) based on selected model
-- Provides consistent interface for all AI functions regardless of provider
-- Handles provider-specific configurations and API differences
-
-### Supported AI Providers
-- **Google Gemini**: Gemini 2.5 Flash, Gemini 3 Pro Preview
-- **Anthropic Claude**: Claude 4.5 Opus
-
-### AI Functions
-5 AI functions are mapped to configurable models:
-- `analyzeProject`: PART 1 analysis (planning/estimation/WBS)
-- `generateRFP`: PART 2 RFP document generation
-- `classifyUserIntent`: Context lock validation (NEW_PROJECT blocking)
-- `streamChatResponse`: Chat response streaming
-- `generateInsight`: AI insight generation
-
-### Context Lock Security
-Both Gemini and Claude chat paths share the same context-lock guard:
-1. User message is analyzed via `classifyUserIntent`
-2. NEW_PROJECT requests are blocked with refusal message
-3. RELATED and GENERAL requests proceed to chat streaming
-
-### Prompt Structure
-- **PART 1** (기획/견적/WBS):
-  - STEP 1: 프로젝트 상세 기획 (모듈 구조)
-  - STEP 2: 유형별 비교 견적 (TYPE A/B/C)
-  - STEP 3: 실행 계획 (WBS)
-  
-- **PART 2** (입찰 공고문):
-  - Clean text format (no markdown)
-  - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
-
-## Recent Changes (December 5, 2024)
-- **Session Isolation & Data Leakage Prevention (세션 격리)**:
-  - New `Immutable Job→Session Registry` in sessionSandbox.ts using localStorage
-  - `registerJobSession(jobId, sessionId)` - Immutable mapping when job starts
-  - `getJobOwnerSession(jobId)` - Lookup owner session (replaces mutable ref)
-  - `unregisterJob(jobId)` - Cleanup on completion/failure/cancel/abort
-  - `cleanupOldJobs()` - Auto-cleanup entries older than 24 hours
-  - **Data Leakage Block**: UI only updates when `ownerSessionId === activeSessionId`
-  - **Scoped Storage**: `saveResultToSessionStorage` saves to owner session only
-  - **Prompt Logging**: User input committed to session history immediately at analysis start
-  - All job handlers (startJobPolling, handleVisibilityChange, rehydrateSession) use registry
-  - Cross-session contamination prevented during session switching
-- **Immutable Constraints System (불변의 제약조건)**:
-  - New `constraintValidator.ts` service for enforcing business rules
-  - **Price Integrity (가격 무결성)**: Rejects price manipulation commands ("싸게 해줘", "비싸게 해줘")
-  - **Essential Logic Lock (필수 로직 잠금)**: Core/Critical modules and features cannot be disabled
-  - **Minimum Viable Scope**: Optional items only can be removed; core features preserved
-  - **Logical Validation**: Dependency checks prevent contradictory configurations
-  - Integrated with chat service for real-time message validation
-  - Error messages with constraint violation codes and user-friendly explanations
-- **Server-Side Text Extraction Pipeline**:
-  - New `textExtractor.ts` service for PDF, DOCX, and text file parsing
-  - Uses `pdf-parse` for PDF extraction (dynamic import for ES module compatibility)
-  - Uses `mammoth` for DOCX extraction
-  - Max 100K characters per file with truncation handling
-  - Word count and page count tracking
-- **Input Processing Trigger Architecture**:
-  - File uploads auto-extract text and trigger AI analysis
-  - Extracted text passed directly to Gemini/Claude APIs
-  - No client-side fallback for document parsing (prevents token explosion)
-- **Referenced Files State & Badge**:
-  - New `InputSource` type in types.ts
-  - `referencedFiles` state tracked in App.tsx
-  - Persisted in session history (`DashboardState.referencedFiles`)
-  - Restored when navigating to historical sessions
-  - New `InputSourcesBadge` component displays "기반 문서: [파일명]" in Dashboard header
-- **Multi-File Attachment with Drag & Drop**:
-  - New file validation utility (`utils/fileValidation.ts`) with comprehensive checks
-  - Support for up to 10 files at once (documents + images)
-  - Supported formats: txt, pdf, doc, docx, md, jpg, jpeg, png, gif, webp
-  - File size limit: 10MB per file
-  - Image thumbnail preview using canvas resizing
-  - Duplicate file detection
-  - Drag & drop with visual overlay in both LandingView and ChatInterface
-  - Toast-style error display with auto-dismiss (FileAttachmentError component)
-  - File previews in chat message bubbles
-- **Real-time Chat Streaming**:
-  - WebSocket-based streaming instead of SSE for better proxy handling
-  - TypingEffectManager class for natural character-by-character animation
-  - 10ms interval, 2 characters at a time
-- **Server File Upload Enhancement**:
-  - Extended multer to accept image files
-  - Structured error responses with detailed validation feedback
-
-## Previous Changes (December 4, 2024)
-- **AI Model Settings Management**:
-  - Created centralized configuration in `constants/aiConfig.ts`
-  - Available models: Gemini 2.5 Flash, Gemini 3 Pro Preview, Claude 4.5 Opus
-  - 5 AI functions mapped: analyzeProject, generateRFP, classifyUserIntent, streamChatResponse, generateInsight
-  - New components: AiSettingsModal.tsx for per-function model selection
-  - SettingsModal.tsx updated as gateway to AI settings
-  - Settings gear icon in header replaces refresh button
-  - Dark mode toggle remains in header for quick access
-- **Information Architecture Redesign**: Hierarchy Flattening
-  - Removed sub-tabs from '견적/예산' tab
-  - Created 3 top-level tabs: [견적/예산], [수행계획], [공고작성]
-  - Data binding: 상세견적 → 견적/예산 tab, 예상일정 → 수행계획 tab
-- New components:
-  - ExecutionPlanTab.tsx - WBS/Schedule display
-  - RFPTab.tsx - RFP generation interface
-- Required module protection: All sub-features of required modules are now locked
-- **FAB State Machine Implementation**:
-  - Phase 1 [견적/예산]: '견적 산출하기' → 계산 후 '수정하기/다음 단계' 분할 모드
-  - Phase 2 [수행계획]: '이전 단계/다음 단계' 네비게이션
-  - Phase 3 [공고작성]: '이전 단계' + '공고작성완료' (disabled)
-  - 다운로드 버튼: 모든 Phase에서 항상 좌측 고정 표시
-- **Multi-Action Container**: Flexbox 레이아웃 (gap-3)
-
-## Previous Changes (December 3, 2024)
-- Added Conditional Workflow for chat commands
-  - Intent Classification: command vs general in AI response
-  - Confirmation UI: "추가 시 재산정이 필요합니다. 진행하시겠습니까?"
-  - Pending action state with approve/cancel buttons
-  - Input blocked during pending action
-- Added scheduleEngine.ts for WBS calculation
-  - Partner-specific configs (teamSize, productivity, buffer)
-  - Duration formula: MM ÷ (teamSize × productivity) × (1 + buffer)
-  - SDLC phase distribution (20/15/50/15)
-
-## Previous Changes (November 26, 2024)
-- Added LandingView component (ChatGPT/Gemini style main page)
-- Implemented Express backend server with SSE streaming
-- Created API routes for /api/analyze, /api/rfp, /api/upload
-- Added prompt builders for PART 1 and PART 2
-- Implemented view transition (landing → detail)
-- Fixed security: removed API key from frontend bundle
-- Fixed SSE error handling with proper try/catch/finally
-
-## Notes
-- The app uses Tailwind CSS via CDN (warning in console is expected for dev)
-- All components are in Korean language
-- Budget calculations are in Korean Won (KRW)
-- Gemini API key is required and stored as a Replit secret
-- Anthropic API key is optional, stored as a Replit secret (ANTHROPIC_API_KEY)
-- API key is only accessed server-side for security
-- The frontend proxies /api requests to the backend server
+- **AI Providers**:
+    - Google Gemini AI (`@google/genai`)
+    - Anthropic Claude (`@anthropic-ai/sdk`)
+- **Backend Libraries**:
+    - Express.js
+    - `multer` (for file uploads)
+    - `pdf-parse` (for PDF text extraction)
+    - `mammoth` (for DOCX text extraction)
+- **Environment Variables (Replit Secrets)**:
+    - `GEMINI_API_KEY`
+    - `ANTHROPIC_API_KEY` (optional)

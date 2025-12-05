@@ -173,7 +173,14 @@ const App: React.FC = () => {
   // Sync dashboard state to localStorage whenever modules or settings change
   useEffect(() => {
     if (activeSessionId && currentView === 'detail') {
+      // [STATE ISOLATION] Validate state owner before saving
+      if (stateOwnerSessionRef.current && stateOwnerSessionRef.current !== activeSessionId) {
+        console.warn(`[App] State owner mismatch during save: owner=${stateOwnerSessionRef.current}, active=${activeSessionId}`);
+        return; // Block cross-session state save
+      }
+      
       const dashboardState: DashboardState = {
+        sessionId: activeSessionId, // Owner ID for validation
         modules,
         partnerType: currentPartnerType,
         projectScale: currentScale,
@@ -275,6 +282,9 @@ const App: React.FC = () => {
 
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
+    // [STATE ISOLATION] Reset state owner when starting fresh
+    stateOwnerSessionRef.current = null;
+    
     // Simply reset to landing view - a new session will be created when analysis starts
     setActiveSessionId(null);
     setMessages(INITIAL_MESSAGES);
@@ -443,6 +453,19 @@ const App: React.FC = () => {
     
     const session = getSessionById(sessionId);
     if (session) {
+      // [VALIDATION] Verify state ownership before proceeding
+      // If we have an active state owner that's different from target, validate the switch
+      const previousOwner = stateOwnerSessionRef.current;
+      if (previousOwner && previousOwner !== sessionId) {
+        console.log(`[App] State owner transition: ${previousOwner} → ${sessionId}`);
+        // Clear any lingering state from previous session before loading new one
+        setMessages(INITIAL_MESSAGES);
+        setModules(INITIAL_MODULES);
+        setReferencedFiles([]);
+        setProjectSummaryContent('');
+        setAiInsight('');
+      }
+      
       // [STATE ISOLATION] Update state ownership to new session
       stateOwnerSessionRef.current = sessionId;
       
@@ -450,15 +473,12 @@ const App: React.FC = () => {
       sessionSandbox.setCurrentSession(sessionId);
       sessionManager.setCurrentSession(sessionId);
       
-      // [VALIDATION] Verify data belongs to target session before rendering
-      const validation = validateBeforeRender(sessionId, session.id);
-      if (!validation.isValid) {
-        console.error(`[App] RENDER BLOCKED: ${validation.reason}`);
-        // Reset to safe state
-        setMessages(INITIAL_MESSAGES);
-        setModules(INITIAL_MODULES);
-        setCurrentView('landing');
-        return;
+      // [VALIDATION] Verify session instance exists and matches
+      const instance = sessionManager.getInstance(sessionId);
+      if (!instance) {
+        // Register missing session instance for legacy sessions
+        sessionManager.registerSession(sessionId, session.title || '이전 세션');
+        console.log(`[App] Registered legacy session ${sessionId}`);
       }
       
       if (session.messages.length > 0) {
@@ -466,14 +486,28 @@ const App: React.FC = () => {
         
         // Restore dashboard state if available
         if (session.dashboardState) {
-          // [VALIDATION] Double-check dashboard state ownership
-          setModules(session.dashboardState.modules);
-          setCurrentPartnerType(session.dashboardState.partnerType);
-          setCurrentScale(session.dashboardState.projectScale);
-          setEstimationStep(session.dashboardState.estimationStep);
-          setProjectSummaryContent(session.dashboardState.projectSummaryContent || '');
-          setAiInsight(session.dashboardState.aiInsight || '');
-          setReferencedFiles(session.dashboardState.referencedFiles || []);
+          // [VALIDATION] Verify dashboardState belongs to target session
+          const dashboardOwner = session.dashboardState.sessionId;
+          if (dashboardOwner && dashboardOwner !== sessionId) {
+            console.error(`[App] DASHBOARD OWNER MISMATCH: dashboard from ${dashboardOwner}, target ${sessionId}`);
+            // Block hydration of mismatched data - reset to defaults
+            setModules(INITIAL_MODULES);
+            setCurrentPartnerType('STUDIO');
+            setCurrentScale('STANDARD');
+            setEstimationStep('SCOPE');
+            setProjectSummaryContent('');
+            setAiInsight('');
+            setReferencedFiles([]);
+          } else {
+            // Owner matches or legacy session without sessionId - safe to hydrate
+            setModules(session.dashboardState.modules);
+            setCurrentPartnerType(session.dashboardState.partnerType);
+            setCurrentScale(session.dashboardState.projectScale);
+            setEstimationStep(session.dashboardState.estimationStep);
+            setProjectSummaryContent(session.dashboardState.projectSummaryContent || '');
+            setAiInsight(session.dashboardState.aiInsight || '');
+            setReferencedFiles(session.dashboardState.referencedFiles || []);
+          }
         } else {
           // Legacy session without dashboard state - reset to defaults
           setModules(INITIAL_MODULES);
@@ -1077,17 +1111,19 @@ const App: React.FC = () => {
     newSession.isLoading = true;
     const currentSessionId = newSession.id;
     
-    // [MULTI-INSTANCE] Create session instance with isolated namespace
-    const sessionInstance = sessionManager.createInstance(text?.substring(0, 20) || '새 프로젝트');
-    console.log(`[App] Created session instance: ${sessionInstance.id} with namespace ${sessionInstance.namespace.toString()}`);
+    // [MULTI-INSTANCE] Register session with instance manager using the SAME ID
+    sessionManager.registerSession(currentSessionId, text?.substring(0, 20) || '새 프로젝트');
+    console.log(`[App] Registered session instance: ${currentSessionId}`);
     
     // [PROMPT BINDING] Bind immutable prompt to session - cannot be changed later
     const boundPrompt = sessionManager.bindPrompt(currentSessionId, text, files);
-    console.log(`[App] Bound immutable prompt to session ${currentSessionId}:`, {
-      text: boundPrompt.text.substring(0, 50) + '...',
-      files: boundPrompt.files.length,
-      timestamp: boundPrompt.timestamp
-    });
+    if (boundPrompt) {
+      console.log(`[App] Bound immutable prompt to session ${currentSessionId}:`, {
+        text: boundPrompt.text.substring(0, 50) + (boundPrompt.text.length > 50 ? '...' : ''),
+        files: boundPrompt.files.length,
+        timestamp: boundPrompt.timestamp
+      });
+    }
     
     // [STATE ISOLATION] Mark state ownership for this session
     stateOwnerSessionRef.current = currentSessionId;

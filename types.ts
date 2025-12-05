@@ -129,6 +129,7 @@ export type EstimationStep = 'SCOPE' | 'RESULT' | 'REGISTER';
 export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
 export interface DashboardState {
+  sessionId?: string; // Owner session ID for state isolation validation
   modules: ModuleItem[];
   partnerType: PartnerType;
   projectScale: ProjectScale;

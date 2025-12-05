@@ -96,10 +96,19 @@ class SessionInstanceManager {
 
   createInstance(title: string = '새 프로젝트'): SessionInstance {
     const id = Date.now().toString();
-    const namespace = Symbol(`session_${id}`);
+    return this.registerSession(id, title);
+  }
+
+  registerSession(sessionId: string, title: string = '새 프로젝트'): SessionInstance {
+    if (this.instances.has(sessionId)) {
+      console.log(`[SessionInstanceManager] Session ${sessionId} already registered`);
+      return this.instances.get(sessionId)!;
+    }
+    
+    const namespace = Symbol(`session_${sessionId}`);
     
     const instance: SessionInstance = Object.seal({
-      id,
+      id: sessionId,
       namespace,
       createdAt: Date.now(),
       initialPrompt: null,
@@ -108,11 +117,11 @@ class SessionInstanceManager {
       isLoading: false
     });
     
-    this.namespaces.set(id, namespace);
-    this.instances.set(id, instance);
+    this.namespaces.set(sessionId, namespace);
+    this.instances.set(sessionId, instance);
     this.saveToStorage();
     
-    console.log(`[SessionInstanceManager] Created instance ${id} with namespace ${namespace.toString()}`);
+    console.log(`[SessionInstanceManager] Registered session ${sessionId} with namespace ${namespace.toString()}`);
     return instance;
   }
 
