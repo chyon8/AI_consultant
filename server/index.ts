@@ -60,6 +60,14 @@ function getFileType(filename: string): 'image' | 'document' {
   return ALLOWED_IMAGE_TYPES.includes(ext) ? 'image' : 'document';
 }
 
+function decodeFilename(filename: string): string {
+  try {
+    return Buffer.from(filename, 'latin1').toString('utf8');
+  } catch {
+    return filename;
+  }
+}
+
 const handleUploadError = (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -147,10 +155,11 @@ app.post('/api/upload', upload.array('files', MAX_FILES), async (req, res) => {
     }
     
     const fileInfos = await Promise.all(files.map(async (f) => {
+      const decodedName = decodeFilename(f.originalname);
       const fileInfo: any = {
         id: f.filename.split('.')[0],
         filename: f.filename,
-        originalName: f.originalname,
+        originalName: decodedName,
         path: f.path,
         size: f.size,
         type: getFileType(f.originalname),
@@ -159,13 +168,13 @@ app.post('/api/upload', upload.array('files', MAX_FILES), async (req, res) => {
       };
       
       if (isExtractableDocument(f.mimetype, f.originalname)) {
-        console.log(`[Upload] Extracting text from: ${f.originalname}`);
+        console.log(`[Upload] Extracting text from: ${decodedName}`);
         const extraction = await extractTextFromFile(f.path, f.mimetype);
         fileInfo.extraction = extraction;
         if (extraction.success) {
-          console.log(`[Upload] Extracted ${extraction.wordCount} words from ${f.originalname}`);
+          console.log(`[Upload] Extracted ${extraction.wordCount} words from ${decodedName}`);
         } else {
-          console.log(`[Upload] Extraction failed for ${f.originalname}: ${extraction.error}`);
+          console.log(`[Upload] Extraction failed for ${decodedName}: ${extraction.error}`);
         }
       }
       
