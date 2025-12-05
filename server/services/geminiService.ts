@@ -55,8 +55,10 @@ export async function analyzeProject(
       { role: 'user', parts: parts }
     ],
     config: {
-      temperature: 0.7,
-      maxOutputTokens: 16000
+      temperature: 1.0,
+      thinkingConfig: {
+        thinkingBudget: 8000
+      }
     }
   });
 
