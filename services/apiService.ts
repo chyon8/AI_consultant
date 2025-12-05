@@ -65,7 +65,7 @@ export async function uploadFiles(files: File[]): Promise<UploadResponse> {
 
 export async function analyzeProject(
   text: string,
-  fileContents: string[],
+  fileDataList: FileData[],
   onChunk: (chunk: string) => void,
   onComplete?: (result: ParsedAnalysisResult | null) => void,
   onError?: (error: string) => void,
@@ -76,7 +76,7 @@ export async function analyzeProject(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, fileContents, modelId }),
+    body: JSON.stringify({ text, fileDataList, modelId }),
   });
 
   if (!response.ok) {
@@ -222,32 +222,84 @@ export async function generateRFP(
 const TEXT_FILE_EXTENSIONS = ['.txt', '.md', '.pdf', '.doc', '.docx'];
 const IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const MAX_FILE_CONTENT_LENGTH = 50000;
+const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
+
+export interface FileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
 
 export function isTextFile(file: File): boolean {
   const ext = '.' + file.name.split('.').pop()?.toLowerCase();
   return TEXT_FILE_EXTENSIONS.includes(ext);
 }
 
-export async function readFileContent(file: File): Promise<string> {
-  if (!isTextFile(file)) {
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    if (IMAGE_FILE_EXTENSIONS.includes('.' + ext)) {
-      return `[이미지 파일: ${file.name} (${Math.round(file.size / 1024)}KB)]`;
-    }
-    return `[파일: ${file.name}]`;
-  }
+export function isImageFile(file: File): boolean {
+  const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+  return IMAGE_FILE_EXTENSIONS.includes(ext);
+}
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      let content = reader.result as string;
-      if (content.length > MAX_FILE_CONTENT_LENGTH) {
-        content = content.substring(0, MAX_FILE_CONTENT_LENGTH) + 
-          `\n\n... [내용이 너무 길어 ${MAX_FILE_CONTENT_LENGTH}자로 잘렸습니다. 원본 크기: ${content.length}자]`;
-      }
-      resolve(content);
-    };
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
+export async function readFileAsData(file: File): Promise<FileData> {
+  if (isImageFile(file)) {
+    if (file.size > MAX_IMAGE_SIZE) {
+      return {
+        type: 'text',
+        name: file.name,
+        content: `[이미지 파일이 너무 큽니다: ${file.name} (${Math.round(file.size / 1024 / 1024)}MB). 최대 4MB까지 지원합니다.]`
+      };
+    }
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(',')[1];
+        resolve({
+          type: 'image',
+          name: file.name,
+          base64: base64,
+          mimeType: file.type || 'image/jpeg'
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  if (isTextFile(file)) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        let content = reader.result as string;
+        if (content.length > MAX_FILE_CONTENT_LENGTH) {
+          content = content.substring(0, MAX_FILE_CONTENT_LENGTH) + 
+            `\n\n... [내용이 너무 길어 ${MAX_FILE_CONTENT_LENGTH}자로 잘렸습니다. 원본 크기: ${content.length}자]`;
+        }
+        resolve({
+          type: 'text',
+          name: file.name,
+          content: content
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+  
+  return {
+    type: 'text',
+    name: file.name,
+    content: `[지원하지 않는 파일 형식: ${file.name}]`
+  };
+}
+
+export async function readFileContent(file: File): Promise<string> {
+  const data = await readFileAsData(file);
+  if (data.type === 'image') {
+    return `[이미지: ${data.name}]`;
+  }
+  return data.content || `[파일: ${data.name}]`;
 }

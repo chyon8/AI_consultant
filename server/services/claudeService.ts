@@ -195,9 +195,17 @@ export function isClaudeConfigured(): boolean {
   return !!ANTHROPIC_API_KEY && !!anthropic;
 }
 
+export interface FileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
+
 export async function analyzeProject(
   userInput: string,
-  fileContents: string[],
+  fileDataList: FileData[],
   onChunk: (chunk: string) => void,
   modelId?: string
 ): Promise<void> {
@@ -207,11 +215,33 @@ export async function analyzeProject(
 
   const model = modelId || DEFAULT_MODEL;
   console.log('[claudeService] analyzeProject using model:', model);
+  console.log('[claudeService] fileDataList count:', fileDataList?.length || 0);
 
-  const combinedInput = [
-    userInput,
-    ...fileContents.map((content, i) => `\n\n--- 첨부파일 ${i + 1} 내용 ---\n${content}`)
-  ].join('');
+  const contentBlocks: any[] = [];
+  
+  contentBlocks.push({ type: 'text', text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + userInput });
+  
+  if (fileDataList && fileDataList.length > 0) {
+    for (let i = 0; i < fileDataList.length; i++) {
+      const fileData = fileDataList[i];
+      
+      if (fileData.type === 'image' && fileData.base64) {
+        console.log(`[claudeService] Adding image: ${fileData.name} (${fileData.mimeType})`);
+        contentBlocks.push({ type: 'text', text: `\n\n--- 첨부 이미지 ${i + 1}: ${fileData.name} ---` });
+        contentBlocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: fileData.mimeType || 'image/jpeg',
+            data: fileData.base64
+          }
+        });
+      } else if (fileData.type === 'text' && fileData.content) {
+        console.log(`[claudeService] Adding text file: ${fileData.name}`);
+        contentBlocks.push({ type: 'text', text: `\n\n--- 첨부파일 ${i + 1}: ${fileData.name} ---\n${fileData.content}` });
+      }
+    }
+  }
 
   const stream = await anthropic.messages.stream({
     model: model,
@@ -219,7 +249,7 @@ export async function analyzeProject(
     messages: [
       { 
         role: 'user', 
-        content: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + combinedInput 
+        content: contentBlocks
       }
     ],
   });

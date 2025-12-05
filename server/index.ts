@@ -170,6 +170,14 @@ app.post('/api/upload', upload.array('files', MAX_FILES), (req, res) => {
   }
 }, handleUploadError);
 
+interface FileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
+
 app.post('/api/analyze', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -178,12 +186,13 @@ app.post('/api/analyze', async (req, res) => {
   res.flushHeaders();
 
   try {
-    const { text, fileContents, modelId } = req.body;
+    const { text, fileDataList, modelId } = req.body as { text: string; fileDataList: FileData[]; modelId?: string };
     let fullResponse = '';
 
     console.log('[Analyze] Starting analysis for:', text?.substring(0, 100), 'with model:', modelId || 'default');
+    console.log('[Analyze] File data count:', fileDataList?.length || 0);
 
-    await analyzeProject(text, fileContents, (chunk: string) => {
+    await analyzeProject(text, fileDataList || [], (chunk: string) => {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
       if (typeof (res as any).flush === 'function') {

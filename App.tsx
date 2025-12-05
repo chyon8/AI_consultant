@@ -13,7 +13,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { AiSettingsModal } from './components/AiSettingsModal';
 import { AIModelSettings, getDefaultModelSettings } from './constants/aiConfig';
 import { deleteSession } from './services/chatHistoryService';
-import { analyzeProject, readFileContent, ParsedAnalysisResult } from './services/apiService';
+import { analyzeProject, readFileAsData, FileData, ParsedAnalysisResult } from './services/apiService';
 import { 
   getChatHistory, 
   saveChatHistory, 
@@ -607,14 +607,14 @@ const App: React.FC = () => {
     
     try {
       // Read file contents first (stay on landing page during analysis)
-      const fileContents = await Promise.all(
-        files.map(file => readFileContent(file))
+      const fileDataList = await Promise.all(
+        files.map(file => readFileAsData(file))
       );
       
       // Call analyze API - stay on landing page, show loading there
       const parsedResult = await analyzeProject(
         text, 
-        fileContents, 
+        fileDataList, 
         (chunk) => {
           // Don't update chat - response collected internally
         },

@@ -7,6 +7,14 @@ import * as claudeService from './claudeService';
 
 type Provider = 'google' | 'anthropic';
 
+export interface FileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
+
 function getProviderFromModelId(modelId: string): Provider {
   if (modelId.startsWith('claude')) {
     return 'anthropic';
@@ -16,7 +24,7 @@ function getProviderFromModelId(modelId: string): Provider {
 
 export async function analyzeProject(
   userInput: string,
-  fileContents: string[],
+  fileDataList: FileData[],
   onChunk: (chunk: string) => void,
   modelId?: string
 ): Promise<void> {
@@ -29,10 +37,10 @@ export async function analyzeProject(
     if (!claudeService.isClaudeConfigured()) {
       throw new Error('Anthropic API key not configured. Please set ANTHROPIC_API_KEY.');
     }
-    return claudeService.analyzeProject(userInput, fileContents, onChunk, effectiveModelId);
+    return claudeService.analyzeProject(userInput, fileDataList, onChunk, effectiveModelId);
   }
   
-  return geminiService.analyzeProject(userInput, fileContents, onChunk, effectiveModelId);
+  return geminiService.analyzeProject(userInput, fileDataList, onChunk, effectiveModelId);
 }
 
 interface ModuleInfo {
