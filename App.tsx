@@ -538,51 +538,28 @@ const App: React.FC = () => {
         console.log(`[App] Registered legacy session ${sessionId}`);
       }
       
-      // [STRICT SWITCH] STEP 3: Sync ALL components from atomic unit or session
-      console.log(`[App] STRICT SWITCH STEP 3: Syncing Chat + Dashboard from session ${sessionId}`);
+      // [STRICT SWITCH] STEP 3: Sync ALL components from atomic unit
+      // Atomic unit is ALWAYS the source of truth (already populated from localStorage if legacy)
+      console.log(`[App] STRICT SWITCH STEP 3: Syncing Chat + Dashboard from atomic unit ${sessionId}`);
       
-      if (atomicUnit) {
-        // Use atomic unit data (preferred - guaranteed coupling)
-        setMessages(atomicUnit.chat.messages);
-        setModules(atomicUnit.dashboard.modules);
-        setCurrentPartnerType(atomicUnit.dashboard.partnerType);
-        setCurrentScale(atomicUnit.dashboard.projectScale);
-        setEstimationStep(atomicUnit.dashboard.estimationStep);
-        setProjectSummaryContent(atomicUnit.dashboard.projectSummaryContent);
-        setAiInsight(atomicUnit.dashboard.aiInsight);
-        setReferencedFiles(atomicUnit.dashboard.referencedFiles);
-        
-        if (atomicUnit.chat.messages.length > INITIAL_MESSAGES.length) {
-          setCurrentView('detail');
-        } else {
-          setCurrentView('landing');
-        }
-        
-        console.log(`[App] ATOMIC SYNC: Chat(${atomicUnit.chat.messages.length} msgs) + Dashboard(${atomicUnit.dashboard.modules.length} modules)`);
-      } else if (session.messages.length > 0) {
-        // Fallback to session data for legacy sessions
-        setMessages(session.messages);
-        
-        if (session.dashboardState) {
-          const dashboardOwner = session.dashboardState.sessionId;
-          if (dashboardOwner && dashboardOwner !== sessionId) {
-            console.error(`[App] ATOMIC VIOLATION: Dashboard from ${dashboardOwner}, target ${sessionId} - BLOCKING`);
-            // Keep default state - don't hydrate mismatched data
-          } else {
-            setModules(session.dashboardState.modules);
-            setCurrentPartnerType(session.dashboardState.partnerType);
-            setCurrentScale(session.dashboardState.projectScale);
-            setEstimationStep(session.dashboardState.estimationStep);
-            setProjectSummaryContent(session.dashboardState.projectSummaryContent || '');
-            setAiInsight(session.dashboardState.aiInsight || '');
-            setReferencedFiles(session.dashboardState.referencedFiles || []);
-          }
-        }
-        
+      // Sync from atomic unit data
+      setMessages(atomicUnit.chat.messages);
+      setModules(atomicUnit.dashboard.modules);
+      setCurrentPartnerType(atomicUnit.dashboard.partnerType);
+      setCurrentScale(atomicUnit.dashboard.projectScale);
+      setEstimationStep(atomicUnit.dashboard.estimationStep);
+      setProjectSummaryContent(atomicUnit.dashboard.projectSummaryContent);
+      setAiInsight(atomicUnit.dashboard.aiInsight);
+      setReferencedFiles(atomicUnit.dashboard.referencedFiles);
+      
+      if (atomicUnit.chat.messages.length > INITIAL_MESSAGES.length) {
         setCurrentView('detail');
       } else {
         setCurrentView('landing');
       }
+      
+      console.log(`[App] ATOMIC SYNC: Chat(${atomicUnit.chat.messages.length} msgs) + Dashboard(${atomicUnit.dashboard.modules.length} modules)`);
+      console.log(`[App] Dashboard modules:`, atomicUnit.dashboard.modules.map(m => m.name).slice(0, 3));
       
       console.log(`[App] STRICT SWITCH COMPLETE: ${sessionId} | State owner: ${stateOwnerSessionRef.current} | Guard active: ${!!isolationGuardRef.current}`);
       
