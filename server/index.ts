@@ -8,6 +8,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
 import { extractTextFromFile, isExtractableDocument, ExtractionResult } from './services/textExtractor';
 import { parseAnalysisResponse } from './services/responseParser';
+import { jobRegistry, Job } from './services/jobRegistry';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -329,6 +330,147 @@ app.post('/api/insight', async (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/jobs/session/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const jobs = jobRegistry.getJobsBySession(sessionId);
+  res.json({ 
+    success: true, 
+    jobs: jobs.map(j => ({
+      id: j.id,
+      type: j.type,
+      status: j.status,
+      progress: j.progress,
+      result: j.result,
+      error: j.error,
+      chunkCount: j.chunkLog.length,
+      createdAt: j.createdAt,
+      updatedAt: j.updatedAt,
+      completedAt: j.completedAt
+    }))
+  });
+});
+
+app.get('/api/jobs/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  const job = jobRegistry.getJob(jobId);
+  
+  if (!job) {
+    return res.status(404).json({ success: false, error: 'Job not found' });
+  }
+  
+  res.json({ 
+    success: true, 
+    job: {
+      id: job.id,
+      sessionId: job.sessionId,
+      type: job.type,
+      status: job.status,
+      progress: job.progress,
+      result: job.result,
+      error: job.error,
+      chunkCount: job.chunkLog.length,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      completedAt: job.completedAt
+    }
+  });
+});
+
+app.get('/api/jobs/:jobId/chunks', (req, res) => {
+  const { jobId } = req.params;
+  const afterSequence = parseInt(req.query.after as string) || -1;
+  
+  const job = jobRegistry.getJob(jobId);
+  if (!job) {
+    return res.status(404).json({ success: false, error: 'Job not found' });
+  }
+  
+  const chunks = jobRegistry.getChunksAfter(jobId, afterSequence);
+  res.json({ 
+    success: true, 
+    chunks,
+    totalChunks: job.chunkLog.length,
+    status: job.status,
+    result: job.status === 'completed' ? job.result : null
+  });
+});
+
+app.post('/api/jobs/:jobId/cancel', (req, res) => {
+  const { jobId } = req.params;
+  const cancelled = jobRegistry.cancelJob(jobId);
+  
+  if (!cancelled) {
+    return res.status(400).json({ success: false, error: 'Job cannot be cancelled' });
+  }
+  
+  res.json({ success: true });
+});
+
+interface AnalyzeJobRequest {
+  sessionId: string;
+  text: string;
+  fileDataList: FileData[];
+  modelId?: string;
+}
+
+app.post('/api/jobs/analyze', async (req, res) => {
+  const { sessionId, text, fileDataList, modelId } = req.body as AnalyzeJobRequest;
+  
+  const existingJob = jobRegistry.getActiveJobForSession(sessionId);
+  if (existingJob) {
+    return res.json({ 
+      success: true, 
+      job: { id: existingJob.id, status: existingJob.status },
+      message: 'Existing job in progress'
+    });
+  }
+  
+  const job = jobRegistry.createJob(sessionId, 'analyze', { text, fileDataList, modelId });
+  
+  res.json({ 
+    success: true, 
+    job: { id: job.id, status: job.status }
+  });
+  
+  (async () => {
+    try {
+      jobRegistry.updateJobStatus(job.id, 'running');
+      let fullResponse = '';
+      
+      console.log(`[Job ${job.id}] Starting analysis in background`);
+      
+      await analyzeProject(text, fileDataList || [], (chunk: string) => {
+        const currentJob = jobRegistry.getJob(job.id);
+        if (currentJob?.status === 'cancelled') {
+          throw new Error('Job cancelled');
+        }
+        
+        fullResponse += chunk;
+        jobRegistry.appendChunk(job.id, chunk, 'content');
+        
+        const estimatedProgress = Math.min(90, (fullResponse.length / 5000) * 100);
+        jobRegistry.updateJobProgress(job.id, estimatedProgress);
+      }, modelId);
+      
+      const parsedData = parseAnalysisResponse(fullResponse);
+      
+      jobRegistry.setJobResult(job.id, parsedData);
+      jobRegistry.updateJobProgress(job.id, 100);
+      jobRegistry.updateJobStatus(job.id, 'completed');
+      
+      console.log(`[Job ${job.id}] Completed successfully`);
+      
+    } catch (error: any) {
+      if (error.message === 'Job cancelled') {
+        console.log(`[Job ${job.id}] Was cancelled`);
+      } else {
+        console.error(`[Job ${job.id}] Failed:`, error);
+        jobRegistry.updateJobStatus(job.id, 'failed', error.message);
+      }
+    }
+  })();
 });
 
 wss.on('connection', (ws: WebSocket) => {
