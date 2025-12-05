@@ -159,7 +159,26 @@ Both Gemini and Claude chat paths share the same context-lock guard:
   - Clean text format (no markdown)
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
-## Recent Changes (December 4, 2024)
+## Recent Changes (December 5, 2024)
+- **Multi-File Attachment with Drag & Drop**:
+  - New file validation utility (`utils/fileValidation.ts`) with comprehensive checks
+  - Support for up to 10 files at once (documents + images)
+  - Supported formats: txt, pdf, doc, docx, md, jpg, jpeg, png, gif, webp
+  - File size limit: 10MB per file
+  - Image thumbnail preview using canvas resizing
+  - Duplicate file detection
+  - Drag & drop with visual overlay in both LandingView and ChatInterface
+  - Toast-style error display with auto-dismiss (FileAttachmentError component)
+  - File previews in chat message bubbles
+- **Real-time Chat Streaming**:
+  - WebSocket-based streaming instead of SSE for better proxy handling
+  - TypingEffectManager class for natural character-by-character animation
+  - 10ms interval, 2 characters at a time
+- **Server File Upload Enhancement**:
+  - Extended multer to accept image files
+  - Structured error responses with detailed validation feedback
+
+## Previous Changes (December 4, 2024)
 - **AI Model Settings Management**:
   - Created centralized configuration in `constants/aiConfig.ts`
   - Available models: Gemini 2.5 Flash, Gemini 3 Pro Preview, Claude 4.5 Opus
