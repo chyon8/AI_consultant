@@ -679,7 +679,12 @@ const App: React.FC = () => {
   const handleResize = (e: React.MouseEvent) => {
     if (isResizing) {
       const newWidth = e.clientX;
-      if (newWidth > 300 && newWidth < 800) {
+      const collapsibleSidebarWidth = isSidebarCollapsed ? 56 : 224;
+      const minChatWidth = 280;
+      const minDashboardWidth = 400;
+      const maxChatWidth = window.innerWidth - collapsibleSidebarWidth - minDashboardWidth;
+      
+      if (newWidth >= minChatWidth && newWidth <= maxChatWidth) {
         setSidebarWidth(newWidth);
       }
     }
