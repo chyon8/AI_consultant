@@ -99,6 +99,12 @@ const App: React.FC = () => {
   // Chat Session State
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  
+  // [FIX] Ref to track activeSessionId for polling callbacks (avoids React closure issues)
+  const activeSessionIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
 
   // Delete Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -475,11 +481,10 @@ const App: React.FC = () => {
     // Freeze current session before switching
     await freezeCurrentSession();
     
-    // Clear current job polling
-    if (jobPollingRef.current) {
-      clearInterval(jobPollingRef.current);
-      jobPollingRef.current = null;
-    }
+    // [FIX] Do NOT clear job polling on session switch!
+    // The background job should continue polling until completion
+    // Result will be saved to the correct owner session via saveResultToSessionStorage
+    // Note: Polling uses ownerSessionId from job registry, not active session
     
     // [STRICT SWITCH] STEP 1: Clear ALL current state immediately
     console.log(`[App] STRICT SWITCH STEP 1: Clearing all current state`);
@@ -512,6 +517,53 @@ const App: React.FC = () => {
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
           }
           console.log(`[App] Created and populated atomic unit for legacy session: ${sessionId}`);
+        }
+      } else {
+        // [FIX] Check if atomic unit has stale data but localStorage has different/better data
+        // This can happen if job completed while on different session and atomic unit wasn't updated
+        const localStorageModules = session.dashboardState?.modules;
+        const atomicModules = atomicUnit.dashboard.modules;
+        const localStorageMessages = session.messages;
+        const atomicMessages = atomicUnit.chat.messages;
+        
+        // More comprehensive stale data detection:
+        // 1. localStorage has more messages than atomic unit
+        // 2. Different number of modules
+        // 3. First module name is different (modules from different analysis)
+        // 4. localStorage has AI completion message but atomic unit doesn't
+        const localHasAIMessage = localStorageMessages?.some(m => m.role === 'model' && m.text.includes('분석이 완료되었습니다'));
+        const atomicHasAIMessage = atomicMessages?.some(m => m.role === 'model' && m.text.includes('분석이 완료되었습니다'));
+        
+        const isStaleData = localStorageModules && localStorageMessages && (
+          (localStorageMessages.length > atomicMessages.length) ||
+          (localStorageModules.length !== atomicModules.length) ||
+          (localStorageModules[0]?.name !== atomicModules[0]?.name) ||
+          (localHasAIMessage && !atomicHasAIMessage) // localStorage has completion but atomic doesn't
+        );
+        
+        if (isStaleData) {
+          console.warn(`[App] STALE DATA DETECTED: Syncing atomic unit from localStorage for session ${sessionId}`);
+          console.log(`[App] localStorage: ${localStorageMessages.length} msgs (hasAI: ${localHasAIMessage}), ${localStorageModules.length} modules`);
+          console.log(`[App] atomic unit: ${atomicMessages.length} msgs (hasAI: ${atomicHasAIMessage}), ${atomicModules.length} modules`);
+          
+          // Sync from localStorage to atomic unit
+          atomicUnit.chat.messages = localStorageMessages;
+          atomicUnit.dashboard.modules = localStorageModules;
+          if (session.dashboardState) {
+            atomicUnit.dashboard.partnerType = session.dashboardState.partnerType;
+            atomicUnit.dashboard.projectScale = session.dashboardState.projectScale;
+            atomicUnit.dashboard.estimationStep = session.dashboardState.estimationStep;
+            atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
+            atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
+            atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
+          }
+          
+          // Persist the sync
+          sessionCoupler.backgroundUpdate(sessionId, (unit) => {
+            unit.chat.messages = atomicUnit!.chat.messages;
+            unit.dashboard = { ...atomicUnit!.dashboard };
+          });
+          console.log(`[App] Atomic unit synced from localStorage for session ${sessionId}`);
         }
       }
       
@@ -1000,7 +1052,7 @@ const App: React.FC = () => {
     updateSessionDashboardState(targetSessionId, dashboardState);
     
     // [CRITICAL] Also update sessionCoupler's atomic unit for consistent data
-    sessionCoupler.backgroundUpdate(targetSessionId, (unit) => {
+    const updateSuccess = sessionCoupler.backgroundUpdate(targetSessionId, (unit) => {
       unit.chat.messages = newMessages;
       unit.dashboard.modules = convertedModules;
       unit.dashboard.partnerType = dashboardState.partnerType;
@@ -1010,7 +1062,32 @@ const App: React.FC = () => {
       unit.dashboard.aiInsight = dashboardState.aiInsight;
       unit.dashboard.referencedFiles = dashboardState.referencedFiles;
     });
-    console.log(`[App] Synced atomic unit for session ${targetSessionId} with analysis result`);
+    
+    if (!updateSuccess) {
+      // [FIX] Atomic unit doesn't exist - create it and populate
+      console.warn(`[App] Atomic unit not found for ${targetSessionId}, creating from localStorage...`);
+      const session = getSessionById(targetSessionId);
+      const title = session?.title || result.projectTitle?.substring(0, 30) || '프로젝트';
+      const newUnit = sessionCoupler.createUnit(targetSessionId, userMsg.text, title);
+      if (newUnit) {
+        // Use backgroundUpdate to persist (createUnit already saves, but this ensures full data)
+        sessionCoupler.backgroundUpdate(targetSessionId, (unit) => {
+          unit.chat.messages = newMessages;
+          unit.dashboard.modules = convertedModules;
+          unit.dashboard.partnerType = dashboardState.partnerType;
+          unit.dashboard.projectScale = dashboardState.projectScale;
+          unit.dashboard.estimationStep = dashboardState.estimationStep;
+          unit.dashboard.projectSummaryContent = dashboardState.projectSummaryContent;
+          unit.dashboard.aiInsight = dashboardState.aiInsight;
+          unit.dashboard.referencedFiles = dashboardState.referencedFiles;
+        });
+        console.log(`[App] Created and populated atomic unit for session ${targetSessionId}`);
+      } else {
+        console.error(`[App] CRITICAL: Failed to create atomic unit for ${targetSessionId}`);
+      }
+    } else {
+      console.log(`[App] Synced atomic unit for session ${targetSessionId} with analysis result`);
+    }
     
     if (result.projectTitle) {
       updateSessionTitle(targetSessionId, result.projectTitle.substring(0, 30).trim());
@@ -1059,8 +1136,8 @@ const App: React.FC = () => {
         return;
       }
       
-      // Get currently active session (what user is viewing now)
-      const activeSession = activeSessionId;
+      // [FIX] Get currently active session from REF (not state) to avoid closure issues
+      const activeSession = activeSessionIdRef.current;
       
       if (status.status === 'completed') {
         clearInterval(jobPollingRef.current!);
