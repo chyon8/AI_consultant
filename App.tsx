@@ -508,6 +508,18 @@ const App: React.FC = () => {
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
     setEstimationStep('SCOPE');
+    // [GL-01 FIX] Reset analyzing state to prevent Ghost Loading
+    setIsAnalyzing(false);
+    setCurrentJobId(null);
+    // [GL-01 FIX] Reset progressive state to prevent stale skeleton display
+    setProgressiveState({
+      modulesReady: true, // Default to true for completed sessions
+      estimatesReady: true,
+      scheduleReady: true,
+      summaryReady: true,
+      schedule: null,
+      summary: null,
+    });
     
     const session = getSessionById(sessionId);
     if (session) {
@@ -1364,8 +1376,20 @@ const App: React.FC = () => {
     if (currentJobId) {
       await cancelServerJob(currentJobId);
       unregisterJob(currentJobId);
+      // [PC-01 FIX] Clean up job-specific acknowledgement data
+      delete acknowledgedStagesPerJob.current[currentJobId];
       setCurrentJobId(null);
     }
+    
+    // [PC-01 FIX] Reset progressive state on abort
+    setProgressiveState({
+      modulesReady: true,
+      estimatesReady: true,
+      scheduleReady: true,
+      summaryReady: true,
+      schedule: null,
+      summary: null,
+    });
     
     // Stop polling
     if (jobPollingRef.current) {
