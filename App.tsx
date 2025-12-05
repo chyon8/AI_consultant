@@ -43,6 +43,9 @@ const App: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   
+  // Abort Controller for analysis
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   // Project Summary Content (STEP 1 from Gemini analysis)
   const [projectSummaryContent, setProjectSummaryContent] = useState<string>('');
   
@@ -621,11 +624,22 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle abort analysis
+  const handleAbortAnalysis = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
+
   // Handle initial analysis from landing page
   const handleAnalyze = async (text: string, files: File[]) => {
     setIsAnalyzing(true);
     setAnalysisError(null);
     setReferencedFiles([]);
+    
+    // Create new abort controller for this analysis
+    abortControllerRef.current = new AbortController();
     
     // Always create a NEW session for each analysis (add to history, don't overwrite)
     const newSession = createNewSession();
@@ -696,8 +710,24 @@ const App: React.FC = () => {
         (error) => {
           setAnalysisError(error);
         },
-        aiModelSettings.analyzeProject
+        aiModelSettings.analyzeProject,
+        abortControllerRef.current?.signal
       );
+      
+      // If aborted, clean up and return early
+      if (!parsedResult && abortControllerRef.current?.signal.aborted) {
+        console.log('[App] Analysis was aborted');
+        // Remove the loading session
+        if (currentSessionId) {
+          const sessions = getChatHistory().filter(s => s.id !== currentSessionId);
+          saveChatHistory(sessions);
+          setChatSessions(sessions);
+          setActiveSessionId(sessions.length > 0 ? sessions[0].id : null);
+        }
+        setIsAnalyzing(false);
+        abortControllerRef.current = null;
+        return;
+      }
       
       // Analysis complete - now switch to detail view
       const newMessages = [
@@ -729,30 +759,42 @@ const App: React.FC = () => {
         setChatSessions(sessions);
       }
       
-    } catch (error) {
-      console.error('Analysis error:', error);
-      const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
-      setAnalysisError(errorMessage);
-      
-      // Rule 3: Remove failed ghost session
-      if (currentSessionId) {
-        const sessions = getChatHistory().filter(s => {
-          if (s.id === currentSessionId && (!s.messages || s.messages.length === 0)) {
-            return false; // Remove empty failed session
+    } catch (error: any) {
+      // Check if aborted
+      if (error?.name === 'AbortError' || abortControllerRef.current?.signal.aborted) {
+        console.log('[App] Analysis aborted by user');
+        if (currentSessionId) {
+          const sessions = getChatHistory().filter(s => s.id !== currentSessionId);
+          saveChatHistory(sessions);
+          setChatSessions(sessions);
+          setActiveSessionId(sessions.length > 0 ? sessions[0].id : null);
+        }
+      } else {
+        console.error('Analysis error:', error);
+        const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
+        setAnalysisError(errorMessage);
+        
+        // Rule 3: Remove failed ghost session
+        if (currentSessionId) {
+          const sessions = getChatHistory().filter(s => {
+            if (s.id === currentSessionId && (!s.messages || s.messages.length === 0)) {
+              return false; // Remove empty failed session
+            }
+            return true;
+          });
+          saveChatHistory(sessions);
+          setChatSessions(sessions);
+          if (sessions.length > 0) {
+            setActiveSessionId(sessions[0].id);
+          } else {
+            setActiveSessionId(null);
           }
-          return true;
-        });
-        saveChatHistory(sessions);
-        setChatSessions(sessions);
-        if (sessions.length > 0) {
-          setActiveSessionId(sessions[0].id);
-        } else {
-          setActiveSessionId(null);
         }
       }
     }
     
     setIsAnalyzing(false);
+    abortControllerRef.current = null;
   };
 
   // Dismiss error notification and reset state
@@ -860,6 +902,7 @@ const App: React.FC = () => {
           /* Landing View - Full width (minus sidebar) */
           <LandingView 
             onAnalyze={handleAnalyze}
+            onAbort={handleAbortAnalysis}
             isLoading={isAnalyzing}
           />
         ) : (

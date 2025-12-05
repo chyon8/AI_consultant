@@ -6,6 +6,7 @@ import { validateFiles, isImageFile, createImageThumbnailUrl, FILE_CONSTANTS } f
 
 interface LandingViewProps {
   onAnalyze: (text: string, files: File[]) => void;
+  onAbort?: () => void;
   isLoading: boolean;
 }
 
@@ -23,7 +24,7 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }) => {
+export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, onAbort, isLoading }) => {
   const [inputText, setInputText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFileWithPreview[]>([]);
   const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -281,21 +282,27 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, isLoading }
               disabled={isLoading}
             />
 
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading || (!inputText.trim() && attachedFiles.length === 0)}
-              className={`p-3 rounded-xl transition-all ${
-                inputText.trim() || attachedFiles.length > 0
-                  ? 'bg-slate-900 dark:bg-indigo-500 text-white hover:bg-black dark:hover:bg-indigo-600 shadow-lg'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
-              }`}
-            >
-              {isLoading ? (
-                <Icons.Refresh size={22} className="animate-spin" />
-              ) : (
+            {isLoading ? (
+              <button
+                onClick={onAbort}
+                className="p-3 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg"
+                title="생성 중단"
+              >
+                <Icons.Square size={20} className="fill-current" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={!inputText.trim() && attachedFiles.length === 0}
+                className={`p-3 rounded-xl transition-all ${
+                  inputText.trim() || attachedFiles.length > 0
+                    ? 'bg-slate-900 dark:bg-indigo-500 text-white hover:bg-black dark:hover:bg-indigo-600 shadow-lg'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+                }`}
+              >
                 <Icons.Send size={22} />
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </div>
 

@@ -89,7 +89,8 @@ export async function analyzeProject(
   onChunk: (chunk: string) => void,
   onComplete?: (result: ParsedAnalysisResult | null) => void,
   onError?: (error: string) => void,
-  modelId?: string
+  modelId?: string,
+  abortSignal?: AbortSignal
 ): Promise<ParsedAnalysisResult | null> {
   const response = await fetch('/api/analyze', {
     method: 'POST',
@@ -97,6 +98,7 @@ export async function analyzeProject(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ text, fileDataList, modelId }),
+    signal: abortSignal,
   });
 
   if (!response.ok) {
@@ -112,30 +114,65 @@ export async function analyzeProject(
   let parsedResult: ParsedAnalysisResult | null = null;
   let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      if (abortSignal?.aborted) {
+        await reader.cancel();
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
+      buffer += decoder.decode(value, { stream: true });
       
-      try {
-        const jsonStr = line.slice(6).trim();
-        if (!jsonStr) continue;
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
         
-        const data: AnalyzeResponse = JSON.parse(jsonStr);
-        
-        if (data.chunk) {
-          onChunk(data.chunk);
+        try {
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr) continue;
+          
+          const data: AnalyzeResponse = JSON.parse(jsonStr);
+          
+          if (data.chunk) {
+            onChunk(data.chunk);
+          }
+          
+          if (data.done && data.parsed) {
+            console.log('[FE] Received parsed data:', {
+              projectTitle: data.parsed.projectTitle,
+              modulesCount: data.parsed.modules?.length || 0
+            });
+            parsedResult = data.parsed;
+            if (onComplete) {
+              onComplete(parsedResult);
+            }
+          }
+          
+          if (data.error) {
+            console.error('[FE] SSE error:', data.error);
+            if (onError) {
+              onError(data.error);
+            }
+            throw new Error(data.error);
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message.includes('Analysis')) {
+            throw e;
+          }
+          console.warn('[FE] JSON parse warning:', e);
         }
-        
+      }
+    }
+
+    if (buffer.trim() && buffer.startsWith('data: ')) {
+      try {
+        const data: AnalyzeResponse = JSON.parse(buffer.slice(6).trim());
         if (data.done && data.parsed) {
-          console.log('[FE] Received parsed data:', {
+          console.log('[FE] Final buffer parsed data:', {
             projectTitle: data.parsed.projectTitle,
             modulesCount: data.parsed.modules?.length || 0
           });
@@ -144,39 +181,16 @@ export async function analyzeProject(
             onComplete(parsedResult);
           }
         }
-        
-        if (data.error) {
-          console.error('[FE] SSE error:', data.error);
-          if (onError) {
-            onError(data.error);
-          }
-          throw new Error(data.error);
-        }
       } catch (e) {
-        if (e instanceof Error && e.message.includes('Analysis')) {
-          throw e;
-        }
-        console.warn('[FE] JSON parse warning:', e);
+        console.warn('[FE] Final buffer parse failed:', e);
       }
     }
-  }
-
-  if (buffer.trim() && buffer.startsWith('data: ')) {
-    try {
-      const data: AnalyzeResponse = JSON.parse(buffer.slice(6).trim());
-      if (data.done && data.parsed) {
-        console.log('[FE] Final buffer parsed data:', {
-          projectTitle: data.parsed.projectTitle,
-          modulesCount: data.parsed.modules?.length || 0
-        });
-        parsedResult = data.parsed;
-        if (onComplete) {
-          onComplete(parsedResult);
-        }
-      }
-    } catch (e) {
-      console.warn('[FE] Final buffer parse failed:', e);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      console.log('[FE] Analysis aborted by user');
+      return null;
     }
+    throw e;
   }
 
   console.log('[FE] analyzeProject returning:', parsedResult ? 'data' : 'null');
