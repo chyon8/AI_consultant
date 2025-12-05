@@ -114,6 +114,88 @@ class SessionSandboxManager {
 
 export const sessionSandbox = new SessionSandboxManager();
 
+// Immutable Job→Session Mapping Registry
+// This ensures job results always go to the spawning session, not the currently active one
+const JOB_REGISTRY_KEY = 'wishket_job_session_registry';
+
+interface JobSessionRegistry {
+  [jobId: string]: {
+    sessionId: string;
+    createdAt: number;
+  };
+}
+
+function getJobRegistry(): JobSessionRegistry {
+  try {
+    const stored = localStorage.getItem(JOB_REGISTRY_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveJobRegistry(registry: JobSessionRegistry): void {
+  localStorage.setItem(JOB_REGISTRY_KEY, JSON.stringify(registry));
+}
+
+/**
+ * Register a job→session mapping. MUST be called when starting a job.
+ * This mapping is immutable once set.
+ */
+export function registerJobSession(jobId: string, sessionId: string): void {
+  const registry = getJobRegistry();
+  if (registry[jobId]) {
+    console.warn(`[JobRegistry] Job ${jobId} already registered to session ${registry[jobId].sessionId}`);
+    return; // Don't overwrite existing mapping
+  }
+  registry[jobId] = { sessionId, createdAt: Date.now() };
+  saveJobRegistry(registry);
+  console.log(`[JobRegistry] Registered job ${jobId} → session ${sessionId}`);
+}
+
+/**
+ * Get the immutable session ID that owns this job.
+ * Returns null if job is not registered.
+ */
+export function getJobOwnerSession(jobId: string): string | null {
+  const registry = getJobRegistry();
+  return registry[jobId]?.sessionId || null;
+}
+
+/**
+ * Unregister a completed/failed job to prevent registry bloat.
+ */
+export function unregisterJob(jobId: string): void {
+  const registry = getJobRegistry();
+  if (registry[jobId]) {
+    delete registry[jobId];
+    saveJobRegistry(registry);
+    console.log(`[JobRegistry] Unregistered job ${jobId}`);
+  }
+}
+
+/**
+ * Clean up old job entries (older than 24 hours)
+ */
+export function cleanupOldJobs(): void {
+  const registry = getJobRegistry();
+  const now = Date.now();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  let cleaned = false;
+  
+  for (const jobId of Object.keys(registry)) {
+    if (now - registry[jobId].createdAt > maxAge) {
+      delete registry[jobId];
+      cleaned = true;
+    }
+  }
+  
+  if (cleaned) {
+    saveJobRegistry(registry);
+    console.log('[JobRegistry] Cleaned up old job entries');
+  }
+}
+
 export interface JobStatusResponse {
   id: string;
   type: string;

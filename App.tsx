@@ -21,7 +21,11 @@ import {
   fetchJobStatus, 
   fetchJobChunks,
   cancelJob as cancelServerJob,
-  fetchSessionJobs
+  fetchSessionJobs,
+  registerJobSession,
+  getJobOwnerSession,
+  unregisterJob,
+  cleanupOldJobs
 } from './services/sessionSandbox';
 import { 
   validateModuleToggle, 
@@ -116,6 +120,9 @@ const App: React.FC = () => {
 
   // Load chat history on mount and cleanup ghost sessions
   useEffect(() => {
+    // Cleanup old job registry entries
+    cleanupOldJobs();
+    
     const stored = getChatHistory();
     // Remove ghost sessions (empty sessions that have no messages)
     const cleaned = stored.filter(s => s.messages && s.messages.length > 0);
@@ -164,10 +171,15 @@ const App: React.FC = () => {
         const status = await fetchJobStatus(currentJobId);
         
         if (status) {
-          const targetSessionId = pendingSessionIdRef.current;
+          // [IMMUTABLE MAPPING] Get owner session from registry, NOT from mutable ref
+          const ownerSessionId = getJobOwnerSession(currentJobId);
+          if (!ownerSessionId) {
+            console.warn('[App] Job has no registered owner session, skipping');
+            return;
+          }
           
-          if (status.status === 'completed' && status.result && targetSessionId) {
-            console.log('[App] Job completed while tab was hidden');
+          if (status.status === 'completed' && status.result) {
+            console.log('[App] Job completed while tab was hidden, owner:', ownerSessionId);
             
             // Stop polling
             if (jobPollingRef.current) {
@@ -175,19 +187,21 @@ const App: React.FC = () => {
               jobPollingRef.current = null;
             }
             
-            const userMsg = pendingUserMsgRef.current || {
+            // Get user message from owner session's history (already committed via Prompt Logging)
+            const session = getSessionById(ownerSessionId);
+            const userMsg = session?.messages?.find(m => m.role === 'user') || {
               id: Date.now().toString(),
               role: 'user' as const,
               text: '프로젝트 분석 요청',
               timestamp: new Date(),
             };
             
-            // [SCOPED STORAGE] Always save to target session's storage
+            // [SCOPED STORAGE] Always save to OWNER session's storage (immutable)
             const { convertedModules, newMessages, dashboardState } = 
-              saveResultToSessionStorage(targetSessionId, status.result, userMsg);
+              saveResultToSessionStorage(ownerSessionId, status.result, userMsg);
             
-            // [DATA LEAKAGE BLOCK] Only update UI if target === active
-            if (targetSessionId === activeSessionId) {
+            // [DATA LEAKAGE BLOCK] Only update UI if owner === active
+            if (ownerSessionId === activeSessionId) {
               console.log('[App] Session match - updating UI after visibility change');
               setModules(convertedModules);
               setProjectSummaryContent(dashboardState.projectSummaryContent);
@@ -207,6 +221,8 @@ const App: React.FC = () => {
               console.log('[App] Session mismatch - UI NOT updated after visibility change');
             }
             
+            // Cleanup
+            unregisterJob(currentJobId);
             setCurrentJobId(null);
             setIsAnalyzing(false);
             pendingUserMsgRef.current = null;
@@ -218,10 +234,11 @@ const App: React.FC = () => {
               jobPollingRef.current = null;
             }
             
-            // [DATA LEAKAGE BLOCK] Only show error if target === active
-            if (targetSessionId === activeSessionId) {
+            // [DATA LEAKAGE BLOCK] Only show error if owner === active
+            if (ownerSessionId === activeSessionId) {
               setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
             }
+            unregisterJob(currentJobId);
             setCurrentJobId(null);
             setIsAnalyzing(false);
           }
@@ -308,8 +325,13 @@ const App: React.FC = () => {
     if (snapshot?.pendingJobId) {
       console.log(`[App] Found pending job ${snapshot.pendingJobId} for session ${sessionId}`);
       
-      // IMPORTANT: Update refs BEFORE checking job status
-      pendingSessionIdRef.current = sessionId;
+      // [IMMUTABLE MAPPING] Verify this job belongs to this session
+      const ownerSessionId = getJobOwnerSession(snapshot.pendingJobId);
+      if (ownerSessionId && ownerSessionId !== sessionId) {
+        console.warn(`[App] Job ${snapshot.pendingJobId} belongs to ${ownerSessionId}, not ${sessionId} - skipping`);
+        await sessionSandbox.deleteSnapshot(sessionId);
+        return;
+      }
       
       const jobStatus = await fetchJobStatus(snapshot.pendingJobId);
       
@@ -326,11 +348,11 @@ const App: React.FC = () => {
             timestamp: new Date(),
           };
           
-          // [SCOPED STORAGE] Save to target session's storage
+          // [SCOPED STORAGE] Save to owner session's storage
           const { convertedModules, newMessages, dashboardState } = 
             saveResultToSessionStorage(sessionId, jobStatus.result, userMsg);
           
-          // [DATA LEAKAGE BLOCK] sessionId IS the active session (we just switched to it)
+          // sessionId IS the active session (we just switched to it)
           // So we update UI in this case
           setModules(convertedModules);
           setProjectSummaryContent(dashboardState.projectSummaryContent);
@@ -347,9 +369,11 @@ const App: React.FC = () => {
             featureCount: totalFeatures
           });
           
+          // Cleanup
+          unregisterJob(snapshot.pendingJobId);
+          await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
           setIsAnalyzing(false);
-          pendingSessionIdRef.current = null;
           
         } else if (jobStatus.status === 'running' || jobStatus.status === 'pending') {
           console.log(`[App] Job still running, resuming polling for session ${sessionId}`);
@@ -359,18 +383,17 @@ const App: React.FC = () => {
           startJobPolling(snapshot.pendingJobId);
           
         } else if (jobStatus.status === 'failed') {
-          // [DATA LEAKAGE BLOCK] sessionId IS active, so show error
           setAnalysisError(jobStatus.error || '분석이 실패했습니다.');
+          unregisterJob(snapshot.pendingJobId);
           await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
           setIsAnalyzing(false);
-          pendingSessionIdRef.current = null;
           
         } else if (jobStatus.status === 'cancelled') {
+          unregisterJob(snapshot.pendingJobId);
           await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
           setIsAnalyzing(false);
-          pendingSessionIdRef.current = null;
         }
       }
     }
@@ -848,8 +871,17 @@ const App: React.FC = () => {
       const status = await fetchJobStatus(jobId);
       if (!status) return;
       
-      // Get target session for this job (stored when job started)
-      const targetSessionId = pendingSessionIdRef.current;
+      // [IMMUTABLE MAPPING] Get owner session from registry, NOT from mutable ref
+      const ownerSessionId = getJobOwnerSession(jobId);
+      if (!ownerSessionId) {
+        console.warn('[App] Job has no registered owner, stopping poll:', jobId);
+        clearInterval(jobPollingRef.current!);
+        jobPollingRef.current = null;
+        setCurrentJobId(null);
+        setIsAnalyzing(false);
+        return;
+      }
+      
       // Get currently active session (what user is viewing now)
       const activeSession = activeSessionId;
       
@@ -857,22 +889,24 @@ const App: React.FC = () => {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         
-        console.log('[App] Job completed:', jobId, 'Target:', targetSessionId, 'Active:', activeSession);
+        console.log('[App] Job completed:', jobId, 'Owner:', ownerSessionId, 'Active:', activeSession);
         
-        if (status.result && targetSessionId) {
-          const userMsg = pendingUserMsgRef.current || {
+        if (status.result) {
+          // Get user message from owner session's history (already committed via Prompt Logging)
+          const session = getSessionById(ownerSessionId);
+          const userMsg = session?.messages?.find(m => m.role === 'user') || {
             id: Date.now().toString(),
             role: 'user' as const,
             text: '프로젝트 분석 요청',
             timestamp: new Date(),
           };
           
-          // [SCOPED STORAGE] Always save to target session's storage
+          // [SCOPED STORAGE] Always save to OWNER session's storage (immutable)
           const { convertedModules, newMessages, dashboardState } = 
-            saveResultToSessionStorage(targetSessionId, status.result, userMsg);
+            saveResultToSessionStorage(ownerSessionId, status.result, userMsg);
           
-          // [DATA LEAKAGE BLOCK] Only update UI if target === active
-          if (targetSessionId === activeSession) {
+          // [DATA LEAKAGE BLOCK] Only update UI if owner === active
+          if (ownerSessionId === activeSession) {
             console.log('[App] Session match - updating UI');
             setModules(convertedModules);
             setProjectSummaryContent(dashboardState.projectSummaryContent);
@@ -893,6 +927,8 @@ const App: React.FC = () => {
           }
         }
         
+        // Cleanup
+        unregisterJob(jobId);
         setCurrentJobId(null);
         setIsAnalyzing(false);
         pendingUserMsgRef.current = null;
@@ -902,23 +938,23 @@ const App: React.FC = () => {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         
-        // [DATA LEAKAGE BLOCK] Only show error if target === active
-        if (targetSessionId === activeSession) {
+        // [DATA LEAKAGE BLOCK] Only show error if owner === active
+        if (ownerSessionId === activeSession) {
           setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
         }
         
         // Remove failed session from storage
-        if (targetSessionId) {
-          const sessions = getChatHistory().filter(s => s.id !== targetSessionId);
-          saveChatHistory(sessions);
-          setChatSessions(sessions);
-          
-          // Only change active session if we were viewing the failed one
-          if (targetSessionId === activeSession && sessions.length > 0) {
-            setActiveSessionId(sessions[0].id);
-          }
+        const sessions = getChatHistory().filter(s => s.id !== ownerSessionId);
+        saveChatHistory(sessions);
+        setChatSessions(sessions);
+        
+        // Only change active session if we were viewing the failed one
+        if (ownerSessionId === activeSession && sessions.length > 0) {
+          setActiveSessionId(sessions[0].id);
         }
         
+        // Cleanup
+        unregisterJob(jobId);
         setCurrentJobId(null);
         setIsAnalyzing(false);
         pendingUserMsgRef.current = null;
@@ -927,6 +963,7 @@ const App: React.FC = () => {
       } else if (status.status === 'cancelled') {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
+        unregisterJob(jobId);
         setCurrentJobId(null);
         setIsAnalyzing(false);
         pendingUserMsgRef.current = null;
@@ -943,9 +980,10 @@ const App: React.FC = () => {
   const handleAbortAnalysis = async () => {
     console.log('[App] Aborting analysis, jobId:', currentJobId);
     
-    // Cancel server-side job
+    // Cancel server-side job and unregister from registry
     if (currentJobId) {
       await cancelServerJob(currentJobId);
+      unregisterJob(currentJobId);
       setCurrentJobId(null);
     }
     
@@ -1059,6 +1097,9 @@ const App: React.FC = () => {
       
       console.log('[App] Job started:', jobResult.jobId);
       setCurrentJobId(jobResult.jobId);
+      
+      // [IMMUTABLE MAPPING] Register job→session in persistent registry
+      registerJobSession(jobResult.jobId, currentSessionId);
       
       // Freeze session state with job info
       const snapshot: SessionSnapshot = {
