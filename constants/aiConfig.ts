@@ -24,13 +24,13 @@ export const AI_AVAILABLE_MODELS: AIModel[] = [
     provider: 'google'
   },
   {
-    id: 'claude-sonnet-4-5-20250514',
+    id: 'claude-sonnet-4-5-20250929',
     name: 'Claude Sonnet 4.5 (Fast)',
     provider: 'anthropic'
   },
   {
-    id: 'claude-opus-4-20250514',
-    name: 'Claude Opus 4',
+    id: 'claude-opus-4-5-20251101',
+    name: 'Claude Opus 4.5',
     provider: 'anthropic'
   }
 ];
