@@ -164,9 +164,9 @@ const App: React.FC = () => {
         const status = await fetchJobStatus(currentJobId);
         
         if (status) {
-          const expectedSession = pendingSessionIdRef.current;
+          const targetSessionId = pendingSessionIdRef.current;
           
-          if (status.status === 'completed' && status.result) {
+          if (status.status === 'completed' && status.result && targetSessionId) {
             console.log('[App] Job completed while tab was hidden');
             
             // Stop polling
@@ -175,38 +175,36 @@ const App: React.FC = () => {
               jobPollingRef.current = null;
             }
             
-            // Only apply if on correct session
-            if (sessionSandbox.getCurrentSession() === expectedSession) {
-              handleAnalysisComplete(status.result);
-              
-              const userMsg = pendingUserMsgRef.current || {
-                id: Date.now().toString(),
-                role: 'user' as const,
-                text: '프로젝트 분석 요청',
-                timestamp: new Date(),
-              };
-              const aiMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다.',
-                timestamp: new Date(),
-              };
-              
-              const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
+            const userMsg = pendingUserMsgRef.current || {
+              id: Date.now().toString(),
+              role: 'user' as const,
+              text: '프로젝트 분석 요청',
+              timestamp: new Date(),
+            };
+            
+            // [SCOPED STORAGE] Always save to target session's storage
+            const { convertedModules, newMessages, dashboardState } = 
+              saveResultToSessionStorage(targetSessionId, status.result, userMsg);
+            
+            // [DATA LEAKAGE BLOCK] Only update UI if target === active
+            if (targetSessionId === activeSessionId) {
+              console.log('[App] Session match - updating UI after visibility change');
+              setModules(convertedModules);
+              setProjectSummaryContent(dashboardState.projectSummaryContent);
               setMessages(newMessages);
               setCurrentView('detail');
               
-              if (expectedSession) {
-                const title = status.result.projectTitle || userMsg.text.substring(0, 20);
-                updateSessionTitle(expectedSession, title.substring(0, 30).trim());
-                updateSessionMessages(expectedSession, newMessages);
-                
-                const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
-                saveChatHistory(sessions);
-                setChatSessions(sessions);
-                
-                await sessionSandbox.deleteSnapshot(expectedSession);
-              }
+              // Generate AI insight
+              const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
+              generateAiInsight({
+                projectName: status.result.projectTitle || '',
+                businessGoals: '',
+                coreValues: [],
+                moduleCount: convertedModules.length,
+                featureCount: totalFeatures
+              });
+            } else {
+              console.log('[App] Session mismatch - UI NOT updated after visibility change');
             }
             
             setCurrentJobId(null);
@@ -219,7 +217,11 @@ const App: React.FC = () => {
               clearInterval(jobPollingRef.current);
               jobPollingRef.current = null;
             }
-            setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+            
+            // [DATA LEAKAGE BLOCK] Only show error if target === active
+            if (targetSessionId === activeSessionId) {
+              setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+            }
             setCurrentJobId(null);
             setIsAnalyzing(false);
           }
@@ -229,7 +231,7 @@ const App: React.FC = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [currentJobId]);
+  }, [currentJobId, activeSessionId]);
 
   // Handle new chat - just reset to landing view for new project
   const handleNewChat = () => {
@@ -314,41 +316,40 @@ const App: React.FC = () => {
       if (jobStatus) {
         if (jobStatus.status === 'completed' && jobStatus.result) {
           console.log(`[App] Job completed, applying result to session ${sessionId}`);
-          handleAnalysisComplete(jobStatus.result);
           
-          // Update session with completed state
-          const userMsg: Message = {
+          // Get user message from session history (already committed via Prompt Logging)
+          const session = getSessionById(sessionId);
+          const userMsg = session?.messages?.find(m => m.role === 'user') || {
             id: Date.now().toString(),
-            role: 'user',
+            role: 'user' as const,
             text: snapshot.inputText || '프로젝트 분석 요청',
             timestamp: new Date(),
           };
-          const aiMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'model',
-            text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다.',
-            timestamp: new Date(),
-          };
-          const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
+          
+          // [SCOPED STORAGE] Save to target session's storage
+          const { convertedModules, newMessages, dashboardState } = 
+            saveResultToSessionStorage(sessionId, jobStatus.result, userMsg);
+          
+          // [DATA LEAKAGE BLOCK] sessionId IS the active session (we just switched to it)
+          // So we update UI in this case
+          setModules(convertedModules);
+          setProjectSummaryContent(dashboardState.projectSummaryContent);
           setMessages(newMessages);
-          updateSessionMessages(sessionId, newMessages);
+          setCurrentView('detail');
           
-          // Update session title
-          if (jobStatus.result.projectTitle) {
-            updateSessionTitle(sessionId, jobStatus.result.projectTitle.substring(0, 30).trim());
-          }
+          // Generate AI insight
+          const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
+          generateAiInsight({
+            projectName: jobStatus.result.projectTitle || '',
+            businessGoals: '',
+            coreValues: [],
+            moduleCount: convertedModules.length,
+            featureCount: totalFeatures
+          });
           
-          // Remove loading state
-          const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
-          saveChatHistory(sessions);
-          setChatSessions(sessions);
-          
-          // Clean up
-          await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
           setIsAnalyzing(false);
           pendingSessionIdRef.current = null;
-          setCurrentView('detail');
           
         } else if (jobStatus.status === 'running' || jobStatus.status === 'pending') {
           console.log(`[App] Job still running, resuming polling for session ${sessionId}`);
@@ -358,6 +359,7 @@ const App: React.FC = () => {
           startJobPolling(snapshot.pendingJobId);
           
         } else if (jobStatus.status === 'failed') {
+          // [DATA LEAKAGE BLOCK] sessionId IS active, so show error
           setAnalysisError(jobStatus.error || '분석이 실패했습니다.');
           await sessionSandbox.deleteSnapshot(sessionId);
           setCurrentJobId(null);
@@ -735,63 +737,8 @@ const App: React.FC = () => {
     }
   };
 
-  // Ref to store parsed project title for session naming
+  // Ref to store parsed project title for session naming (legacy - now using scoped storage)
   const parsedProjectTitleRef = React.useRef<string>('');
-
-  // Handle parsed analysis result
-  const handleAnalysisComplete = (result: ParsedAnalysisResult | null) => {
-    console.log('[App] handleAnalysisComplete called with:', result ? {
-      projectTitle: result.projectTitle,
-      modulesCount: result.modules?.length || 0,
-      hasEstimates: !!result.estimates,
-      hasRawMarkdown: !!result.rawMarkdown
-    } : 'null');
-    
-    // Store project title for session naming
-    if (result?.projectTitle) {
-      parsedProjectTitleRef.current = result.projectTitle;
-    }
-    
-    if (result && result.modules && result.modules.length > 0) {
-      const convertedModules: ModuleItem[] = result.modules.map(mod => ({
-        id: mod.id,
-        name: mod.name,
-        description: mod.description,
-        baseCost: mod.baseCost,
-        baseManMonths: mod.baseManMonths,
-        category: mod.category,
-        isSelected: mod.isSelected,
-        required: mod.required,
-        subFeatures: mod.subFeatures.map(feat => ({
-          id: feat.id,
-          name: feat.name,
-          price: feat.price,
-          manWeeks: feat.manWeeks,
-          isSelected: feat.isSelected
-        }))
-      }));
-      console.log('[App] Setting modules:', convertedModules.length, 'items');
-      setModules(convertedModules);
-      
-      // Store project summary content (rawMarkdown from STEP 1)
-      if (result.rawMarkdown) {
-        console.log('[App] Setting projectSummaryContent, length:', result.rawMarkdown.length);
-        setProjectSummaryContent(result.rawMarkdown);
-      }
-      
-      // Generate AI insight
-      const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
-      generateAiInsight({
-        projectName: result.projectTitle || '',
-        businessGoals: '',
-        coreValues: [],
-        moduleCount: convertedModules.length,
-        featureCount: totalFeatures
-      });
-    } else {
-      console.warn('[App] No valid modules in result');
-    }
-  };
   
   // Generate AI Insight via API
   const generateAiInsight = async (params: {
@@ -821,6 +768,74 @@ const App: React.FC = () => {
     }
   };
 
+  // [SCOPED STORAGE] Save analysis result to session-specific storage only
+  const saveResultToSessionStorage = (targetSessionId: string, result: any, userMsg: Message) => {
+    console.log(`[App] Saving result to session storage: ${targetSessionId}`);
+    
+    // Convert modules from result
+    const convertedModules: ModuleItem[] = result.modules?.map((m: any) => ({
+      id: m.id,
+      name: m.name,
+      description: m.description || '',
+      category: m.category || 'core',
+      baseCost: m.baseCost || 0,
+      baseManMonths: m.baseManMonths || 0,
+      isSelected: m.isSelected !== false,
+      required: m.required || false,
+      subFeatures: m.subFeatures?.map((sf: any) => ({
+        id: sf.id,
+        name: sf.name,
+        price: sf.price || 0,
+        manWeeks: sf.manWeeks || 0,
+        isSelected: sf.isSelected !== false,
+      })) || []
+    })) || INITIAL_MODULES;
+
+    // Create AI response message
+    const aiMsg: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'model',
+      text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.',
+      timestamp: new Date(),
+    };
+    
+    // Build complete messages (user prompt already committed)
+    const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
+    
+    // Build dashboard state for session storage
+    const dashboardState: DashboardState = {
+      modules: convertedModules,
+      partnerType: 'STUDIO',
+      projectScale: 'STANDARD',
+      estimationStep: 'SCOPE',
+      projectSummaryContent: result.rawMarkdown || '',
+      aiInsight: '',
+      referencedFiles: []
+    };
+    
+    // Commit to session's scoped storage
+    updateSessionMessages(targetSessionId, newMessages);
+    updateSessionDashboardState(targetSessionId, dashboardState);
+    
+    if (result.projectTitle) {
+      updateSessionTitle(targetSessionId, result.projectTitle.substring(0, 30).trim());
+    }
+    
+    // Remove loading state
+    const sessions = getChatHistory().map(s => 
+      s.id === targetSessionId ? { ...s, isLoading: false } : s
+    );
+    saveChatHistory(sessions);
+    setChatSessions(sessions);
+    
+    // Clean up snapshot
+    sessionSandbox.deleteSnapshot(targetSessionId);
+    
+    console.log(`[App] Result saved to session ${targetSessionId} storage`);
+    
+    return { convertedModules, newMessages, dashboardState };
+  };
+
   // Start polling for job status
   const startJobPolling = (jobId: string) => {
     if (jobPollingRef.current) {
@@ -833,53 +848,48 @@ const App: React.FC = () => {
       const status = await fetchJobStatus(jobId);
       if (!status) return;
       
-      // Check if we're still on the correct session
-      const currentSession = sessionSandbox.getCurrentSession();
-      const expectedSession = pendingSessionIdRef.current;
+      // Get target session for this job (stored when job started)
+      const targetSessionId = pendingSessionIdRef.current;
+      // Get currently active session (what user is viewing now)
+      const activeSession = activeSessionId;
       
       if (status.status === 'completed') {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         
-        console.log('[App] Job completed:', jobId, 'Current session:', currentSession, 'Expected:', expectedSession);
+        console.log('[App] Job completed:', jobId, 'Target:', targetSessionId, 'Active:', activeSession);
         
-        // Only update UI if we're still on the correct session
-        if (currentSession === expectedSession && status.result) {
-          handleAnalysisComplete(status.result);
-          
-          // Complete the UI transition
+        if (status.result && targetSessionId) {
           const userMsg = pendingUserMsgRef.current || {
             id: Date.now().toString(),
             role: 'user' as const,
             text: '프로젝트 분석 요청',
             timestamp: new Date(),
           };
-          const aiMsg: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'model',
-            text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.',
-            timestamp: new Date(),
-          };
           
-          const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
-          setMessages(newMessages);
-          setCurrentView('detail');
+          // [SCOPED STORAGE] Always save to target session's storage
+          const { convertedModules, newMessages, dashboardState } = 
+            saveResultToSessionStorage(targetSessionId, status.result, userMsg);
           
-          // Update session with final title and messages
-          if (expectedSession) {
-            const title = status.result.projectTitle || userMsg.text.substring(0, 20);
-            updateSessionTitle(expectedSession, title.substring(0, 30).trim());
-            updateSessionMessages(expectedSession, newMessages);
+          // [DATA LEAKAGE BLOCK] Only update UI if target === active
+          if (targetSessionId === activeSession) {
+            console.log('[App] Session match - updating UI');
+            setModules(convertedModules);
+            setProjectSummaryContent(dashboardState.projectSummaryContent);
+            setMessages(newMessages);
+            setCurrentView('detail');
             
-            // Remove loading state from sessions
-            const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
-            saveChatHistory(sessions);
-            setChatSessions(sessions);
-          }
-          
-          // Clear the snapshot since job is complete
-          if (expectedSession) {
-            sessionSandbox.deleteSnapshot(expectedSession);
+            // Generate AI insight for current view
+            const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
+            generateAiInsight({
+              projectName: status.result.projectTitle || '',
+              businessGoals: '',
+              coreValues: [],
+              moduleCount: convertedModules.length,
+              featureCount: totalFeatures
+            });
+          } else {
+            console.log('[App] Session mismatch - UI NOT updated (data saved to storage only)');
           }
         }
         
@@ -892,18 +902,20 @@ const App: React.FC = () => {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         
-        // Only show error if we're on the correct session
-        if (currentSession === expectedSession) {
+        // [DATA LEAKAGE BLOCK] Only show error if target === active
+        if (targetSessionId === activeSession) {
           setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+        }
+        
+        // Remove failed session from storage
+        if (targetSessionId) {
+          const sessions = getChatHistory().filter(s => s.id !== targetSessionId);
+          saveChatHistory(sessions);
+          setChatSessions(sessions);
           
-          // Remove failed session
-          if (expectedSession) {
-            const sessions = getChatHistory().filter(s => s.id !== expectedSession);
-            saveChatHistory(sessions);
-            setChatSessions(sessions);
-            if (sessions.length > 0) {
-              setActiveSessionId(sessions[0].id);
-            }
+          // Only change active session if we were viewing the failed one
+          if (targetSessionId === activeSession && sessions.length > 0) {
+            setActiveSessionId(sessions[0].id);
           }
         }
         
@@ -976,21 +988,29 @@ const App: React.FC = () => {
     // Always create a NEW session for each analysis (add to history, don't overwrite)
     const newSession = createNewSession();
     newSession.isLoading = true;
-    const updatedSessions = [newSession, ...chatSessions];
-    saveChatHistory(updatedSessions);
-    setChatSessions(updatedSessions);
-    setActiveSessionId(newSession.id);
     const currentSessionId = newSession.id;
-    pendingSessionIdRef.current = currentSessionId;
-    sessionSandbox.setCurrentSession(currentSessionId);
     
-    // Add user message
+    // [PROMPT LOGGING] Immediately commit user prompt to session's chat history
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
       text: text || `[${files.map(f => f.name).join(', ')}] 파일을 첨부했습니다.`,
       timestamp: new Date(),
     };
+    
+    // Commit user prompt as permanent log in session history
+    newSession.messages = [...INITIAL_MESSAGES, userMsg];
+    
+    const updatedSessions = [newSession, ...chatSessions];
+    saveChatHistory(updatedSessions);
+    setChatSessions(updatedSessions);
+    setActiveSessionId(currentSessionId);
+    setMessages(newSession.messages); // Sync UI with committed history
+    
+    pendingSessionIdRef.current = currentSessionId;
+    sessionSandbox.setCurrentSession(currentSessionId);
+    
+    // Store user message ref for job completion (backup only)
     pendingUserMsgRef.current = userMsg;
     
     try {
