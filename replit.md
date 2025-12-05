@@ -65,7 +65,8 @@ Before writing any code, you MUST output a plan in this format:
 - **Unified AI Router**: `server/services/aiRouter.ts` dispatches AI calls to either Google Gemini or Anthropic Claude based on the selected model, providing a consistent interface.
 - **AI Functions**: Five core AI functions are configurable: `analyzeProject`, `generateRFP`, `classifyUserIntent`, `streamChatResponse`, `generateInsight`.
 - **Context Lock Security**: A context-lock guard ensures that "NEW_PROJECT" requests are blocked during ongoing sessions to prevent accidental resets.
-- **Prompt Structure**: AI prompts are structured for two main parts: PART 1 (Project Planning/Estimation/WBS) and PART 2 (RFP Document Generation).
+- **Shared Prompts**: All AI prompts are centralized in `server/prompts/analysis.ts` (v1.3.0-Staged-Output) to ensure consistent behavior across Gemini and Claude models.
+- **Prompt Structure**: AI prompts are structured for staged output with PART 1 (Project Planning/Estimation/WBS with 4 progressive stages) and PART 2 (RFP Document Generation).
 
 ### User Flow
 1. **Landing Page**: Users input project requirements or attach relevant files.
