@@ -219,10 +219,34 @@ export async function generateRFP(
   }
 }
 
+const TEXT_FILE_EXTENSIONS = ['.txt', '.md', '.pdf', '.doc', '.docx'];
+const IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const MAX_FILE_CONTENT_LENGTH = 50000;
+
+export function isTextFile(file: File): boolean {
+  const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+  return TEXT_FILE_EXTENSIONS.includes(ext);
+}
+
 export async function readFileContent(file: File): Promise<string> {
+  if (!isTextFile(file)) {
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (IMAGE_FILE_EXTENSIONS.includes('.' + ext)) {
+      return `[이미지 파일: ${file.name} (${Math.round(file.size / 1024)}KB)]`;
+    }
+    return `[파일: ${file.name}]`;
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload = () => {
+      let content = reader.result as string;
+      if (content.length > MAX_FILE_CONTENT_LENGTH) {
+        content = content.substring(0, MAX_FILE_CONTENT_LENGTH) + 
+          `\n\n... [내용이 너무 길어 ${MAX_FILE_CONTENT_LENGTH}자로 잘렸습니다. 원본 크기: ${content.length}자]`;
+      }
+      resolve(content);
+    };
     reader.onerror = reject;
     reader.readAsText(file);
   });
