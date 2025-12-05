@@ -54,6 +54,12 @@ Before writing any code, you MUST output a plan in this format:
 - AI Model Settings Management allowing per-function model selection (e.g., for `analyzeProject`, `generateRFP`).
 - Conditional workflow for chat commands with intent classification and user confirmation for significant actions.
 - WBS (Work Breakdown Structure) calculation using `scheduleEngine.ts` with partner-specific configurations.
+- **Progressive Loading Architecture**: Staged SSE streaming with per-job acknowledgement tracking.
+  - AI generates data in stages: Modules → Estimates → Schedule → Summary with stage markers
+  - Server detects stage markers and sends staged results to client via `stagedResults` in job status
+  - Client displays modules immediately while other tabs show skeleton loaders
+  - Per-job acknowledgement tracking (`acknowledgedStagesPerJob`) prevents duplicate processing
+  - Job-scoped acknowledgement ensures correct behavior across session switches and tab visibility changes
 
 ### AI Integration & Architecture
 - **Unified AI Router**: `server/services/aiRouter.ts` dispatches AI calls to either Google Gemini or Anthropic Claude based on the selected model, providing a consistent interface.
