@@ -1240,6 +1240,11 @@ const App: React.FC = () => {
     // Commit user prompt as permanent log in session history
     newSession.messages = [...INITIAL_MESSAGES, userMsg];
     
+    // [ATOMIC SYNC] Also update atomic unit with initial messages
+    sessionCoupler.backgroundUpdate(currentSessionId, (unit) => {
+      unit.chat.messages = newSession.messages;
+    });
+    
     const updatedSessions = [newSession, ...chatSessions];
     saveChatHistory(updatedSessions);
     setChatSessions(updatedSessions);
