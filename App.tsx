@@ -451,7 +451,17 @@ const App: React.FC = () => {
           console.log(`[App] Job still running, resuming polling for session ${sessionId}`);
           setCurrentJobId(snapshot.pendingJobId);
           setIsAnalyzing(true);
-          setCurrentView('landing'); // Stay on landing while analyzing
+          // [FIX] Show Dashboard with skeleton UI instead of LandingView loading screen
+          setCurrentView('detail');
+          // [FIX] Reset progressiveState to show skeletons while resuming
+          setProgressiveState({
+            modulesReady: false,
+            estimatesReady: false,
+            scheduleReady: false,
+            summaryReady: false,
+            schedule: null,
+            summary: null,
+          });
           startJobPolling(snapshot.pendingJobId);
           
         } else if (jobStatus.status === 'failed') {
