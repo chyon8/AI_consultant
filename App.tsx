@@ -21,6 +21,11 @@ import {
   validateBeforeRender,
   withSessionValidation
 } from './services/sessionInstance';
+import { 
+  sessionCoupler, 
+  AtomicSessionUnit,
+  createIsolationGuard
+} from './services/atomicSession';
 import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo } from './services/apiService';
 import { 
   sessionSandbox, 
@@ -122,16 +127,32 @@ const App: React.FC = () => {
   // Session state isolation tracking - stores which session each state belongs to
   const stateOwnerSessionRef = useRef<string | null>(null);
   
-  // Validation: Check if current state matches the active session
+  // Atomic Session Coupling - enforces 1:1 Chat+Dashboard binding
+  const isolationGuardRef = useRef<ReturnType<typeof createIsolationGuard> | null>(null);
+  
+  // Validation: Check if current state matches the active session (ATOMIC UNIT check)
   const isStateValidForSession = useCallback((targetSessionId: string | null): boolean => {
     if (!targetSessionId) return true;
     if (!stateOwnerSessionRef.current) return true;
     
     const isValid = stateOwnerSessionRef.current === targetSessionId;
     if (!isValid) {
-      console.warn(`[App] State validation FAILED: state belongs to ${stateOwnerSessionRef.current}, but target is ${targetSessionId}`);
+      console.warn(`[App] ATOMIC UNIT VIOLATION: state belongs to ${stateOwnerSessionRef.current}, but target is ${targetSessionId}`);
     }
     return isValid;
+  }, []);
+  
+  // Atomic Session Guard - blocks cross-session operations
+  const validateAtomicOperation = useCallback((operation: string): boolean => {
+    if (!isolationGuardRef.current) {
+      console.warn(`[App] No isolation guard for ${operation}`);
+      return false;
+    }
+    if (!isolationGuardRef.current.canUpdateDashboard()) {
+      console.error(`[App] ATOMIC BLOCK: ${operation} rejected - session mismatch`);
+      return false;
+    }
+    return true;
   }, []);
 
   // Persist AI model settings to localStorage
@@ -432,14 +453,23 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle session selection - restore both messages AND dashboard state
+  // Handle session selection - STRICT CONTEXT SWITCHING (Atomic Unit sync)
   const handleSelectSession = async (sessionId: string) => {
-    console.log(`[App] Session switch requested: ${activeSessionId} → ${sessionId}`);
+    console.log(`[App] STRICT CONTEXT SWITCH requested: ${activeSessionId} → ${sessionId}`);
     
-    // [VALIDATION] Verify target session exists and is valid
-    const targetInstance = sessionManager.getInstance(sessionId);
-    if (!targetInstance && sessionManager.getAllIds().length > 0) {
-      console.log(`[App] Session ${sessionId} not in instance manager, creating entry`);
+    // [ATOMIC UNIT] Save current session's atomic state before switching
+    if (activeSessionId && stateOwnerSessionRef.current === activeSessionId) {
+      console.log(`[App] Saving atomic state for session ${activeSessionId} before switch`);
+      sessionCoupler.backgroundUpdate(activeSessionId, (unit) => {
+        unit.chat.messages = messages;
+        unit.dashboard.modules = modules;
+        unit.dashboard.partnerType = currentPartnerType;
+        unit.dashboard.projectScale = currentScale;
+        unit.dashboard.estimationStep = estimationStep;
+        unit.dashboard.projectSummaryContent = projectSummaryContent;
+        unit.dashboard.aiInsight = aiInsight;
+        unit.dashboard.referencedFiles = referencedFiles;
+      });
     }
     
     // Freeze current session before switching
@@ -451,55 +481,74 @@ const App: React.FC = () => {
       jobPollingRef.current = null;
     }
     
+    // [STRICT SWITCH] STEP 1: Clear ALL current state immediately
+    console.log(`[App] STRICT SWITCH STEP 1: Clearing all current state`);
+    setMessages(INITIAL_MESSAGES);
+    setModules(INITIAL_MODULES);
+    setReferencedFiles([]);
+    setProjectSummaryContent('');
+    setAiInsight('');
+    setCurrentPartnerType('STUDIO');
+    setCurrentScale('STANDARD');
+    setEstimationStep('SCOPE');
+    
     const session = getSessionById(sessionId);
     if (session) {
-      // [VALIDATION] Verify state ownership before proceeding
-      // If we have an active state owner that's different from target, validate the switch
-      const previousOwner = stateOwnerSessionRef.current;
-      if (previousOwner && previousOwner !== sessionId) {
-        console.log(`[App] State owner transition: ${previousOwner} → ${sessionId}`);
-        // Clear any lingering state from previous session before loading new one
-        setMessages(INITIAL_MESSAGES);
-        setModules(INITIAL_MODULES);
-        setReferencedFiles([]);
-        setProjectSummaryContent('');
-        setAiInsight('');
-      }
-      
-      // [STATE ISOLATION] Update state ownership to new session
+      // [STRICT SWITCH] STEP 2: Update all session references atomically
+      console.log(`[App] STRICT SWITCH STEP 2: Updating session references to ${sessionId}`);
       stateOwnerSessionRef.current = sessionId;
-      
       setActiveSessionId(sessionId);
       sessionSandbox.setCurrentSession(sessionId);
       sessionManager.setCurrentSession(sessionId);
       
-      // [VALIDATION] Verify session instance exists and matches
+      // [ATOMIC UNIT] Ensure session exists in coupler, then switch
+      let atomicUnit = sessionCoupler.getUnit(sessionId);
+      if (!atomicUnit) {
+        // Create atomic unit for legacy session
+        atomicUnit = sessionCoupler.createUnit(sessionId, '', session.title || '이전 세션');
+        console.log(`[App] Created atomic unit for legacy session: ${sessionId}`);
+      }
+      sessionCoupler.switchSession(sessionId);
+      isolationGuardRef.current = createIsolationGuard(sessionId);
+      
+      // Ensure session instance exists
       const instance = sessionManager.getInstance(sessionId);
       if (!instance) {
-        // Register missing session instance for legacy sessions
         sessionManager.registerSession(sessionId, session.title || '이전 세션');
         console.log(`[App] Registered legacy session ${sessionId}`);
       }
       
-      if (session.messages.length > 0) {
+      // [STRICT SWITCH] STEP 3: Sync ALL components from atomic unit or session
+      console.log(`[App] STRICT SWITCH STEP 3: Syncing Chat + Dashboard from session ${sessionId}`);
+      
+      if (atomicUnit) {
+        // Use atomic unit data (preferred - guaranteed coupling)
+        setMessages(atomicUnit.chat.messages);
+        setModules(atomicUnit.dashboard.modules);
+        setCurrentPartnerType(atomicUnit.dashboard.partnerType);
+        setCurrentScale(atomicUnit.dashboard.projectScale);
+        setEstimationStep(atomicUnit.dashboard.estimationStep);
+        setProjectSummaryContent(atomicUnit.dashboard.projectSummaryContent);
+        setAiInsight(atomicUnit.dashboard.aiInsight);
+        setReferencedFiles(atomicUnit.dashboard.referencedFiles);
+        
+        if (atomicUnit.chat.messages.length > INITIAL_MESSAGES.length) {
+          setCurrentView('detail');
+        } else {
+          setCurrentView('landing');
+        }
+        
+        console.log(`[App] ATOMIC SYNC: Chat(${atomicUnit.chat.messages.length} msgs) + Dashboard(${atomicUnit.dashboard.modules.length} modules)`);
+      } else if (session.messages.length > 0) {
+        // Fallback to session data for legacy sessions
         setMessages(session.messages);
         
-        // Restore dashboard state if available
         if (session.dashboardState) {
-          // [VALIDATION] Verify dashboardState belongs to target session
           const dashboardOwner = session.dashboardState.sessionId;
           if (dashboardOwner && dashboardOwner !== sessionId) {
-            console.error(`[App] DASHBOARD OWNER MISMATCH: dashboard from ${dashboardOwner}, target ${sessionId}`);
-            // Block hydration of mismatched data - reset to defaults
-            setModules(INITIAL_MODULES);
-            setCurrentPartnerType('STUDIO');
-            setCurrentScale('STANDARD');
-            setEstimationStep('SCOPE');
-            setProjectSummaryContent('');
-            setAiInsight('');
-            setReferencedFiles([]);
+            console.error(`[App] ATOMIC VIOLATION: Dashboard from ${dashboardOwner}, target ${sessionId} - BLOCKING`);
+            // Keep default state - don't hydrate mismatched data
           } else {
-            // Owner matches or legacy session without sessionId - safe to hydrate
             setModules(session.dashboardState.modules);
             setCurrentPartnerType(session.dashboardState.partnerType);
             setCurrentScale(session.dashboardState.projectScale);
@@ -508,26 +557,14 @@ const App: React.FC = () => {
             setAiInsight(session.dashboardState.aiInsight || '');
             setReferencedFiles(session.dashboardState.referencedFiles || []);
           }
-        } else {
-          // Legacy session without dashboard state - reset to defaults
-          setModules(INITIAL_MODULES);
-          setCurrentPartnerType('STUDIO');
-          setCurrentScale('STANDARD');
-          setEstimationStep('SCOPE');
-          setProjectSummaryContent('');
-          setAiInsight('');
-          setReferencedFiles([]);
         }
         
         setCurrentView('detail');
       } else {
-        setMessages(INITIAL_MESSAGES);
-        setModules(INITIAL_MODULES);
-        setReferencedFiles([]);
         setCurrentView('landing');
       }
       
-      console.log(`[App] Session switch complete: now on ${sessionId}, state owner: ${stateOwnerSessionRef.current}`);
+      console.log(`[App] STRICT SWITCH COMPLETE: ${sessionId} | State owner: ${stateOwnerSessionRef.current} | Guard active: ${!!isolationGuardRef.current}`);
       
       // Rehydrate: check for pending background jobs
       await rehydrateSession(sessionId);
@@ -566,6 +603,12 @@ const App: React.FC = () => {
   };
 
   const handleToggleModule = (id: string) => {
+    // [ISOLATION RULE] Block if no active session or guard mismatch
+    if (!validateAtomicOperation('handleToggleModule')) {
+      console.error(`[App] ISOLATION BLOCK: Module toggle for ${id} rejected`);
+      return;
+    }
+    
     const validation = validateModuleToggle(modules, id);
     if (!validation.valid) {
       console.warn(`[App] Module toggle blocked: ${validation.errorCode} - ${validation.message}`);
@@ -581,6 +624,12 @@ const App: React.FC = () => {
   };
 
   const handleToggleSubFeature = (moduleId: string, subId: string) => {
+    // [ISOLATION RULE] Block if no active session or guard mismatch
+    if (!validateAtomicOperation('handleToggleSubFeature')) {
+      console.error(`[App] ISOLATION BLOCK: Feature toggle for ${moduleId}/${subId} rejected`);
+      return;
+    }
+    
     const validation = validateFeatureToggle(modules, moduleId, subId);
     if (!validation.valid) {
       console.warn(`[App] Feature toggle blocked: ${validation.errorCode} - ${validation.message}`);
@@ -599,6 +648,12 @@ const App: React.FC = () => {
   };
 
   const applyPartnerType = (type: PartnerType) => {
+    // [ISOLATION RULE] Block cross-session partner type changes
+    if (!validateAtomicOperation('applyPartnerType')) {
+      console.error(`[App] ISOLATION BLOCK: Partner type change rejected`);
+      return;
+    }
+    
     console.log('[App] applyPartnerType called with:', type);
     setCurrentPartnerType(type);
     console.log('[App] Partner type updated to:', type);
@@ -1111,8 +1166,15 @@ const App: React.FC = () => {
     newSession.isLoading = true;
     const currentSessionId = newSession.id;
     
+    // [ATOMIC UNIT] Create coupled Chat+Dashboard unit
+    const sessionTitle = text?.substring(0, 20) || '새 프로젝트';
+    const atomicUnit = sessionCoupler.createUnit(currentSessionId, text || '', sessionTitle);
+    sessionCoupler.switchSession(currentSessionId);
+    isolationGuardRef.current = createIsolationGuard(currentSessionId);
+    console.log(`[App] ATOMIC UNIT CREATED: ${currentSessionId} (Chat+Dashboard coupled)`);
+    
     // [MULTI-INSTANCE] Register session with instance manager using the SAME ID
-    sessionManager.registerSession(currentSessionId, text?.substring(0, 20) || '새 프로젝트');
+    sessionManager.registerSession(currentSessionId, sessionTitle);
     console.log(`[App] Registered session instance: ${currentSessionId}`);
     
     // [PROMPT BINDING] Bind immutable prompt to session - cannot be changed later
