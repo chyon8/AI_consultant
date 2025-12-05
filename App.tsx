@@ -535,6 +535,9 @@ const App: React.FC = () => {
     }
   };
 
+  // Ref to store parsed project title for session naming
+  const parsedProjectTitleRef = React.useRef<string>('');
+
   // Handle parsed analysis result
   const handleAnalysisComplete = (result: ParsedAnalysisResult | null) => {
     console.log('[App] handleAnalysisComplete called with:', result ? {
@@ -543,6 +546,11 @@ const App: React.FC = () => {
       hasEstimates: !!result.estimates,
       hasRawMarkdown: !!result.rawMarkdown
     } : 'null');
+    
+    // Store project title for session naming
+    if (result?.projectTitle) {
+      parsedProjectTitleRef.current = result.projectTitle;
+    }
     
     if (result && result.modules && result.modules.length > 0) {
       const convertedModules: ModuleItem[] = result.modules.map(mod => ({
@@ -703,9 +711,16 @@ const App: React.FC = () => {
       setMessages(newMessages);
       setCurrentView('detail');
 
-      // Save session with first message as title
+      // Save session with project title (from AI analysis) or text excerpt
       if (currentSessionId) {
-        const title = text ? text.substring(0, 20).trim() : 'New Chat';
+        let title = 'New Chat';
+        if (parsedProjectTitleRef.current) {
+          // Use AI-generated project title (concise)
+          title = parsedProjectTitleRef.current.substring(0, 30).trim();
+        } else if (text) {
+          title = text.substring(0, 20).trim();
+        }
+        parsedProjectTitleRef.current = ''; // Reset for next session
         updateSessionTitle(currentSessionId, title);
         updateSessionMessages(currentSessionId, newMessages);
         // Remove loading state
