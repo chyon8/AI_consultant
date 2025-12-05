@@ -75,11 +75,53 @@ Reply with exactly one word: RELATED, NEW_PROJECT, or GENERAL`;
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
+const PRICE_MANIPULATION_PATTERNS = [
+  /싸게|저렴하게|할인|깎아|낮춰|줄여.*가격|예산.*줄|비용.*줄|금액.*줄/i,
+  /비싸게|올려.*가격|높여.*가격|가격.*올|비용.*올|금액.*올/i,
+  /\d+\s*(원|만원|천만원|억)\s*(으로|이면|에|내에|안에)/i,
+  /예산\s*\d+|가격\s*\d+|비용\s*\d+/i,
+  /가격.*맞춰|예산.*맞춰|금액.*조정/i,
+  /더\s*싸게|더\s*저렴/i,
+  /가격\s*(을|를)?\s*(낮춰|줄여|내려)/i,
+  /(예산|비용|가격)\s*(범위|한도)\s*(을|를)?\s*\d+/i,
+  /\d+\s*(만원|천만|억)\s*(정도|이내|이하|미만)/i,
+];
+
+function detectPriceManipulation(message: string): boolean {
+  return PRICE_MANIPULATION_PATTERNS.some(pattern => pattern.test(message));
+}
+
 export async function classifyUserIntent(
   userMessage: string,
   projectContext: ProjectContext,
   modelId?: string
 ): Promise<{ judgment: ContextJudgment; shouldBlock: boolean; refusalMessage?: string }> {
+  if (detectPriceManipulation(userMessage)) {
+    console.log('[chatService] Price manipulation detected:', userMessage);
+    return {
+      judgment: 'RELATED',
+      shouldBlock: true,
+      refusalMessage: `<CHAT>
+💰 **가격 무결성 정책 안내**
+
+견적 금액은 **선택된 기능과 파트너 유형에 따라 자동으로 계산**되는 결과값입니다.
+
+가격을 직접 조정하는 것은 견적의 신뢰성을 위해 지원하지 않습니다.
+
+**비용을 조정하고 싶으시다면:**
+1. 📋 **기능 범위 조정** - 선택적(Optional) 기능을 줄여보세요
+2. 🏢 **파트너 유형 변경** - AI Native(가성비) ↔ Agency(안정성)
+3. 📊 **규모 조정** - MVP/Standard/High-End 중 선택
+
+어떤 방식으로 조정해드릴까요?
+</CHAT>
+
+<ACTION>
+{"type": "no_action", "intent": "general", "payload": {}}
+</ACTION>`
+    };
+  }
+
   if (!GEMINI_API_KEY) {
     return { judgment: 'GENERAL', shouldBlock: false };
   }

@@ -162,6 +162,14 @@ Both Gemini and Claude chat paths share the same context-lock guard:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (December 5, 2024)
+- **Immutable Constraints System (불변의 제약조건)**:
+  - New `constraintValidator.ts` service for enforcing business rules
+  - **Price Integrity (가격 무결성)**: Rejects price manipulation commands ("싸게 해줘", "비싸게 해줘")
+  - **Essential Logic Lock (필수 로직 잠금)**: Core/Critical modules and features cannot be disabled
+  - **Minimum Viable Scope**: Optional items only can be removed; core features preserved
+  - **Logical Validation**: Dependency checks prevent contradictory configurations
+  - Integrated with chat service for real-time message validation
+  - Error messages with constraint violation codes and user-friendly explanations
 - **Server-Side Text Extraction Pipeline**:
   - New `textExtractor.ts` service for PDF, DOCX, and text file parsing
   - Uses `pdf-parse` for PDF extraction (dynamic import for ES module compatibility)

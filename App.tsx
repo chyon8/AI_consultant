@@ -15,6 +15,14 @@ import { AIModelSettings, getDefaultModelSettings } from './constants/aiConfig';
 import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo } from './services/apiService';
 import { 
+  validateModuleToggle, 
+  validateFeatureToggle, 
+  validateChatAction, 
+  isEssentialModule,
+  isEssentialFeature,
+  CONSTRAINT_ERROR_MESSAGES 
+} from './services/constraintValidator';
+import { 
   getChatHistory, 
   saveChatHistory, 
   createNewSession, 
@@ -250,6 +258,12 @@ const App: React.FC = () => {
   };
 
   const handleToggleModule = (id: string) => {
+    const validation = validateModuleToggle(modules, id);
+    if (!validation.valid) {
+      console.warn(`[App] Module toggle blocked: ${validation.errorCode} - ${validation.message}`);
+      return;
+    }
+    
     setModules(prev => prev.map(m => {
       if (m.id === id) {
         return { ...m, isSelected: !m.isSelected };
@@ -259,6 +273,12 @@ const App: React.FC = () => {
   };
 
   const handleToggleSubFeature = (moduleId: string, subId: string) => {
+    const validation = validateFeatureToggle(modules, moduleId, subId);
+    if (!validation.valid) {
+      console.warn(`[App] Feature toggle blocked: ${validation.errorCode} - ${validation.message}`);
+      return;
+    }
+    
     setModules(prev => prev.map(m => {
       if (m.id === moduleId) {
         return {
@@ -429,10 +449,14 @@ const App: React.FC = () => {
           console.log('[App] Available modules:', modules.map(m => `${m.name} [${m.id}]`));
           return { success: false, error: `"${action.payload.moduleId}" 모듈을 찾을 수 없습니다.` };
         }
-        if (targetModule.required && targetModule.isSelected) {
-          console.warn(`[App] Cannot disable required module: "${targetModule.name}"`);
-          return { success: false, error: `"${targetModule.name}"은(는) 필수 모듈이므로 비활성화할 수 없습니다.` };
+        
+        const validation = validateModuleToggle(modules, targetModule.id);
+        if (!validation.valid) {
+          console.warn(`[App] Constraint violation: ${validation.errorCode} - ${validation.message}`);
+          const prefix = validation.errorCode ? CONSTRAINT_ERROR_MESSAGES[validation.errorCode] : '';
+          return { success: false, error: `${prefix}\n${validation.message}` };
         }
+        
         console.log('[App] Calling handleToggleModule for:', targetModule.name);
         handleToggleModule(targetModule.id);
         return { success: true };
@@ -455,6 +479,14 @@ const App: React.FC = () => {
           console.log('[App] Available features:', targetModule.subFeatures.map(f => `${f.name} [${f.id}]`));
           return { success: false, error: `"${targetModule.name}" 모듈에서 "${action.payload.featureId}" 기능을 찾을 수 없습니다.` };
         }
+        
+        const validation = validateFeatureToggle(modules, targetModule.id, targetFeature.id);
+        if (!validation.valid) {
+          console.warn(`[App] Constraint violation: ${validation.errorCode} - ${validation.message}`);
+          const prefix = validation.errorCode ? CONSTRAINT_ERROR_MESSAGES[validation.errorCode] : '';
+          return { success: false, error: `${prefix}\n${validation.message}` };
+        }
+        
         console.log('[App] Calling handleToggleSubFeature for:', targetModule.name, '->', targetFeature.name);
         handleToggleSubFeature(targetModule.id, targetFeature.id);
         return { success: true };
