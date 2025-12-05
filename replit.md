@@ -162,6 +162,17 @@ Both Gemini and Claude chat paths share the same context-lock guard:
   - Structured sections (프로젝트 개요, 과업 범위, 기술 스택 등)
 
 ## Recent Changes (December 5, 2024)
+- **Session Isolation & Data Leakage Prevention (세션 격리)**:
+  - New `Immutable Job→Session Registry` in sessionSandbox.ts using localStorage
+  - `registerJobSession(jobId, sessionId)` - Immutable mapping when job starts
+  - `getJobOwnerSession(jobId)` - Lookup owner session (replaces mutable ref)
+  - `unregisterJob(jobId)` - Cleanup on completion/failure/cancel/abort
+  - `cleanupOldJobs()` - Auto-cleanup entries older than 24 hours
+  - **Data Leakage Block**: UI only updates when `ownerSessionId === activeSessionId`
+  - **Scoped Storage**: `saveResultToSessionStorage` saves to owner session only
+  - **Prompt Logging**: User input committed to session history immediately at analysis start
+  - All job handlers (startJobPolling, handleVisibilityChange, rehydrateSession) use registry
+  - Cross-session contamination prevented during session switching
 - **Immutable Constraints System (불변의 제약조건)**:
   - New `constraintValidator.ts` service for enforcing business rules
   - **Price Integrity (가격 무결성)**: Rejects price manipulation commands ("싸게 해줘", "비싸게 해줘")
