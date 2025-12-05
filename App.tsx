@@ -15,6 +15,15 @@ import { AIModelSettings, getDefaultModelSettings } from './constants/aiConfig';
 import { deleteSession } from './services/chatHistoryService';
 import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo } from './services/apiService';
 import { 
+  sessionSandbox, 
+  SessionSnapshot, 
+  startAnalyzeJob, 
+  fetchJobStatus, 
+  fetchJobChunks,
+  cancelJob as cancelServerJob,
+  fetchSessionJobs
+} from './services/sessionSandbox';
+import { 
   validateModuleToggle, 
   validateFeatureToggle, 
   validateChatAction, 
@@ -45,6 +54,10 @@ const App: React.FC = () => {
   
   // Abort Controller for analysis
   const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Current job ID for background analysis
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const jobPollingRef = useRef<NodeJS.Timeout | null>(null);
   
   // Project Summary Content (STEP 1 from Gemini analysis)
   const [projectSummaryContent, setProjectSummaryContent] = useState<string>('');
@@ -191,11 +204,70 @@ const App: React.FC = () => {
     setSessionToDelete(null);
   };
 
+  // Freeze current session state before switching
+  const freezeCurrentSession = async () => {
+    if (!activeSessionId) return;
+    
+    const snapshot: SessionSnapshot = {
+      sessionId: activeSessionId,
+      timestamp: Date.now(),
+      scrollPosition: 0,
+      inputText: '',
+      pendingJobId: currentJobId,
+      lastChunkSequence: -1,
+      streamingBuffer: '',
+      viewState: currentView,
+      analysisInProgress: isAnalyzing
+    };
+    
+    await sessionSandbox.freezeSession(snapshot);
+    console.log(`[App] Froze session ${activeSessionId}`);
+  };
+
+  // Check for pending jobs and rehydrate
+  const rehydrateSession = async (sessionId: string) => {
+    const snapshot = await sessionSandbox.thawSession(sessionId);
+    
+    if (snapshot?.pendingJobId) {
+      console.log(`[App] Found pending job ${snapshot.pendingJobId} for session ${sessionId}`);
+      const jobStatus = await fetchJobStatus(snapshot.pendingJobId);
+      
+      if (jobStatus) {
+        if (jobStatus.status === 'completed' && jobStatus.result) {
+          console.log(`[App] Job completed, applying result`);
+          handleAnalysisComplete(jobStatus.result);
+          setCurrentJobId(null);
+          setIsAnalyzing(false);
+        } else if (jobStatus.status === 'running' || jobStatus.status === 'pending') {
+          console.log(`[App] Job still running, resuming polling`);
+          setCurrentJobId(snapshot.pendingJobId);
+          setIsAnalyzing(true);
+          startJobPolling(snapshot.pendingJobId);
+        } else if (jobStatus.status === 'failed') {
+          setAnalysisError(jobStatus.error || '분석이 실패했습니다.');
+          setCurrentJobId(null);
+          setIsAnalyzing(false);
+        }
+      }
+    }
+  };
+
   // Handle session selection - restore both messages AND dashboard state
-  const handleSelectSession = (sessionId: string) => {
+  const handleSelectSession = async (sessionId: string) => {
+    // Freeze current session before switching
+    await freezeCurrentSession();
+    
+    // Clear current job polling
+    if (jobPollingRef.current) {
+      clearInterval(jobPollingRef.current);
+      jobPollingRef.current = null;
+    }
+    
     const session = getSessionById(sessionId);
     if (session) {
       setActiveSessionId(sessionId);
+      sessionSandbox.setCurrentSession(sessionId);
+      
       if (session.messages.length > 0) {
         setMessages(session.messages);
         
@@ -226,6 +298,9 @@ const App: React.FC = () => {
         setReferencedFiles([]);
         setCurrentView('landing');
       }
+      
+      // Rehydrate: check for pending background jobs
+      await rehydrateSession(sessionId);
     }
   };
 
@@ -624,12 +699,72 @@ const App: React.FC = () => {
     }
   };
 
+  // Start polling for job status
+  const startJobPolling = (jobId: string) => {
+    if (jobPollingRef.current) {
+      clearInterval(jobPollingRef.current);
+    }
+    
+    jobPollingRef.current = setInterval(async () => {
+      const status = await fetchJobStatus(jobId);
+      if (!status) return;
+      
+      if (status.status === 'completed') {
+        clearInterval(jobPollingRef.current!);
+        jobPollingRef.current = null;
+        
+        if (status.result) {
+          handleAnalysisComplete(status.result);
+          
+          // Complete the UI transition
+          const userMsg: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            text: '프로젝트 분석 요청',
+            timestamp: new Date(),
+          };
+          const aiMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'model',
+            text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다.',
+            timestamp: new Date(),
+          };
+          setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
+          setCurrentView('detail');
+        }
+        
+        setCurrentJobId(null);
+        setIsAnalyzing(false);
+      } else if (status.status === 'failed') {
+        clearInterval(jobPollingRef.current!);
+        jobPollingRef.current = null;
+        setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+        setCurrentJobId(null);
+        setIsAnalyzing(false);
+      } else if (status.status === 'cancelled') {
+        clearInterval(jobPollingRef.current!);
+        jobPollingRef.current = null;
+        setCurrentJobId(null);
+        setIsAnalyzing(false);
+      }
+    }, 1000);
+  };
+
   // Handle abort analysis
-  const handleAbortAnalysis = () => {
+  const handleAbortAnalysis = async () => {
+    if (currentJobId) {
+      await cancelServerJob(currentJobId);
+      setCurrentJobId(null);
+    }
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    if (jobPollingRef.current) {
+      clearInterval(jobPollingRef.current);
+      jobPollingRef.current = null;
+    }
+    setIsAnalyzing(false);
   };
 
   // Handle initial analysis from landing page
