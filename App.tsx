@@ -494,6 +494,33 @@ const App: React.FC = () => {
     
     const session = getSessionById(sessionId);
     if (session) {
+      // [ATOMIC UNIT] Ensure session exists in coupler BEFORE any switch
+      let atomicUnit = sessionCoupler.getUnit(sessionId);
+      if (!atomicUnit) {
+        // Create and populate atomic unit for legacy session
+        atomicUnit = sessionCoupler.createUnit(sessionId, '', session.title || '이전 세션');
+        if (atomicUnit) {
+          // Populate with legacy session data
+          atomicUnit.chat.messages = session.messages || INITIAL_MESSAGES;
+          if (session.dashboardState) {
+            atomicUnit.dashboard.modules = session.dashboardState.modules;
+            atomicUnit.dashboard.partnerType = session.dashboardState.partnerType;
+            atomicUnit.dashboard.projectScale = session.dashboardState.projectScale;
+            atomicUnit.dashboard.estimationStep = session.dashboardState.estimationStep;
+            atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
+            atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
+            atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
+          }
+          console.log(`[App] Created and populated atomic unit for legacy session: ${sessionId}`);
+        }
+      }
+      
+      // [CRITICAL] Abort switch if atomic unit cannot be created
+      if (!atomicUnit) {
+        console.error(`[App] ATOMIC SWITCH ABORT: Cannot create unit for session ${sessionId}`);
+        return;
+      }
+      
       // [STRICT SWITCH] STEP 2: Update all session references atomically
       console.log(`[App] STRICT SWITCH STEP 2: Updating session references to ${sessionId}`);
       stateOwnerSessionRef.current = sessionId;
@@ -501,13 +528,6 @@ const App: React.FC = () => {
       sessionSandbox.setCurrentSession(sessionId);
       sessionManager.setCurrentSession(sessionId);
       
-      // [ATOMIC UNIT] Ensure session exists in coupler, then switch
-      let atomicUnit = sessionCoupler.getUnit(sessionId);
-      if (!atomicUnit) {
-        // Create atomic unit for legacy session
-        atomicUnit = sessionCoupler.createUnit(sessionId, '', session.title || '이전 세션');
-        console.log(`[App] Created atomic unit for legacy session: ${sessionId}`);
-      }
       sessionCoupler.switchSession(sessionId);
       isolationGuardRef.current = createIsolationGuard(sessionId);
       
@@ -679,6 +699,12 @@ const App: React.FC = () => {
   };
 
   const handleScaleChange = (scale: ProjectScale) => {
+    // [ISOLATION RULE] Block cross-session scale changes
+    if (!validateAtomicOperation('handleScaleChange')) {
+      console.error(`[App] ISOLATION BLOCK: Scale change rejected`);
+      return;
+    }
+    
     console.log('[App] handleScaleChange called with:', scale);
     setCurrentScale(scale);
     if (scale === 'MVP') {
@@ -720,6 +746,12 @@ const App: React.FC = () => {
   };
 
   const handleAddFeature = (moduleId: string, feature: { name: string; price: number; manWeeks: number; isNew: true }) => {
+    // [ISOLATION RULE] Block cross-session feature additions
+    if (!validateAtomicOperation('handleAddFeature')) {
+      console.error(`[App] ISOLATION BLOCK: Add feature rejected`);
+      return;
+    }
+    
     console.log('[App] Adding new feature to module:', moduleId, feature);
     setModules(prev => prev.map(m => {
       if (m.id === moduleId) {
@@ -751,6 +783,12 @@ const App: React.FC = () => {
     isNew: true;
     subFeatures: { name: string; price: number; manWeeks: number; isNew: true }[] 
   }) => {
+    // [ISOLATION RULE] Block cross-session module creation
+    if (!validateAtomicOperation('handleCreateModule')) {
+      console.error(`[App] ISOLATION BLOCK: Create module rejected`);
+      return;
+    }
+    
     console.log('[App] Creating new module:', moduleData);
     const newModuleId = generateModuleId(moduleData.name);
     const newModule: ModuleItem = {
@@ -776,6 +814,12 @@ const App: React.FC = () => {
   };
 
   const handleChatAction = (action: ChatAction): { success: boolean; error?: string } => {
+    // [ISOLATION RULE] Block cross-session chat actions
+    if (!validateAtomicOperation('handleChatAction')) {
+      console.error(`[App] ISOLATION BLOCK: Chat action rejected`);
+      return { success: false, error: 'Session isolation violation' };
+    }
+    
     console.log('[App] Handling chat action:', action);
     
     const findModuleByIdOrName = (moduleIdOrName: string) => {

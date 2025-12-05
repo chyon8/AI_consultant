@@ -45,7 +45,10 @@ Before writing any code, you MUST output a plan in this format:
 - Partner type presets (TYPE A/AI_NATIVE, TYPE B/STUDIO, TYPE C/AGENCY).
 - Three top-level tabs: `견적/예산` (Estimation/Budget), `수행계획` (Execution Plan), `공고작성` (RFP Creation).
 - Dark mode support and a resizable sidebar.
-- Session isolation for managing multiple project estimations without data leakage, using `sessionInstance.ts` and localStorage for persistence.
+- **Atomic Session Unit Architecture** (`services/atomicSession.ts`): Strict 1:1 coupling between chat sessions and dashboard state.
+- **SessionCoupler** enforces indivisible chat+dashboard binding with ownership validation.
+- **Strict Context Switching**: When switching sessions, ALL components (chat + dashboard) sync immediately to that session's data.
+- **Isolation Guards**: All state mutations validate session ownership before executing; mismatched operations are blocked.
 - Immutable Constraints System (`constraintValidator.ts`) to enforce business rules like price integrity and essential logic locks.
 - Server-side text extraction for PDF, DOCX, and text files, with auto-triggering of AI analysis upon upload.
 - AI Model Settings Management allowing per-function model selection (e.g., for `analyzeProject`, `generateRFP`).
