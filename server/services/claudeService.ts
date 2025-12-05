@@ -63,7 +63,7 @@ export async function analyzeProject(
 
   const stream = await anthropic.messages.stream({
     model: model,
-    max_tokens: 16000,
+    max_tokens: 32000,
     messages: [
       { 
         role: 'user', 
