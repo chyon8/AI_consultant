@@ -281,17 +281,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )
             )}
             {activeTab === TabView.ESTIMATION && (
-              <EstimationTab 
-                modules={modules} 
-                onToggleModule={onToggleModule} 
-                onToggleSubFeature={onToggleSubFeature}
-                setModules={setModules}
-                currentPartnerType={currentPartnerType}
-                onSelectPartnerType={onSelectPartnerType}
-                estimationStep={estimationStep}
-                currentScale={currentScale}
-                onScaleChange={onScaleChange}
-              />
+              isAnalyzing && progressiveState && !progressiveState.modulesReady ? (
+                <TabSkeleton type="estimation" />
+              ) : (
+                <EstimationTab 
+                  modules={modules} 
+                  onToggleModule={onToggleModule} 
+                  onToggleSubFeature={onToggleSubFeature}
+                  setModules={setModules}
+                  currentPartnerType={currentPartnerType}
+                  onSelectPartnerType={onSelectPartnerType}
+                  estimationStep={estimationStep}
+                  currentScale={currentScale}
+                  onScaleChange={onScaleChange}
+                />
+              )
             )}
             {activeTab === TabView.EXECUTION_PLAN && (
               isAnalyzing && progressiveState && !progressiveState.scheduleReady ? (

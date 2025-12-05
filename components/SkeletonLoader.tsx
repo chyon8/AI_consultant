@@ -32,10 +32,43 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className = '' 
 );
 
 interface TabSkeletonProps {
-  type: 'schedule' | 'summary';
+  type: 'schedule' | 'summary' | 'estimation';
 }
 
 export const TabSkeleton: React.FC<TabSkeletonProps> = ({ type }) => {
+  if (type === 'estimation') {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-5 w-40" />
+              </div>
+              <Skeleton className="h-5 w-28" />
+            </div>
+            <Skeleton className="h-4 w-full mb-3" />
+            <Skeleton className="h-4 w-3/4 mb-4" />
+            <div className="flex gap-2">
+              {[1, 2, 3].map((j) => (
+                <Skeleton key={j} className="h-7 w-24 rounded-full" />
+              ))}
+            </div>
+          </div>
+        ))}
+        
+        <div className="text-center text-sm text-gray-400 dark:text-gray-500 mt-6 flex items-center justify-center gap-2">
+          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75" />
+          </svg>
+          프로젝트를 분석하고 있습니다...
+        </div>
+      </div>
+    );
+  }
+  
   if (type === 'schedule') {
     return (
       <div className="p-6 space-y-6">

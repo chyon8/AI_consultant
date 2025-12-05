@@ -1199,7 +1199,6 @@ const App: React.FC = () => {
               
               setModules(convertedModules);
               setProgressiveState(prev => ({ ...prev, modulesReady: true }));
-              setCurrentView('detail'); // Show detail view as soon as modules arrive
               
               if (projectTitle) {
                 updateSessionTitle(ownerSessionId, projectTitle.substring(0, 30).trim());
@@ -1534,8 +1533,17 @@ const App: React.FC = () => {
         updateSessionTitle(currentSessionId, text.substring(0, 20).trim() + '...');
       }
       
-      // Job started successfully - UI remains on landing with loading state
-      // Job polling will handle transition to detail view on completion
+      // [IMMEDIATE SKELETON] Switch to detail view immediately with all skeletons showing
+      // Progressive loading will replace skeletons with real content as data arrives
+      setProgressiveState({
+        modulesReady: false,
+        estimatesReady: false,
+        scheduleReady: false,
+        summaryReady: false,
+        schedule: null,
+        summary: null,
+      });
+      setCurrentView('detail');
       
     } catch (error: any) {
       console.error('Analysis error:', error);
