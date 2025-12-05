@@ -705,76 +705,151 @@ const App: React.FC = () => {
       clearInterval(jobPollingRef.current);
     }
     
+    console.log('[App] Starting job polling for:', jobId);
+    
     jobPollingRef.current = setInterval(async () => {
       const status = await fetchJobStatus(jobId);
       if (!status) return;
+      
+      // Check if we're still on the correct session
+      const currentSession = sessionSandbox.getCurrentSession();
+      const expectedSession = pendingSessionIdRef.current;
       
       if (status.status === 'completed') {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         
-        if (status.result) {
+        console.log('[App] Job completed:', jobId, 'Current session:', currentSession, 'Expected:', expectedSession);
+        
+        // Only update UI if we're still on the correct session
+        if (currentSession === expectedSession && status.result) {
           handleAnalysisComplete(status.result);
           
           // Complete the UI transition
-          const userMsg: Message = {
+          const userMsg = pendingUserMsgRef.current || {
             id: Date.now().toString(),
-            role: 'user',
+            role: 'user' as const,
             text: '프로젝트 분석 요청',
             timestamp: new Date(),
           };
           const aiMsg: Message = {
             id: (Date.now() + 1).toString(),
             role: 'model',
-            text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다.',
+            text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.',
             timestamp: new Date(),
           };
-          setMessages([...INITIAL_MESSAGES, userMsg, aiMsg]);
+          
+          const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
+          setMessages(newMessages);
           setCurrentView('detail');
+          
+          // Update session with final title and messages
+          if (expectedSession) {
+            const title = status.result.projectTitle || userMsg.text.substring(0, 20);
+            updateSessionTitle(expectedSession, title.substring(0, 30).trim());
+            updateSessionMessages(expectedSession, newMessages);
+            
+            // Remove loading state from sessions
+            const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
+            saveChatHistory(sessions);
+            setChatSessions(sessions);
+          }
+          
+          // Clear the snapshot since job is complete
+          if (expectedSession) {
+            sessionSandbox.deleteSnapshot(expectedSession);
+          }
         }
         
         setCurrentJobId(null);
         setIsAnalyzing(false);
+        pendingUserMsgRef.current = null;
+        pendingSessionIdRef.current = null;
+        
       } else if (status.status === 'failed') {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
-        setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+        
+        // Only show error if we're on the correct session
+        if (currentSession === expectedSession) {
+          setAnalysisError(status.error || '분석 중 오류가 발생했습니다.');
+          
+          // Remove failed session
+          if (expectedSession) {
+            const sessions = getChatHistory().filter(s => s.id !== expectedSession);
+            saveChatHistory(sessions);
+            setChatSessions(sessions);
+            if (sessions.length > 0) {
+              setActiveSessionId(sessions[0].id);
+            }
+          }
+        }
+        
         setCurrentJobId(null);
         setIsAnalyzing(false);
+        pendingUserMsgRef.current = null;
+        pendingSessionIdRef.current = null;
+        
       } else if (status.status === 'cancelled') {
         clearInterval(jobPollingRef.current!);
         jobPollingRef.current = null;
         setCurrentJobId(null);
         setIsAnalyzing(false);
+        pendingUserMsgRef.current = null;
+        pendingSessionIdRef.current = null;
       }
     }, 1000);
   };
 
+  // Pending user message for job completion
+  const pendingUserMsgRef = useRef<Message | null>(null);
+  const pendingSessionIdRef = useRef<string | null>(null);
+
   // Handle abort analysis
   const handleAbortAnalysis = async () => {
+    console.log('[App] Aborting analysis, jobId:', currentJobId);
+    
+    // Cancel server-side job
     if (currentJobId) {
       await cancelServerJob(currentJobId);
       setCurrentJobId(null);
     }
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
+    
+    // Stop polling
     if (jobPollingRef.current) {
       clearInterval(jobPollingRef.current);
       jobPollingRef.current = null;
     }
+    
+    // Remove the pending session
+    const sessionToRemove = pendingSessionIdRef.current;
+    if (sessionToRemove) {
+      const sessions = getChatHistory().filter(s => s.id !== sessionToRemove);
+      saveChatHistory(sessions);
+      setChatSessions(sessions);
+      if (sessions.length > 0) {
+        setActiveSessionId(sessions[0].id);
+      } else {
+        setActiveSessionId(null);
+      }
+      
+      // Clean up snapshot
+      await sessionSandbox.deleteSnapshot(sessionToRemove);
+    }
+    
+    // Clear refs
+    pendingUserMsgRef.current = null;
+    pendingSessionIdRef.current = null;
     setIsAnalyzing(false);
+    
+    console.log('[App] Analysis aborted');
   };
 
-  // Handle initial analysis from landing page
+  // Handle initial analysis from landing page - using Job-based background processing
   const handleAnalyze = async (text: string, files: File[]) => {
     setIsAnalyzing(true);
     setAnalysisError(null);
     setReferencedFiles([]);
-    
-    // Create new abort controller for this analysis
-    abortControllerRef.current = new AbortController();
     
     // Always create a NEW session for each analysis (add to history, don't overwrite)
     const newSession = createNewSession();
@@ -784,6 +859,8 @@ const App: React.FC = () => {
     setChatSessions(updatedSessions);
     setActiveSessionId(newSession.id);
     const currentSessionId = newSession.id;
+    pendingSessionIdRef.current = currentSessionId;
+    sessionSandbox.setCurrentSession(currentSessionId);
     
     // Add user message
     const userMsg: Message = {
@@ -792,16 +869,7 @@ const App: React.FC = () => {
       text: text || `[${files.map(f => f.name).join(', ')}] 파일을 첨부했습니다.`,
       timestamp: new Date(),
     };
-    
-    // Create AI message for chat (will show after view switch)
-    const aiMsgId = (Date.now() + 1).toString();
-    const aiMsg: Message = {
-      id: aiMsgId,
-      role: 'model',
-      text: '',
-      timestamp: new Date(),
-      isStreaming: false,
-    };
+    pendingUserMsgRef.current = userMsg;
     
     try {
       let fileDataList: FileData[] = [];
@@ -834,102 +902,72 @@ const App: React.FC = () => {
         }
       }
       
-      // Call analyze API - stay on landing page, show loading there
-      const parsedResult = await analyzeProject(
-        text, 
-        fileDataList, 
-        (chunk) => {
-          // Don't update chat - response collected internally
-        },
-        handleAnalysisComplete,
-        (error) => {
-          setAnalysisError(error);
-        },
-        aiModelSettings.analyzeProject,
-        abortControllerRef.current?.signal
+      // Start background job instead of direct SSE
+      console.log('[App] Starting background analysis job for session:', currentSessionId);
+      const jobResult = await startAnalyzeJob(
+        currentSessionId,
+        text,
+        fileDataList,
+        aiModelSettings.analyzeProject
       );
       
-      // If aborted, clean up and return early
-      if (!parsedResult && abortControllerRef.current?.signal.aborted) {
-        console.log('[App] Analysis was aborted');
-        // Remove the loading session
-        if (currentSessionId) {
-          const sessions = getChatHistory().filter(s => s.id !== currentSessionId);
-          saveChatHistory(sessions);
-          setChatSessions(sessions);
-          setActiveSessionId(sessions.length > 0 ? sessions[0].id : null);
-        }
-        setIsAnalyzing(false);
-        abortControllerRef.current = null;
-        return;
+      if (!jobResult) {
+        throw new Error('분석 작업을 시작할 수 없습니다.');
       }
       
-      // Analysis complete - now switch to detail view
-      const newMessages = [
-        ...INITIAL_MESSAGES, 
-        userMsg, 
-        { 
-          ...aiMsg, 
-          text: '프로젝트 분석이 완료되었습니다.\n\n오른쪽 대시보드에서 분석된 모듈 구조와 견적 정보를 확인하실 수 있습니다. 기능 범위를 조정하신 후 견적을 산출해보세요.' 
-        }
-      ];
-      setMessages(newMessages);
-      setCurrentView('detail');
+      console.log('[App] Job started:', jobResult.jobId);
+      setCurrentJobId(jobResult.jobId);
+      
+      // Freeze session state with job info
+      const snapshot: SessionSnapshot = {
+        sessionId: currentSessionId,
+        timestamp: Date.now(),
+        scrollPosition: 0,
+        inputText: text,
+        pendingJobId: jobResult.jobId,
+        lastChunkSequence: -1,
+        streamingBuffer: '',
+        viewState: 'landing',
+        analysisInProgress: true
+      };
+      await sessionSandbox.freezeSession(snapshot);
+      
+      // Start polling for job completion
+      startJobPolling(jobResult.jobId);
 
-      // Save session with project title (from AI analysis) or text excerpt
-      if (currentSessionId) {
-        let title = 'New Chat';
-        if (parsedProjectTitleRef.current) {
-          // Use AI-generated project title (concise)
-          title = parsedProjectTitleRef.current.substring(0, 30).trim();
-        } else if (text) {
-          title = text.substring(0, 20).trim();
-        }
-        parsedProjectTitleRef.current = ''; // Reset for next session
-        updateSessionTitle(currentSessionId, title);
-        updateSessionMessages(currentSessionId, newMessages);
-        // Remove loading state
-        const sessions = getChatHistory().map(s => ({ ...s, isLoading: false }));
-        saveChatHistory(sessions);
-        setChatSessions(sessions);
+      // Save initial session title (will be updated when analysis completes)
+      if (text) {
+        updateSessionTitle(currentSessionId, text.substring(0, 20).trim() + '...');
       }
+      
+      // Job started successfully - UI remains on landing with loading state
+      // Job polling will handle transition to detail view on completion
       
     } catch (error: any) {
-      // Check if aborted
-      if (error?.name === 'AbortError' || abortControllerRef.current?.signal.aborted) {
-        console.log('[App] Analysis aborted by user');
-        if (currentSessionId) {
-          const sessions = getChatHistory().filter(s => s.id !== currentSessionId);
-          saveChatHistory(sessions);
-          setChatSessions(sessions);
-          setActiveSessionId(sessions.length > 0 ? sessions[0].id : null);
-        }
-      } else {
-        console.error('Analysis error:', error);
-        const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
-        setAnalysisError(errorMessage);
-        
-        // Rule 3: Remove failed ghost session
-        if (currentSessionId) {
-          const sessions = getChatHistory().filter(s => {
-            if (s.id === currentSessionId && (!s.messages || s.messages.length === 0)) {
-              return false; // Remove empty failed session
-            }
-            return true;
-          });
-          saveChatHistory(sessions);
-          setChatSessions(sessions);
-          if (sessions.length > 0) {
-            setActiveSessionId(sessions[0].id);
-          } else {
-            setActiveSessionId(null);
+      console.error('Analysis error:', error);
+      const errorMessage = error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.';
+      setAnalysisError(errorMessage);
+      
+      // Remove failed ghost session
+      if (currentSessionId) {
+        const sessions = getChatHistory().filter(s => {
+          if (s.id === currentSessionId && (!s.messages || s.messages.length === 0)) {
+            return false; // Remove empty failed session
           }
+          return true;
+        });
+        saveChatHistory(sessions);
+        setChatSessions(sessions);
+        if (sessions.length > 0) {
+          setActiveSessionId(sessions[0].id);
+        } else {
+          setActiveSessionId(null);
         }
       }
+      
+      setIsAnalyzing(false);
+      setCurrentJobId(null);
     }
-    
-    setIsAnalyzing(false);
-    abortControllerRef.current = null;
   };
 
   // Dismiss error notification and reset state
