@@ -126,7 +126,7 @@ const AIAssistantSection: React.FC<{
         </h3>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-5 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
               <Icons.Zap size={16} className="text-white" />
             </div>
             <div>
@@ -165,7 +165,7 @@ const AIAssistantSection: React.FC<{
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg ring-4 ring-blue-100 dark:ring-blue-900/30">
+              <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
                 <Icons.Zap size={22} className="text-white" />
               </div>
               <div>
@@ -178,9 +178,9 @@ const AIAssistantSection: React.FC<{
             {onRegenerate && (
               <button
                 onClick={onRegenerate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
+                className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
-                <Icons.Refresh size={14} />
+                <Icons.Refresh size={13} />
                 <span>재생성</span>
               </button>
             )}
@@ -311,8 +311,8 @@ const AIAssistantSection: React.FC<{
 
         <div className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-sky-900/20">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-              <Icons.Zap size={16} className="text-blue-600 dark:text-blue-400" />
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Icons.Zap size={16} className="text-white" />
             </div>
             <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">So What?</span>
           </div>
@@ -388,7 +388,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
           </h3>
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
                 <Icons.Zap size={20} className="text-white" />
               </div>
               <div>
@@ -400,7 +400,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
             </div>
             <button
               onClick={onGenerateInsight}
-              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Icons.Sparkles size={18} />
               <span>AI 어시스턴트 생성</span>
