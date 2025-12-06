@@ -1460,6 +1460,9 @@ const App: React.FC = () => {
     pendingSessionIdRef.current = null;
     setIsAnalyzing(false);
     
+    // Return to home screen
+    setCurrentView('landing');
+    
     console.log('[App] Analysis aborted');
   };
 

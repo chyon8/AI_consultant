@@ -134,10 +134,9 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                           e.stopPropagation();
                           onAbortSession(session.id);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                        title="중단"
+                        className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                       >
-                        <Icons.Close size={14} />
+                        중단
                       </button>
                     ) : hoveredSessionId === session.id && !session.isLoading && (
                       <button
