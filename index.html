@@ -43,6 +43,7 @@
               'slide-up': 'slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
               'fade-in-up': 'fadeInUp 0.4s ease-out forwards',
               'slide-in-left': 'slideInLeft 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'typing-dot': 'typingDot 1.4s ease-in-out infinite',
             },
             keyframes: {
               fadeIn: {
@@ -60,6 +61,10 @@
               slideInLeft: {
                 '0%': { transform: 'translateX(-100%)', opacity: '0' },
                 '100%': { transform: 'translateX(0)', opacity: '1' },
+              },
+              typingDot: {
+                '0%, 60%, 100%': { transform: 'translateY(0)', opacity: '0.4' },
+                '30%': { transform: 'translateY(-4px)', opacity: '1' },
               }
             }
           }

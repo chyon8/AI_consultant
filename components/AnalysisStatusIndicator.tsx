@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProgressiveLoadingState } from '../types';
-import { Icons } from './Icons';
 
 interface AnalysisStatusIndicatorProps {
   isAnalyzing: boolean;
@@ -78,36 +77,45 @@ export const AnalysisStatusIndicator: React.FC<AnalysisStatusIndicatorProps> = (
   const isComplete = displayedStage === 'complete';
   
   return (
-    <div className="flex items-start gap-3 animate-slide-up">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-        {isComplete ? (
-          <Icons.Check size={16} className="text-indigo-600 dark:text-indigo-400" />
-        ) : (
-          <Icons.Refresh size={16} className="text-indigo-600 dark:text-indigo-400 animate-spin" />
-        )}
-      </div>
+    <div className="flex flex-col items-start gap-1.5 animate-slide-up">
       <div 
         className={`
-          flex items-center gap-2 px-4 py-2.5 
-          bg-gradient-to-r from-indigo-50 to-purple-50 
-          dark:from-indigo-900/20 dark:to-purple-900/20 
-          border border-indigo-100 dark:border-indigo-800/50
-          rounded-xl shadow-sm
+          px-4 py-2.5
+          bg-gray-100 dark:bg-slate-700
+          rounded-2xl rounded-bl-md
           transition-opacity duration-200 ease-in-out
           ${isTransitioning ? 'opacity-0' : 'opacity-100'}
         `}
       >
-        <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-300">
           {STAGE_MESSAGES[displayedStage]}
         </span>
-        {!isComplete && (
-          <span className="flex gap-1">
-            <span className="w-1.5 h-1.5 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </span>
-        )}
       </div>
+      
+      {!isComplete && (
+        <div 
+          className="
+            px-3 py-2
+            bg-gray-100 dark:bg-slate-700
+            rounded-full
+          "
+        >
+          <div className="flex items-center gap-1">
+            <span 
+              className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-typing-dot"
+              style={{ animationDelay: '0ms' }}
+            />
+            <span 
+              className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-typing-dot"
+              style={{ animationDelay: '150ms' }}
+            />
+            <span 
+              className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-typing-dot"
+              style={{ animationDelay: '300ms' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
