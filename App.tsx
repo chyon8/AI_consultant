@@ -1736,6 +1736,7 @@ const App: React.FC = () => {
           onNewChat={handleNewChat}
           onSelectSession={handleSelectSession}
           onDeleteSession={handleDeleteSessionClick}
+          onAbortSession={handleAbortAnalysis}
         />
 
         {/* Conditional View Rendering */}

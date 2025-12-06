@@ -10,6 +10,7 @@ interface CollapsibleSidebarProps {
   onNewChat: () => void;
   onSelectSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string, sessionTitle: string) => void;
+  onAbortSession?: (sessionId: string) => void;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -28,7 +29,8 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
   activeSessionId,
   onNewChat,
   onSelectSession,
-  onDeleteSession
+  onDeleteSession,
+  onAbortSession
 }) => {
   const [isProjectExpanded, setIsProjectExpanded] = useState(true);
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
@@ -126,7 +128,18 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                       </span>
                     </button>
                     
-                    {hoveredSessionId === session.id && !session.isLoading && (
+                    {session.isLoading && onAbortSession ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAbortSession(session.id);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        title="중단"
+                      >
+                        <Icons.Close size={14} />
+                      </button>
+                    ) : hoveredSessionId === session.id && !session.isLoading && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
