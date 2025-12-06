@@ -87,3 +87,27 @@ Before writing any code, you MUST output a plan in this format:
 - **Environment Variables (Replit Secrets)**:
     - `GEMINI_API_KEY`
     - `ANTHROPIC_API_KEY` (optional)
+
+## Session Data Persistence Checklist
+
+When adding new data fields that must persist across session switches, follow this checklist:
+
+### Required Steps for New Dashboard Data Fields
+
+1. **types.ts**: Add field to `DashboardState` interface
+2. **services/atomicSession.ts**: Add field to `AtomicSessionUnit.dashboard` interface
+3. **App.tsx - Auto-save effect**: Include field in the dashboard save effect (around line 223-240) and add to dependency array
+4. **App.tsx - Session switch (legacy)**: Include field when populating atomic unit from legacy session data
+5. **App.tsx - Session switch (stale data sync)**: Include field when syncing stale data from localStorage
+6. **App.tsx - Session switch (STEP 3)**: Include field when syncing from atomic unit to React state
+7. **App.tsx - saveResultToSessionStorage**: Include field in dashboardState object
+8. **App.tsx - backgroundUpdate calls**: Include field in ALL sessionCoupler.backgroundUpdate calls
+
+### Current Persisted Fields
+- `modules`, `partnerType`, `projectScale`, `estimationStep`
+- `projectSummaryContent`, `aiInsight`, `referencedFiles`
+- `projectOverview` (project title, business goals, core values, tech stack)
+- `summary` (keyPoints, risks, recommendations)
+
+### Critical Rule
+**Session data must NEVER leak between sessions.** When switching sessions, ALL data must be restored from the target session's storage. The auto-save effect must include ALL fields to prevent overwriting with null/undefined values.

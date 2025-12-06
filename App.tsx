@@ -560,6 +560,7 @@ const App: React.FC = () => {
             atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
             atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
+            atomicUnit.dashboard.projectOverview = session.dashboardState.projectOverview || null;
             atomicUnit.dashboard.summary = session.dashboardState.summary || null;
           }
           console.log(`[App] Created and populated atomic unit for legacy session: ${sessionId}`);
@@ -577,15 +578,28 @@ const App: React.FC = () => {
         // 2. Different number of modules
         // 3. First module name is different (modules from different analysis)
         // 4. localStorage has AI completion message but atomic unit doesn't
+        // 5. localStorage has projectOverview but atomic doesn't
+        // 6. localStorage has summary but atomic doesn't
         const localHasAIMessage = localStorageMessages?.some(m => m.role === 'model' && m.text.includes('분석이 완료되었습니다'));
         const atomicHasAIMessage = atomicMessages?.some(m => m.role === 'model' && m.text.includes('분석이 완료되었습니다'));
+        const localHasProjectOverview = !!session.dashboardState?.projectOverview?.projectTitle;
+        const atomicHasProjectOverview = !!atomicUnit.dashboard.projectOverview?.projectTitle;
+        const localHasSummary = !!session.dashboardState?.summary?.keyPoints?.length;
+        const atomicHasSummary = !!atomicUnit.dashboard.summary?.keyPoints?.length;
         
-        const isStaleData = localStorageModules && localStorageMessages && (
+        // Stale data detection - sync if localStorage has better/different data
+        const hasModuleDiscrepancy = localStorageModules && localStorageMessages && (
           (localStorageMessages.length > atomicMessages.length) ||
           (localStorageModules.length !== atomicModules.length) ||
           (localStorageModules[0]?.name !== atomicModules[0]?.name) ||
           (localHasAIMessage && !atomicHasAIMessage) // localStorage has completion but atomic doesn't
         );
+        
+        // Also sync if localStorage has projectOverview/summary that atomic doesn't have
+        const hasMissingDashboardData = (localHasProjectOverview && !atomicHasProjectOverview) || 
+                                         (localHasSummary && !atomicHasSummary);
+        
+        const isStaleData = hasModuleDiscrepancy || hasMissingDashboardData;
         
         if (isStaleData) {
           console.warn(`[App] STALE DATA DETECTED: Syncing atomic unit from localStorage for session ${sessionId}`);
@@ -602,6 +616,7 @@ const App: React.FC = () => {
             atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
             atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
+            atomicUnit.dashboard.projectOverview = session.dashboardState.projectOverview || null;
             atomicUnit.dashboard.summary = session.dashboardState.summary || null;
           }
           
@@ -651,6 +666,17 @@ const App: React.FC = () => {
       setAiInsight(atomicUnit.dashboard.aiInsight);
       setReferencedFiles(atomicUnit.dashboard.referencedFiles);
       setProjectOverview(atomicUnit.dashboard.projectOverview || null);
+      
+      // [SESSION PERSISTENCE] Update progressiveState with session-specific data
+      setProgressiveState({
+        projectOverviewReady: true,
+        modulesReady: true,
+        estimatesReady: true,
+        scheduleReady: true,
+        summaryReady: true,
+        schedule: null,
+        summary: atomicUnit.dashboard.summary || null,
+      });
       
       if (atomicUnit.chat.messages.length > INITIAL_MESSAGES.length) {
         setCurrentView('detail');
