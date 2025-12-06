@@ -59,18 +59,38 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto">
           <div className="py-2">
+            <button
+              onClick={onNewChat}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors rounded-lg mx-2 mb-2"
+              style={{ width: 'calc(100% - 16px)' }}
+            >
+              <Icons.Plus size={16} className="flex-shrink-0" />
+              <span className="text-sm font-medium">새 프로젝트</span>
+            </button>
+
+            <div className="flex items-center gap-1 px-3 mb-2">
+              <button
+                className="flex-1 flex items-center justify-center gap-2 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="프로젝트 검색"
+              >
+                <Icons.Search size={14} />
+                <span className="text-xs">검색</span>
+              </button>
+              <button
+                className="flex-1 flex items-center justify-center gap-2 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="검수 도구"
+              >
+                <Icons.Pencil size={14} />
+                <span className="text-xs">도구</span>
+              </button>
+            </div>
+
+            <div className="mx-3 mb-2 border-t border-slate-200 dark:border-slate-700"></div>
+
             <div className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-indigo-600 dark:text-indigo-400">
               <Icons.External size={16} className="flex-shrink-0" />
               <span className="text-sm font-medium">외주</span>
             </div>
-
-            <button
-              onClick={onNewChat}
-              className="w-full flex items-center gap-3 pl-6 pr-3 py-2 text-left text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <Icons.Plus size={14} className="flex-shrink-0" />
-              <span className="text-sm">새 프로젝트</span>
-            </button>
 
             <div className="mt-1">
               <button
@@ -78,7 +98,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                 className="w-full flex items-center gap-3 pl-6 pr-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <Icons.Clock size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                <span className="flex-1 text-sm text-slate-600 dark:text-slate-300">프로젝트</span>
+                <span className="flex-1 text-sm text-slate-600 dark:text-slate-300">채팅 기록</span>
                 {sessionCount > 0 && (
                   <span className="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">
                     {sessionCount}
@@ -155,7 +175,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                 
                 {(!chatSessions || chatSessions.length === 0) && (
                   <div className="pl-10 pr-3 py-3 text-xs text-slate-400 dark:text-slate-500">
-                    프로젝트가 없습니다
+                    채팅 기록이 없습니다
                   </div>
                 )}
               </div>
@@ -166,19 +186,32 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
       {isCollapsed && (
         <div className="flex-1 flex flex-col items-center py-2 gap-1">
+          <button
+            onClick={onNewChat}
+            className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+            title="새 프로젝트"
+          >
+            <Icons.Plus size={18} />
+          </button>
+          <button
+            className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            title="검색"
+          >
+            <Icons.Search size={18} />
+          </button>
+          <button
+            className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            title="검수 도구"
+          >
+            <Icons.Pencil size={18} />
+          </button>
+          <div className="w-6 my-1 border-t border-slate-200 dark:border-slate-700"></div>
           <div
             className="p-2 text-indigo-600 dark:text-indigo-400"
             title="외주"
           >
             <Icons.External size={18} />
           </div>
-          <button
-            onClick={onNewChat}
-            className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-            title="새 프로젝트"
-          >
-            <Icons.Plus size={18} />
-          </button>
         </div>
       )}
     </div>
