@@ -81,7 +81,8 @@ const AIAssistantSection: React.FC<{
   insight?: string; 
   loading?: boolean; 
   error?: string;
-}> = ({ insight, loading, error }) => {
+  onRegenerate?: () => void;
+}> = ({ insight, loading, error, onRegenerate }) => {
   const { parsedInsight, parseError } = useMemo<{ parsedInsight: AIInsightData | null; parseError: string | null }>(() => {
     if (!insight) return { parsedInsight: null, parseError: null };
     try {
@@ -125,7 +126,7 @@ const AIAssistantSection: React.FC<{
         </h3>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-5 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
               <Icons.Zap size={16} className="text-white" />
             </div>
             <div>
@@ -162,16 +163,27 @@ const AIAssistantSection: React.FC<{
       </h3>
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg ring-4 ring-violet-100 dark:ring-violet-900/30">
-              <Icons.Zap size={22} className="text-white" />
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg ring-4 ring-blue-100 dark:ring-blue-900/30">
+                <Icons.Zap size={22} className="text-white" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">
+                  {parsedInsight.project_title}
+                </h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">프로젝트 브리핑</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                {parsedInsight.project_title}
-              </h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">프로젝트 브리핑</p>
-            </div>
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
+              >
+                <Icons.Refresh size={14} />
+                <span>재생성</span>
+              </button>
+            )}
           </div>
           
           <div className="flex flex-wrap gap-3">
@@ -188,7 +200,7 @@ const AIAssistantSection: React.FC<{
             <DashboardBadge 
               label="범위" 
               value={parsedInsight.dashboard.work_scope.join(', ')} 
-              color="purple" 
+              color="blue" 
             />
             <DashboardBadge 
               label="카테고리" 
@@ -297,41 +309,41 @@ const AIAssistantSection: React.FC<{
           </div>
         )}
 
-        <div className="p-6 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-violet-900/20 dark:via-purple-900/20 dark:to-indigo-900/20">
+        <div className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-sky-900/20">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
-              <Icons.Zap size={16} className="text-violet-600 dark:text-violet-400" />
+            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+              <Icons.Zap size={16} className="text-blue-600 dark:text-blue-400" />
             </div>
             <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">So What?</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-5 pl-10">
             <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">누가</p>
+              <p className="text-xs font-semibold text-blue-500 dark:text-blue-400 mb-1 uppercase tracking-wide">누가</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.who}</p>
             </div>
             <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">왜</p>
+              <p className="text-xs font-semibold text-blue-500 dark:text-blue-400 mb-1 uppercase tracking-wide">왜</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.why}</p>
             </div>
             <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">어디서</p>
+              <p className="text-xs font-semibold text-blue-500 dark:text-blue-400 mb-1 uppercase tracking-wide">어디서</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.where}</p>
             </div>
             <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">무엇을</p>
+              <p className="text-xs font-semibold text-blue-500 dark:text-blue-400 mb-1 uppercase tracking-wide">무엇을</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.what}</p>
             </div>
             <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">어떻게</p>
+              <p className="text-xs font-semibold text-blue-500 dark:text-blue-400 mb-1 uppercase tracking-wide">어떻게</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.how}</p>
             </div>
             <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">언제</p>
+              <p className="text-xs font-semibold text-blue-500 dark:text-blue-400 mb-1 uppercase tracking-wide">언제</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.when}</p>
             </div>
           </div>
-          <div className="ml-10 p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-violet-200 dark:border-violet-700 shadow-sm">
-            <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 leading-relaxed">
+          <div className="ml-10 p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-blue-200 dark:border-blue-700 shadow-sm">
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 leading-relaxed">
               {parsedInsight.so_what.one_line_conclusion}
             </p>
           </div>
@@ -374,9 +386,9 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
           <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase mb-3">
             AI 어시스턴트
           </h3>
-          <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl border border-violet-200 dark:border-violet-800 p-6">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                 <Icons.Zap size={20} className="text-white" />
               </div>
               <div>
@@ -388,7 +400,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
             </div>
             <button
               onClick={onGenerateInsight}
-              className="w-full px-4 py-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
               <Icons.Sparkles size={18} />
               <span>AI 어시스턴트 생성</span>
@@ -399,7 +411,8 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
         <AIAssistantSection 
           insight={aiInsight} 
           loading={aiInsightLoading} 
-          error={aiInsightError} 
+          error={aiInsightError}
+          onRegenerate={onGenerateInsight}
         />
       )}
 
