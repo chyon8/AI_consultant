@@ -1950,13 +1950,12 @@ const App: React.FC = () => {
                   aiInsightLoading={aiInsightLoading}
                   aiInsightError={aiInsightError}
                   onGenerateInsight={() => {
-                    const totalFeatures = modules.reduce((sum, m) => sum + m.subFeatures.length, 0);
+                    const userMessage = messages.find(m => m.role === 'user');
                     generateAiInsight({
                       projectName: projectOverview?.projectTitle || '',
                       businessGoals: projectOverview?.businessGoals || '',
                       coreValues: projectOverview?.coreValues || [],
-                      moduleCount: modules.length,
-                      featureCount: totalFeatures
+                      originalInput: userMessage?.text || projectSummaryContent || ''
                     });
                   }}
                   rfpModelId={aiModelSettings.generateRFP}

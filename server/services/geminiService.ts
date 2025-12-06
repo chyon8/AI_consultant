@@ -74,8 +74,7 @@ export interface InsightParams {
   projectName: string;
   businessGoals: string;
   coreValues: string[];
-  moduleCount: number;
-  featureCount: number;
+  originalInput: string;
 }
 
 export async function generateInsight(params: InsightParams, modelId?: string): Promise<string> {
@@ -89,8 +88,9 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
 - 프로젝트명: ${params.projectName || "미정"}
 - 비즈니스 목표: ${params.businessGoals || "미정"}
 - 핵심 가치: ${params.coreValues.join(", ") || "미정"}
-- 모듈 수: ${params.moduleCount}개
-- 기능 수: ${params.featureCount}개
+
+## 원본 요구사항
+${params.originalInput || "없음"}
 
 위 정보를 기반으로 분석해주세요.
 `;
