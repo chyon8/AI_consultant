@@ -126,7 +126,7 @@ const AIAssistantSection: React.FC<{
         </h3>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-5 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#534CEC' }}>
               <Icons.Zap size={16} className="text-white" />
             </div>
             <div>
@@ -165,7 +165,7 @@ const AIAssistantSection: React.FC<{
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#534CEC' }}>
                 <Icons.Zap size={22} className="text-white" />
               </div>
               <div>
@@ -311,7 +311,7 @@ const AIAssistantSection: React.FC<{
 
         <div className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-sky-900/20">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#534CEC' }}>
               <Icons.Zap size={16} className="text-white" />
             </div>
             <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">So What?</span>
@@ -388,7 +388,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
           </h3>
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#534CEC' }}>
                 <Icons.Zap size={20} className="text-white" />
               </div>
               <div>
@@ -400,10 +400,10 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
             </div>
             <button
               onClick={onGenerateInsight}
-              className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 text-white font-medium rounded-lg transition-opacity hover:opacity-90 flex items-center justify-center"
+              style={{ backgroundColor: '#534CEC' }}
             >
-              <Icons.Sparkles size={18} />
-              <span>AI 어시스턴트 생성</span>
+              AI 어시스턴트 생성
             </button>
           </div>
         </div>
