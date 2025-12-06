@@ -50,7 +50,8 @@ import {
   Trash2,
   Settings,
   Image,
-  Upload
+  Upload,
+  ArrowRight
 } from 'lucide-react';
 
 export const Icons = {
@@ -105,5 +106,6 @@ export const Icons = {
   Trash: Trash2,
   Settings: Settings,
   Image: Image,
-  Upload: Upload
+  Upload: Upload,
+  ArrowRight: ArrowRight
 };

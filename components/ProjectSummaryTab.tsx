@@ -49,6 +49,7 @@ interface ProjectSummaryTabProps {
   aiInsightLoading?: boolean;
   aiInsightError?: string;
   summary?: SummaryData | null;
+  onGenerateInsight?: () => void;
 }
 
 const SkeletonCard: React.FC<{ lines?: number }> = ({ lines = 3 }) => (
@@ -332,7 +333,8 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
   aiInsight, 
   aiInsightLoading, 
   aiInsightError, 
-  summary 
+  summary,
+  onGenerateInsight
 }) => {
   if (!summary && !aiInsight && !aiInsightLoading) {
     return (
@@ -351,13 +353,43 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
 
   const hasSummary = summary && (summary.keyPoints.length > 0 || summary.risks.length > 0 || summary.recommendations.length > 0);
 
+  const showGenerateButton = !aiInsight && !aiInsightLoading && !aiInsightError && onGenerateInsight;
+
   return (
     <div className="space-y-8 animate-fade-in pb-20">
-      <AIAssistantSection 
-        insight={aiInsight} 
-        loading={aiInsightLoading} 
-        error={aiInsightError} 
-      />
+      {showGenerateButton ? (
+        <div className="mb-8">
+          <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase mb-3">
+            AI 어시스턴트
+          </h3>
+          <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl border border-violet-200 dark:border-violet-800 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Icons.Zap size={20} className="text-white" />
+              </div>
+              <div>
+                <h4 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                  AI 프로젝트 브리핑
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">프로젝트 분석 결과를 기반으로 상세 인사이트를 생성합니다</p>
+              </div>
+            </div>
+            <button
+              onClick={onGenerateInsight}
+              className="w-full px-4 py-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+            >
+              <Icons.Sparkles size={18} />
+              <span>AI 어시스턴트 생성</span>
+            </button>
+          </div>
+        </div>
+      ) : (aiInsight || aiInsightLoading || aiInsightError) && (
+        <AIAssistantSection 
+          insight={aiInsight} 
+          loading={aiInsightLoading} 
+          error={aiInsightError} 
+        />
+      )}
 
       {hasSummary && (
         <div className="space-y-3">

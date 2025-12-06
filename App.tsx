@@ -283,16 +283,6 @@ const App: React.FC = () => {
               setProjectSummaryContent(dashboardState.projectSummaryContent);
               setMessages(newMessages);
               setCurrentView('detail');
-              
-              // Generate AI insight
-              const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
-              generateAiInsight({
-                projectName: status.result.projectTitle || '',
-                businessGoals: '',
-                coreValues: [],
-                moduleCount: convertedModules.length,
-                featureCount: totalFeatures
-              });
             } else {
               console.log('[App] Session mismatch - UI NOT updated after visibility change');
             }
@@ -439,16 +429,6 @@ const App: React.FC = () => {
           setProjectSummaryContent(dashboardState.projectSummaryContent);
           setMessages(newMessages);
           setCurrentView('detail');
-          
-          // Generate AI insight
-          const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
-          generateAiInsight({
-            projectName: jobStatus.result.projectTitle || '',
-            businessGoals: '',
-            coreValues: [],
-            moduleCount: convertedModules.length,
-            featureCount: totalFeatures
-          });
           
           // Cleanup
           unregisterJob(snapshot.pendingJobId);
@@ -1434,15 +1414,6 @@ const App: React.FC = () => {
               summary: status.result.summary,
             });
             
-            // Generate AI insight for current view
-            const totalFeatures = convertedModules.reduce((sum, m) => sum + m.subFeatures.length, 0);
-            generateAiInsight({
-              projectName: status.result.projectTitle || '',
-              businessGoals: '',
-              coreValues: [],
-              moduleCount: convertedModules.length,
-              featureCount: totalFeatures
-            });
           } else {
             console.log('[App] Session mismatch - UI NOT updated (data saved to storage only)');
           }
@@ -1916,6 +1887,16 @@ const App: React.FC = () => {
                   aiInsight={aiInsight}
                   aiInsightLoading={aiInsightLoading}
                   aiInsightError={aiInsightError}
+                  onGenerateInsight={() => {
+                    const totalFeatures = modules.reduce((sum, m) => sum + m.subFeatures.length, 0);
+                    generateAiInsight({
+                      projectName: projectOverview?.projectTitle || '',
+                      businessGoals: projectOverview?.businessGoals || '',
+                      coreValues: projectOverview?.coreValues || [],
+                      moduleCount: modules.length,
+                      featureCount: totalFeatures
+                    });
+                  }}
                   rfpModelId={aiModelSettings.generateRFP}
                   referencedFiles={referencedFiles}
                   progressiveState={progressiveState}
