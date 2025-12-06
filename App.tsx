@@ -487,6 +487,8 @@ const App: React.FC = () => {
         unit.dashboard.estimationStep = estimationStep;
         unit.dashboard.projectSummaryContent = projectSummaryContent;
         unit.dashboard.aiInsight = aiInsight;
+        unit.dashboard.aiInsightLoading = aiInsightLoading;
+        unit.dashboard.aiInsightError = aiInsightError;
         unit.dashboard.referencedFiles = referencedFiles;
         unit.dashboard.projectOverview = projectOverview;
       });
