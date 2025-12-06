@@ -1752,8 +1752,8 @@ const App: React.FC = () => {
             {/* Chat Panel - hidden in dashboard-only mode */}
             {splitMode !== 'dashboard-only' && (
               <div 
-                className={`h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative ${isResizing ? '' : 'transition-all duration-300'} animate-slide-in-left`}
-                style={{ width: splitMode === 'chat-only' ? '100%' : sidebarWidth }}
+                className={`h-full z-20 bg-white dark:bg-slate-950 relative ${isResizing ? '' : 'transition-all duration-300'} animate-slide-in-left ${splitMode === 'chat-only' ? 'flex-1' : 'flex-shrink-0 border-r border-slate-100 dark:border-slate-800'}`}
+                style={splitMode === 'chat-only' ? undefined : { width: sidebarWidth }}
               >
                 <ChatInterface 
                   messages={messages} 
