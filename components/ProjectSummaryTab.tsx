@@ -92,7 +92,39 @@ const AIAssistantSection: React.FC<{
         jsonStr = jsonMatch[1];
       }
       jsonStr = jsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      return { parsedInsight: JSON.parse(jsonStr), parseError: null };
+      const parsed = JSON.parse(jsonStr);
+      const normalized: AIInsightData = {
+        project_title: parsed.project_title || '프로젝트',
+        dashboard: {
+          is_new_build: parsed.dashboard?.is_new_build || '-',
+          difficulty: parsed.dashboard?.difficulty || '-',
+          difficulty_reason: parsed.dashboard?.difficulty_reason || '',
+          work_scope: parsed.dashboard?.work_scope || [],
+          category: parsed.dashboard?.category || '-',
+        },
+        current_status: {
+          status: parsed.current_status?.status || '-',
+          history: parsed.current_status?.history || '',
+        },
+        gap_analysis: parsed.gap_analysis || [],
+        technical_scope: {
+          required_tech: parsed.technical_scope?.required_tech || '',
+          suggested_stack: parsed.technical_scope?.suggested_stack || '',
+          resources_done: parsed.technical_scope?.resources_done || '',
+          resources_todo: parsed.technical_scope?.resources_todo || '',
+        },
+        checkpoints: parsed.checkpoints || [],
+        so_what: {
+          who: parsed.so_what?.who || '-',
+          why: parsed.so_what?.why || '-',
+          where: parsed.so_what?.where || '-',
+          what: parsed.so_what?.what || '-',
+          how: parsed.so_what?.how || '-',
+          when: parsed.so_what?.when || '-',
+          one_line_conclusion: parsed.so_what?.one_line_conclusion || '-',
+        },
+      };
+      return { parsedInsight: normalized, parseError: null };
     } catch (e) {
       console.error('Failed to parse AI insight JSON:', e);
       return { parsedInsight: null, parseError: 'AI 응답 형식을 파싱하는데 실패했습니다. 다시 시도해주세요.' };
