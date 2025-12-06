@@ -102,7 +102,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                     {sessionCount}
                   </span>
                 )}
-                <div className={`transition-transform duration-200 ${isProjectExpanded ? '' : '-rotate-90'}`}>
+                <div className={`transition-transform duration-200 ${isProjectExpanded ? '' : 'rotate-180'}`}>
                   <Icons.Up size={14} className="text-slate-400" />
                 </div>
               </button>
