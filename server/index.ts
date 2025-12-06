@@ -11,7 +11,7 @@ import { parseAnalysisResponse, detectCompletedStages, StageType } from './servi
 import { jobRegistry, Job } from './services/jobRegistry';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || (process.env.NODE_ENV === 'production' ? 5000 : 3001);
 const server = createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws/chat' });
 
@@ -526,6 +526,21 @@ wss.on('connection', (ws: WebSocket) => {
     console.log('[WebSocket] Client disconnected');
   });
 });
+
+// Serve static files in production
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction) {
+  const distPath = path.join(process.cwd(), 'dist');
+  app.use(express.static(distPath));
+  
+  // Handle client-side routing - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/ws')) {
+      res.sendFile(path.join(distPath, 'index.html'));
+    }
+  });
+  console.log(`[Production] Serving static files from ${distPath}`);
+}
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
