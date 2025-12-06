@@ -61,31 +61,29 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
           <div className="py-2">
             <button
               onClick={onNewChat}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors rounded-lg mx-2 mb-2"
-              style={{ width: 'calc(100% - 16px)' }}
+              className="w-full flex items-center gap-3 pl-6 pr-3 py-2 text-left text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
-              <Icons.Plus size={16} className="flex-shrink-0" />
-              <span className="text-sm font-medium">새 프로젝트</span>
+              <Icons.Plus size={14} className="flex-shrink-0" />
+              <span className="text-sm">새 프로젝트</span>
             </button>
 
-            <div className="flex items-center gap-1 px-3 mb-2">
-              <button
-                className="flex-1 flex items-center justify-center gap-2 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                title="프로젝트 검색"
-              >
-                <Icons.Search size={14} />
-                <span className="text-xs">검색</span>
-              </button>
-              <button
-                className="flex-1 flex items-center justify-center gap-2 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                title="검수 도구"
-              >
-                <Icons.Pencil size={14} />
-                <span className="text-xs">도구</span>
-              </button>
-            </div>
+            <button
+              className="w-full flex items-center gap-3 pl-6 pr-3 py-2 text-left text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="프로젝트 검색"
+            >
+              <Icons.Search size={14} className="flex-shrink-0" />
+              <span className="text-sm">검색</span>
+            </button>
 
-            <div className="mx-3 mb-2 border-t border-slate-200 dark:border-slate-700"></div>
+            <button
+              className="w-full flex items-center gap-3 pl-6 pr-3 py-2 text-left text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="검수 도구"
+            >
+              <Icons.Pencil size={14} className="flex-shrink-0" />
+              <span className="text-sm">도구</span>
+            </button>
+
+            <div className="mx-3 my-2 border-t border-slate-200 dark:border-slate-700"></div>
 
             <div className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-indigo-600 dark:text-indigo-400">
               <Icons.External size={16} className="flex-shrink-0" />
@@ -188,7 +186,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
         <div className="flex-1 flex flex-col items-center py-2 gap-1">
           <button
             onClick={onNewChat}
-            className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+            className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
             title="새 프로젝트"
           >
             <Icons.Plus size={18} />
