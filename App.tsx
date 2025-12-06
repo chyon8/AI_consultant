@@ -1143,7 +1143,8 @@ const App: React.FC = () => {
     const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
     
     // Build dashboard state for session storage
-    const techCategories = [...new Set(convertedModules.map((m: any) => m.category).filter(Boolean))] as string[];
+    // Use AI-parsed techStack if available, otherwise empty array
+    const parsedTechStack = result.projectOverview?.techStack || result.techStack || [];
     const dashboardState: DashboardState = {
       modules: convertedModules,
       partnerType: 'STUDIO',
@@ -1153,10 +1154,10 @@ const App: React.FC = () => {
       aiInsight: '',
       referencedFiles: [],
       projectOverview: {
-        projectTitle: result.projectTitle || '',
-        businessGoals: result.businessGoals || '',
-        coreValues: result.coreValues || [],
-        techStack: techCategories.length > 0 ? [{ layer: 'Modules', items: techCategories }] : []
+        projectTitle: result.projectTitle || result.projectOverview?.projectTitle || '',
+        businessGoals: result.businessGoals || result.projectOverview?.businessGoals || '',
+        coreValues: result.coreValues || result.projectOverview?.coreValues || [],
+        techStack: parsedTechStack
       },
       summary: result.summary || null
     };
