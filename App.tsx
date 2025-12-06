@@ -667,27 +667,31 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  const resizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
+    resizeRef.current = { startX: e.clientX, startWidth: sidebarWidth };
     setIsResizing(true);
   };
 
   const stopResizing = () => {
+    resizeRef.current = null;
     setIsResizing(false);
   };
 
   const handleResize = (e: React.MouseEvent) => {
-    if (isResizing) {
-      const newWidth = e.clientX;
-      const collapsibleSidebarWidth = isSidebarCollapsed ? 56 : 224;
-      const minChatWidth = 280;
-      const minDashboardWidth = 400;
-      const maxChatWidth = window.innerWidth - collapsibleSidebarWidth - minDashboardWidth;
-      
-      if (newWidth >= minChatWidth && newWidth <= maxChatWidth) {
-        setSidebarWidth(newWidth);
-      }
-    }
+    if (!isResizing || !resizeRef.current) return;
+    
+    const delta = e.clientX - resizeRef.current.startX;
+    const newWidth = resizeRef.current.startWidth + delta;
+    const collapsibleSidebarWidth = isSidebarCollapsed ? 56 : 224;
+    const minChatWidth = 280;
+    const minDashboardWidth = 400;
+    const maxChatWidth = window.innerWidth - collapsibleSidebarWidth - minDashboardWidth;
+    
+    const clampedWidth = Math.max(minChatWidth, Math.min(maxChatWidth, newWidth));
+    setSidebarWidth(clampedWidth);
   };
 
   const handleToggleModule = (id: string) => {
@@ -1723,7 +1727,7 @@ const App: React.FC = () => {
           /* Detail View - Chat + Dashboard */
           <>
             <div 
-              className="h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative transition-all duration-500 animate-slide-in-left"
+              className={`h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative ${isResizing ? '' : 'transition-all duration-300'} animate-slide-in-left`}
               style={{ width: sidebarWidth }}
             >
               <ChatInterface 
