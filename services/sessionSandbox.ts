@@ -196,7 +196,7 @@ export function cleanupOldJobs(): void {
   }
 }
 
-export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
+export type StageType = 'projectOverview' | 'modules' | 'estimates' | 'schedule' | 'summary';
 
 export interface StagedResult {
   stage: StageType;

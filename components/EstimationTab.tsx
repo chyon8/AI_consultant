@@ -147,19 +147,22 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
             )}
             {projectOverview.businessGoals && (
               <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {projectOverview.businessGoals}
+                <span className="font-medium text-slate-700 dark:text-slate-200">목표:</span> {projectOverview.businessGoals}
               </p>
             )}
             {projectOverview.coreValues.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {projectOverview.coreValues.map((value, idx) => (
-                  <span 
-                    key={idx}
-                    className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-md"
-                  >
-                    {value}
-                  </span>
-                ))}
+              <div className="mt-3">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">핵심 가치</span>
+                <div className="flex flex-wrap gap-2">
+                  {projectOverview.coreValues.map((value, idx) => (
+                    <span 
+                      key={idx}
+                      className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-md"
+                    >
+                      {value}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
