@@ -44,9 +44,6 @@
               'fade-in-up': 'fadeInUp 0.4s ease-out forwards',
               'slide-in-left': 'slideInLeft 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
               'typing-dot': 'typingDot 1.4s ease-in-out infinite',
-              'text-pulse': 'textPulse 2s ease-in-out infinite',
-              'swipe-out': 'swipeOut 0.2s ease-in forwards',
-              'swipe-in': 'swipeIn 0.25s ease-out forwards',
             },
             keyframes: {
               fadeIn: {
@@ -68,18 +65,6 @@
               typingDot: {
                 '0%, 100%': { opacity: '0.3' },
                 '50%': { opacity: '0.9' },
-              },
-              textPulse: {
-                '0%, 100%': { opacity: '0.6' },
-                '50%': { opacity: '1' },
-              },
-              swipeOut: {
-                '0%': { transform: 'translateX(0)', opacity: '1' },
-                '100%': { transform: 'translateX(-20px)', opacity: '0' },
-              },
-              swipeIn: {
-                '0%': { transform: 'translateX(20px)', opacity: '0' },
-                '100%': { transform: 'translateX(0)', opacity: '1' },
               }
             }
           }
