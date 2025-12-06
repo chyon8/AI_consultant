@@ -2,7 +2,6 @@ import * as geminiService from './geminiService';
 import * as rfpService from './rfpService';
 import * as chatService from './chatService';
 import { classifyUserIntent, extractProjectContext } from './chatService';
-import * as insightService from './insightService';
 import * as claudeService from './claudeService';
 
 type Provider = 'google' | 'anthropic';
@@ -79,7 +78,7 @@ export interface InsightParams {
 }
 
 export async function generateInsight(params: InsightParams, modelId?: string): Promise<string> {
-  const effectiveModelId = modelId || 'gemini-2.5-flash';
+  const effectiveModelId = modelId || 'gemini-3-pro-preview';
   const provider = getProviderFromModelId(effectiveModelId);
   
   console.log(`[aiRouter] generateInsight - provider: ${provider}, model: ${effectiveModelId}`);
@@ -91,7 +90,7 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
     return claudeService.generateInsight(params, effectiveModelId);
   }
   
-  return insightService.generateInsight(params, effectiveModelId);
+  return geminiService.generateInsight(params, effectiveModelId);
 }
 
 interface Message {

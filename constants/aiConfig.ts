@@ -65,7 +65,7 @@ export const AI_FUNCTION_MAP: AIFunctionConfig[] = [
     description: '채팅 응답 생성'
   },
   {
-    file: 'insightService.ts',
+    file: 'geminiService.ts',
     functionName: 'generateInsight',
     defaultModel: 'gemini-3-pro-preview',
     promptVar: 'ASSISTANT_PROMPT',
