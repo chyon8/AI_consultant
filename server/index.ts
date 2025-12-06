@@ -534,8 +534,10 @@ if (isProduction) {
   app.use(express.static(distPath));
   
   // Handle client-side routing - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/ws')) {
+  // Express 5 requires named wildcard parameters
+  app.get('/{*path}', (req, res) => {
+    const reqPath = req.path;
+    if (!reqPath.startsWith('/api') && !reqPath.startsWith('/uploads') && !reqPath.startsWith('/ws')) {
       res.sendFile(path.join(distPath, 'index.html'));
     }
   });
