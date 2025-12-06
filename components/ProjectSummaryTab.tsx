@@ -140,6 +140,49 @@ function parseStep1Content(content: string): ParsedData {
 export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, aiInsight }) => {
   const parsedData = useMemo(() => parseStep1Content(content), [content]);
 
+  // DEBUG: Show raw data sources
+  const debugMode = true; // Set to false to hide debug info
+  
+  if (debugMode) {
+    return (
+      <div className="space-y-6 p-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+          <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-200 mb-3">🔍 DEBUG: Raw Data Sources</h3>
+          
+          {/* AI Insight from /api/insight */}
+          <div className="mb-4">
+            <div className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
+              📌 aiInsight (from /api/insight - generateInsight prompt)
+            </div>
+            <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-60 border">
+              {aiInsight ? aiInsight : '(empty - showing default placeholder)'}
+            </pre>
+          </div>
+          
+          {/* Content from PART1_PROMPT */}
+          <div className="mb-4">
+            <div className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
+              📌 content (from PART1_PROMPT - projectSummaryContent/rawMarkdown)
+            </div>
+            <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-60 border whitespace-pre-wrap">
+              {content ? content.substring(0, 2000) + (content.length > 2000 ? '...[truncated]' : '') : '(empty)'}
+            </pre>
+          </div>
+          
+          {/* Parsed Data */}
+          <div>
+            <div className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
+              📌 parsedData (extracted from content)
+            </div>
+            <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-60 border">
+              {JSON.stringify(parsedData, null, 2)}
+            </pre>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!content) {
     return (
       <div className="min-h-[500px] flex items-center justify-center">
