@@ -70,9 +70,9 @@ const DashboardBadge: React.FC<{ label: string; value: string; color?: string }>
   };
 
   return (
-    <div className={`inline-flex flex-col px-3 py-2 rounded-lg border ${colorClasses[color]}`}>
-      <span className="text-[10px] uppercase tracking-wider opacity-70">{label}</span>
-      <span className="text-sm font-semibold">{value}</span>
+    <div className={`inline-flex flex-col px-4 py-2.5 rounded-xl border shadow-sm ${colorClasses[color]}`}>
+      <span className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">{label}</span>
+      <span className="text-sm font-bold">{value}</span>
     </div>
   );
 };
@@ -157,24 +157,24 @@ const AIAssistantSection: React.FC<{
 
   return (
     <div className="mb-8">
-      <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase mb-3">
+      <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wider uppercase mb-4">
         AI 어시스턴트
       </h3>
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <Icons.Zap size={20} className="text-white" />
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg ring-4 ring-violet-100 dark:ring-violet-900/30">
+              <Icons.Zap size={22} className="text-white" />
             </div>
             <div>
-              <h4 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+              <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">
                 {parsedInsight.project_title}
               </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">프로젝트 브리핑</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">프로젝트 브리핑</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <DashboardBadge 
               label="신규 여부" 
               value={parsedInsight.dashboard.is_new_build === 'O' ? '신규 구축' : '유지보수'} 
@@ -197,46 +197,52 @@ const AIAssistantSection: React.FC<{
             />
           </div>
           {parsedInsight.dashboard.difficulty_reason && (
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 italic">
-              * 난이도 근거: {parsedInsight.dashboard.difficulty_reason}
+            <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+              <span className="font-medium">난이도 근거:</span> {parsedInsight.dashboard.difficulty_reason}
             </p>
           )}
         </div>
 
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2 mb-3">
-            <Icons.File size={16} className="text-slate-400" />
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">현재 상태</span>
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <Icons.File size={16} className="text-slate-500 dark:text-slate-400" />
+            </div>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">현재 상태</span>
           </div>
-          <div className="space-y-2">
-            <p className="text-sm text-slate-700 dark:text-slate-300">{parsedInsight.current_status.status}</p>
+          <div className="space-y-3 pl-10">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.current_status.status}</p>
             {parsedInsight.current_status.history && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">히스토리: {parsedInsight.current_status.history}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2">
+                <span className="font-medium">히스토리:</span> {parsedInsight.current_status.history}
+              </p>
             )}
           </div>
         </div>
 
         {parsedInsight.gap_analysis && parsedInsight.gap_analysis.length > 0 && (
-          <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Icons.ArrowRight size={16} className="text-slate-400" />
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Gap 분석</span>
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+                <Icons.ArrowRight size={16} className="text-emerald-500 dark:text-emerald-400" />
+              </div>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Gap 분석</span>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pl-10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    <th className="pb-2 pr-4">영역</th>
-                    <th className="pb-2 pr-4">As-Is</th>
-                    <th className="pb-2">To-Be</th>
+                  <tr className="text-left text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b-2 border-slate-200 dark:border-slate-700">
+                    <th className="pb-3 pr-4 font-bold">영역</th>
+                    <th className="pb-3 pr-4 font-bold">As-Is (현재)</th>
+                    <th className="pb-3 font-bold">To-Be (목표)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {parsedInsight.gap_analysis.map((gap, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2 pr-4 font-medium text-slate-700 dark:text-slate-300">{gap.category}</td>
-                      <td className="py-2 pr-4 text-slate-500 dark:text-slate-400">{gap.as_is}</td>
-                      <td className="py-2 text-emerald-600 dark:text-emerald-400">{gap.to_be}</td>
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 pr-4 font-semibold text-slate-700 dark:text-slate-300">{gap.category}</td>
+                      <td className="py-3 pr-4 text-slate-500 dark:text-slate-400">{gap.as_is}</td>
+                      <td className="py-3 text-emerald-600 dark:text-emerald-400 font-medium">{gap.to_be}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -245,81 +251,87 @@ const AIAssistantSection: React.FC<{
           </div>
         )}
 
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2 mb-3">
-            <Icons.Settings size={16} className="text-slate-400" />
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">기술 범위</span>
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+              <Icons.Settings size={16} className="text-blue-500 dark:text-blue-400" />
+            </div>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">기술 범위</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">필수 기술</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.technical_scope.required_tech || '-'}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pl-10">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">필수 기술</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.required_tech || '-'}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">제안 스택</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.technical_scope.suggested_stack || '-'}</p>
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">제안 스택</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.suggested_stack || '-'}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">준비된 자원</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.technical_scope.resources_done || '-'}</p>
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">준비된 자원</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.resources_done || '-'}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">개발할 자원</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.technical_scope.resources_todo || '-'}</p>
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">개발할 자원</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.resources_todo || '-'}</p>
             </div>
           </div>
         </div>
 
         {parsedInsight.checkpoints && parsedInsight.checkpoints.length > 0 && (
-          <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Icons.Alert size={16} className="text-amber-500" />
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">확인 필요 사항</span>
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+                <Icons.Alert size={16} className="text-amber-500 dark:text-amber-400" />
+              </div>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">확인 필요 사항</span>
             </div>
-            <ul className="space-y-2">
+            <ul className="space-y-3 pl-10">
               {parsedInsight.checkpoints.map((checkpoint, idx) => (
-                <li key={idx} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                  <span className="text-amber-500 mt-0.5 font-bold">{idx + 1}.</span>
-                  <span>{checkpoint}</span>
+                <li key={idx} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg p-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center justify-center">{idx + 1}</span>
+                  <span className="leading-relaxed pt-0.5">{checkpoint}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        <div className="p-5 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
-          <div className="flex items-center gap-2 mb-3">
-            <Icons.Zap size={16} className="text-violet-500" />
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">So What?</span>
+        <div className="p-6 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-violet-900/20 dark:via-purple-900/20 dark:to-indigo-900/20">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+              <Icons.Zap size={16} className="text-violet-600 dark:text-violet-400" />
+            </div>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">So What?</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm mb-4">
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">누가</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.so_what.who}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-5 pl-10">
+            <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">누가</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.who}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">왜</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.so_what.why}</p>
+            <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">왜</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.why}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">어디서</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.so_what.where}</p>
+            <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">어디서</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.where}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">무엇을</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.so_what.what}</p>
+            <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">무엇을</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.what}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">어떻게</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.so_what.how}</p>
+            <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">어떻게</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.how}</p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">언제</p>
-              <p className="text-slate-700 dark:text-slate-300">{parsedInsight.so_what.when}</p>
+            <div className="bg-white/70 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-violet-500 dark:text-violet-400 mb-1 uppercase tracking-wide">언제</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.so_what.when}</p>
             </div>
           </div>
-          <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-violet-200 dark:border-violet-800">
-            <p className="text-sm font-medium text-violet-700 dark:text-violet-300">
+          <div className="ml-10 p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-violet-200 dark:border-violet-700 shadow-sm">
+            <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 leading-relaxed">
               {parsedInsight.so_what.one_line_conclusion}
             </p>
           </div>

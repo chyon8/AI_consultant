@@ -11,7 +11,7 @@ export interface InsightParams {
   featureCount: number;
 }
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3-pro-preview";
 
 export async function generateInsight(params: InsightParams, modelId?: string): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
