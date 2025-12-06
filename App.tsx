@@ -657,6 +657,8 @@ const App: React.FC = () => {
   // Resizing State
   const [sidebarWidth, setSidebarWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
+  const [splitMode, setSplitMode] = useState<'split' | 'chat-only' | 'dashboard-only'>('split');
+  const lastSplitWidthRef = useRef(450);
 
   // Apply Dark Mode
   useEffect(() => {
@@ -676,6 +678,22 @@ const App: React.FC = () => {
   };
 
   const stopResizing = () => {
+    if (resizeRef.current) {
+      const collapsibleSidebarWidth = isSidebarCollapsed ? 56 : 224;
+      const snapThreshold = 100;
+      const maxWidth = window.innerWidth - collapsibleSidebarWidth;
+      
+      // Snap to chat-only if dragged far right
+      if (sidebarWidth > maxWidth - snapThreshold) {
+        lastSplitWidthRef.current = resizeRef.current.startWidth;
+        setSplitMode('chat-only');
+      }
+      // Snap to dashboard-only if dragged far left
+      else if (sidebarWidth < snapThreshold) {
+        lastSplitWidthRef.current = resizeRef.current.startWidth;
+        setSplitMode('dashboard-only');
+      }
+    }
     resizeRef.current = null;
     setIsResizing(false);
   };
@@ -686,12 +704,17 @@ const App: React.FC = () => {
     const delta = e.clientX - resizeRef.current.startX;
     const newWidth = resizeRef.current.startWidth + delta;
     const collapsibleSidebarWidth = isSidebarCollapsed ? 56 : 224;
-    const minChatWidth = 280;
-    const minDashboardWidth = 400;
+    const minChatWidth = 50; // Allow dragging to near-zero for snap detection
+    const minDashboardWidth = 50;
     const maxChatWidth = window.innerWidth - collapsibleSidebarWidth - minDashboardWidth;
     
     const clampedWidth = Math.max(minChatWidth, Math.min(maxChatWidth, newWidth));
     setSidebarWidth(clampedWidth);
+  };
+
+  const restoreSplitView = () => {
+    setSplitMode('split');
+    setSidebarWidth(lastSplitWidthRef.current);
   };
 
   const handleToggleModule = (id: string) => {
@@ -1726,51 +1749,80 @@ const App: React.FC = () => {
         ) : (
           /* Detail View - Chat + Dashboard */
           <>
-            <div 
-              className={`h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative ${isResizing ? '' : 'transition-all duration-300'} animate-slide-in-left`}
-              style={{ width: sidebarWidth }}
-            >
-              <ChatInterface 
-                messages={messages} 
-                setMessages={setMessages}
-                modules={modules}
-                setModules={setModules}
-                onChatAction={handleChatAction}
-                modelSettings={{
-                  classifyUserIntent: aiModelSettings.classifyUserIntent,
-                  streamChatResponse: aiModelSettings.streamChatResponse
-                }}
-              />
-            </div>
+            {/* Chat Panel - hidden in dashboard-only mode */}
+            {splitMode !== 'dashboard-only' && (
+              <div 
+                className={`h-full z-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex-shrink-0 relative ${isResizing ? '' : 'transition-all duration-300'} animate-slide-in-left`}
+                style={{ width: splitMode === 'chat-only' ? '100%' : sidebarWidth }}
+              >
+                <ChatInterface 
+                  messages={messages} 
+                  setMessages={setMessages}
+                  modules={modules}
+                  setModules={setModules}
+                  onChatAction={handleChatAction}
+                  modelSettings={{
+                    classifyUserIntent: aiModelSettings.classifyUserIntent,
+                    streamChatResponse: aiModelSettings.streamChatResponse
+                  }}
+                />
+                {/* Restore button when chat-only */}
+                {splitMode === 'chat-only' && (
+                  <button
+                    onClick={restoreSplitView}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg shadow-md transition-colors z-50"
+                    title="대시보드 보기"
+                  >
+                    <Icons.Right size={20} className="text-slate-600 dark:text-slate-300" />
+                  </button>
+                )}
+              </div>
+            )}
 
-            <div
-              className={`w-1 hover:w-1.5 cursor-col-resize hover:bg-indigo-500 transition-all z-40 flex-shrink-0 relative group flex items-center justify-center -ml-[1px] ${isResizing ? 'bg-indigo-500 w-1.5' : 'bg-transparent'}`}
-              onMouseDown={startResizing}
-            >
-               <div className={`w-0.5 h-8 rounded-full transition-colors ${isResizing ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-white'}`} />
-            </div>
+            {/* Splitter - only in split mode */}
+            {splitMode === 'split' && (
+              <div
+                className={`w-1 hover:w-1.5 cursor-col-resize hover:bg-indigo-500 transition-all z-40 flex-shrink-0 relative group flex items-center justify-center -ml-[1px] ${isResizing ? 'bg-indigo-500 w-1.5' : 'bg-transparent'}`}
+                onMouseDown={startResizing}
+              >
+                 <div className={`w-0.5 h-8 rounded-full transition-colors ${isResizing ? 'bg-white' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-white'}`} />
+              </div>
+            )}
 
-            <div className="flex-1 h-full bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 animate-fade-in">
-              <Dashboard 
-                modules={modules} 
-                setModules={setModules}
-                onToggleModule={handleToggleModule}
-                onToggleSubFeature={handleToggleSubFeature}
-                currentPartnerType={currentPartnerType}
-                onSelectPartnerType={applyPartnerType}
-                multipliers={multipliers}
-                estimationStep={estimationStep}
-                onStepChange={setEstimationStep}
-                currentScale={currentScale}
-                onScaleChange={handleScaleChange}
-                projectSummaryContent={projectSummaryContent}
-                aiInsight={aiInsight}
-                rfpModelId={aiModelSettings.generateRFP}
-                referencedFiles={referencedFiles}
-                progressiveState={progressiveState}
-                isAnalyzing={isAnalyzing}
-              />
-            </div>
+            {/* Dashboard Panel - hidden in chat-only mode */}
+            {splitMode !== 'chat-only' && (
+              <div className="flex-1 h-full bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 animate-fade-in">
+                {/* Restore button when dashboard-only */}
+                {splitMode === 'dashboard-only' && (
+                  <button
+                    onClick={restoreSplitView}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg shadow-md transition-colors z-50"
+                    title="채팅 보기"
+                  >
+                    <Icons.Left size={20} className="text-slate-600 dark:text-slate-300" />
+                  </button>
+                )}
+                <Dashboard 
+                  modules={modules} 
+                  setModules={setModules}
+                  onToggleModule={handleToggleModule}
+                  onToggleSubFeature={handleToggleSubFeature}
+                  currentPartnerType={currentPartnerType}
+                  onSelectPartnerType={applyPartnerType}
+                  multipliers={multipliers}
+                  estimationStep={estimationStep}
+                  onStepChange={setEstimationStep}
+                  currentScale={currentScale}
+                  onScaleChange={handleScaleChange}
+                  projectSummaryContent={projectSummaryContent}
+                  aiInsight={aiInsight}
+                  rfpModelId={aiModelSettings.generateRFP}
+                  referencedFiles={referencedFiles}
+                  progressiveState={progressiveState}
+                  isAnalyzing={isAnalyzing}
+                />
+              </div>
+            )}
           </>
         )}
       </main>
