@@ -145,6 +145,7 @@ export interface DashboardState {
   aiInsight?: string;
   referencedFiles?: InputSource[];
   projectOverview?: ProjectOverview | null;
+  summary?: ParsedSummary | null;
 }
 
 export type ChatActionType = 

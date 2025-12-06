@@ -229,11 +229,12 @@ const App: React.FC = () => {
         projectSummaryContent,
         aiInsight,
         referencedFiles,
-        projectOverview
+        projectOverview,
+        summary: progressiveState?.summary || null
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary]);
 
   // Handle visibility change - check job status when tab becomes active
   useEffect(() => {
@@ -531,6 +532,8 @@ const App: React.FC = () => {
     setIsAnalyzing(false);
     setCurrentJobId(null);
     // [GL-01 FIX] Reset progressive state to prevent stale skeleton display
+    const session = getSessionById(sessionId);
+    
     setProgressiveState({
       projectOverviewReady: true, // Default to true for completed sessions
       modulesReady: true,
@@ -538,10 +541,8 @@ const App: React.FC = () => {
       scheduleReady: true,
       summaryReady: true,
       schedule: null,
-      summary: null,
+      summary: session?.dashboardState?.summary || null,
     });
-    
-    const session = getSessionById(sessionId);
     if (session) {
       // [ATOMIC UNIT] Ensure session exists in coupler BEFORE any switch
       let atomicUnit = sessionCoupler.getUnit(sessionId);
@@ -559,6 +560,7 @@ const App: React.FC = () => {
             atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
             atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
+            atomicUnit.dashboard.summary = session.dashboardState.summary || null;
           }
           console.log(`[App] Created and populated atomic unit for legacy session: ${sessionId}`);
         }
@@ -600,6 +602,7 @@ const App: React.FC = () => {
             atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
             atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
+            atomicUnit.dashboard.summary = session.dashboardState.summary || null;
           }
           
           // Persist the sync
@@ -1128,7 +1131,8 @@ const App: React.FC = () => {
         businessGoals: result.businessGoals || '',
         coreValues: result.coreValues || [],
         techStack: techCategories.length > 0 ? [{ layer: 'Modules', items: techCategories }] : []
-      }
+      },
+      summary: result.summary || null
     };
     
     // Commit to session's scoped storage (localStorage)
@@ -1146,6 +1150,7 @@ const App: React.FC = () => {
       unit.dashboard.aiInsight = dashboardState.aiInsight;
       unit.dashboard.referencedFiles = dashboardState.referencedFiles;
       unit.dashboard.projectOverview = dashboardState.projectOverview;
+      unit.dashboard.summary = dashboardState.summary;
     });
     
     if (!updateSuccess) {
@@ -1166,6 +1171,7 @@ const App: React.FC = () => {
           unit.dashboard.aiInsight = dashboardState.aiInsight;
           unit.dashboard.referencedFiles = dashboardState.referencedFiles;
           unit.dashboard.projectOverview = dashboardState.projectOverview;
+          unit.dashboard.summary = dashboardState.summary;
         });
         console.log(`[App] Created and populated atomic unit for session ${targetSessionId}`);
       } else {
