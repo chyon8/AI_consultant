@@ -40,33 +40,35 @@ export const AnalysisStatusIndicator: React.FC<AnalysisStatusIndicatorProps> = (
   progressiveState
 }) => {
   const [displayedStage, setDisplayedStage] = useState<AnalysisStage>('estimating');
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [animationState, setAnimationState] = useState<'idle' | 'swipe-out' | 'swipe-in'>('idle');
   const prevStageRef = useRef<AnalysisStage>('estimating');
   
   useEffect(() => {
     if (!isAnalyzing) {
       prevStageRef.current = 'estimating';
       setDisplayedStage('estimating');
+      setAnimationState('idle');
       return;
     }
     
     const newStage = determineStage(progressiveState);
     
     if (newStage !== prevStageRef.current) {
-      setIsTransitioning(true);
+      setAnimationState('swipe-out');
       
-      const fadeOutTimer = setTimeout(() => {
+      const swipeOutTimer = setTimeout(() => {
         setDisplayedStage(newStage);
         prevStageRef.current = newStage;
+        setAnimationState('swipe-in');
         
-        const fadeInTimer = setTimeout(() => {
-          setIsTransitioning(false);
-        }, 50);
+        const swipeInTimer = setTimeout(() => {
+          setAnimationState('idle');
+        }, 250);
         
-        return () => clearTimeout(fadeInTimer);
+        return () => clearTimeout(swipeInTimer);
       }, 200);
       
-      return () => clearTimeout(fadeOutTimer);
+      return () => clearTimeout(swipeOutTimer);
     }
   }, [isAnalyzing, progressiveState]);
   
@@ -76,6 +78,12 @@ export const AnalysisStatusIndicator: React.FC<AnalysisStatusIndicatorProps> = (
   
   const isComplete = displayedStage === 'complete';
   
+  const getTextAnimationClass = () => {
+    if (animationState === 'swipe-out') return 'animate-swipe-out';
+    if (animationState === 'swipe-in') return 'animate-swipe-in';
+    return isComplete ? '' : 'animate-text-pulse';
+  };
+  
   return (
     <div className="flex flex-col items-start gap-1.5 animate-slide-up">
       <div 
@@ -83,11 +91,15 @@ export const AnalysisStatusIndicator: React.FC<AnalysisStatusIndicatorProps> = (
           px-4 py-2.5
           bg-gray-100 dark:bg-slate-700
           rounded-2xl rounded-bl-md
-          transition-opacity duration-200 ease-in-out
-          ${isTransitioning ? 'opacity-0' : 'opacity-100'}
+          overflow-hidden
         `}
       >
-        <span className="text-sm font-medium text-gray-500 dark:text-gray-300">
+        <span 
+          className={`
+            inline-block text-sm font-medium text-gray-500 dark:text-gray-300
+            ${getTextAnimationClass()}
+          `}
+        >
           {STAGE_MESSAGES[displayedStage]}
         </span>
       </div>
