@@ -79,10 +79,11 @@ const App: React.FC = () => {
   // Project Summary Content (STEP 1 from Gemini analysis)
   const [projectSummaryContent, setProjectSummaryContent] = useState<string>('');
   
-  // AI Insight for Project Summary
+  // AI Insight for Project Summary (session-scoped loading)
   const [aiInsight, setAiInsight] = useState<string>('');
   const [aiInsightLoading, setAiInsightLoading] = useState<boolean>(false);
   const [aiInsightError, setAiInsightError] = useState<string>('');
+  const [insightLoadingSessionId, setInsightLoadingSessionId] = useState<string | null>(null);
 
   // Project Overview (프로젝트 개요, 기술 스택)
   const [projectOverview, setProjectOverview] = useState<ProjectOverview | null>(null);
@@ -543,6 +544,8 @@ const App: React.FC = () => {
             atomicUnit.dashboard.estimationStep = session.dashboardState.estimationStep;
             atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
             atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
+            atomicUnit.dashboard.aiInsightLoading = false;
+            atomicUnit.dashboard.aiInsightError = '';
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
             atomicUnit.dashboard.projectOverview = session.dashboardState.projectOverview || null;
             atomicUnit.dashboard.summary = session.dashboardState.summary || null;
@@ -599,6 +602,8 @@ const App: React.FC = () => {
             atomicUnit.dashboard.estimationStep = session.dashboardState.estimationStep;
             atomicUnit.dashboard.projectSummaryContent = session.dashboardState.projectSummaryContent || '';
             atomicUnit.dashboard.aiInsight = session.dashboardState.aiInsight || '';
+            atomicUnit.dashboard.aiInsightLoading = false;
+            atomicUnit.dashboard.aiInsightError = '';
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
             atomicUnit.dashboard.projectOverview = session.dashboardState.projectOverview || null;
             atomicUnit.dashboard.summary = session.dashboardState.summary || null;
@@ -658,6 +663,8 @@ const App: React.FC = () => {
       setEstimationStep(atomicUnit.dashboard.estimationStep);
       setProjectSummaryContent(atomicUnit.dashboard.projectSummaryContent);
       setAiInsight(atomicUnit.dashboard.aiInsight);
+      setAiInsightLoading(atomicUnit.dashboard.aiInsightLoading || false);
+      setAiInsightError(atomicUnit.dashboard.aiInsightError || '');
       setReferencedFiles(atomicUnit.dashboard.referencedFiles);
       setProjectOverview(atomicUnit.dashboard.projectOverview || null);
       
@@ -1074,7 +1081,7 @@ const App: React.FC = () => {
   // Ref to store parsed project title for session naming (legacy - now using scoped storage)
   const parsedProjectTitleRef = React.useRef<string>('');
   
-  // Generate AI Insight via API
+  // Generate AI Insight via API (session-scoped)
   const generateAiInsight = async (params: {
     projectName: string;
     businessGoals: string;
@@ -1082,9 +1089,24 @@ const App: React.FC = () => {
     moduleCount: number;
     featureCount: number;
   }) => {
+    // [SESSION ISOLATION] Track which session initiated this request
+    const ownerSessionId = activeSessionIdRef.current;
+    if (!ownerSessionId) {
+      console.error('[App] Cannot generate AI insight: no active session');
+      return;
+    }
+    
+    console.log(`[App] AI Insight generation started for session: ${ownerSessionId}`);
+    setInsightLoadingSessionId(ownerSessionId);
     setAiInsightLoading(true);
     setAiInsightError('');
-    setAiInsight('');
+    // [FIX] Do NOT clear existing aiInsight - keep showing until new data arrives
+    
+    // Update atomic unit loading state
+    sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+      unit.dashboard.aiInsightLoading = true;
+      unit.dashboard.aiInsightError = '';
+    });
     
     try {
       console.log('[App] Generating AI insight for:', params.projectName, 'with model:', aiModelSettings.generateInsight);
@@ -1097,19 +1119,55 @@ const App: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.insight) {
-          console.log('[App] AI insight generated:', data.insight.substring(0, 100));
-          setAiInsight(data.insight);
+          console.log('[App] AI insight generated for session:', ownerSessionId);
+          
+          // [SESSION ISOLATION] Save to owner session's atomic unit
+          sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+            unit.dashboard.aiInsight = data.insight;
+            unit.dashboard.aiInsightLoading = false;
+            unit.dashboard.aiInsightError = '';
+          });
+          
+          // Only update React state if still on the same session
+          if (activeSessionIdRef.current === ownerSessionId) {
+            setAiInsight(data.insight);
+          }
         } else {
-          setAiInsightError(data.error || 'AI 분석 결과를 가져오지 못했습니다.');
+          const errorMsg = data.error || 'AI 분석 결과를 가져오지 못했습니다.';
+          sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+            unit.dashboard.aiInsightLoading = false;
+            unit.dashboard.aiInsightError = errorMsg;
+          });
+          if (activeSessionIdRef.current === ownerSessionId) {
+            setAiInsightError(errorMsg);
+          }
         }
       } else {
-        setAiInsightError('AI 분석 요청에 실패했습니다.');
+        const errorMsg = 'AI 분석 요청에 실패했습니다.';
+        sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+          unit.dashboard.aiInsightLoading = false;
+          unit.dashboard.aiInsightError = errorMsg;
+        });
+        if (activeSessionIdRef.current === ownerSessionId) {
+          setAiInsightError(errorMsg);
+        }
       }
     } catch (error) {
       console.error('[App] Failed to generate AI insight:', error);
-      setAiInsightError('AI 분석 중 오류가 발생했습니다.');
+      const errorMsg = 'AI 분석 중 오류가 발생했습니다.';
+      sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+        unit.dashboard.aiInsightLoading = false;
+        unit.dashboard.aiInsightError = errorMsg;
+      });
+      if (activeSessionIdRef.current === ownerSessionId) {
+        setAiInsightError(errorMsg);
+      }
     } finally {
-      setAiInsightLoading(false);
+      // Only update React loading state if still on the same session
+      if (activeSessionIdRef.current === ownerSessionId) {
+        setAiInsightLoading(false);
+      }
+      setInsightLoadingSessionId(null);
     }
   };
 

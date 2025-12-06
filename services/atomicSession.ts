@@ -17,6 +17,8 @@ export interface AtomicSessionUnit {
     estimationStep: EstimationStep;
     projectSummaryContent: string;
     aiInsight: string;
+    aiInsightLoading: boolean;
+    aiInsightError: string;
     referencedFiles: InputSource[];
     projectOverview?: ProjectOverview | null;
     summary?: ParsedSummary | null;
@@ -104,6 +106,8 @@ class SessionCoupler {
         estimationStep: 'SCOPE',
         projectSummaryContent: '',
         aiInsight: '',
+        aiInsightLoading: false,
+        aiInsightError: '',
         referencedFiles: []
       },
       meta: {
