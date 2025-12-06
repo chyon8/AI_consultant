@@ -656,8 +656,18 @@ const App: React.FC = () => {
       // Atomic unit is ALWAYS the source of truth (already populated from localStorage if legacy)
       console.log(`[App] STRICT SWITCH STEP 3: Syncing Chat + Dashboard from atomic unit ${sessionId}`);
       
-      // Sync from atomic unit data
-      setMessages(atomicUnit.chat.messages);
+      // Sync from atomic unit data - cleanup orphan streaming messages
+      const cleanedMessages = atomicUnit.chat.messages.map(msg => {
+        if (msg.isStreaming) {
+          console.log(`[App] Cleaning orphan streaming message: ${msg.id}`);
+          const interruptedText = msg.text 
+            ? `${msg.text}\n\n_(응답이 중단되었습니다)_`
+            : '_(응답이 중단되었습니다)_';
+          return { ...msg, text: interruptedText, isStreaming: false };
+        }
+        return msg;
+      });
+      setMessages(cleanedMessages);
       setModules(atomicUnit.dashboard.modules);
       setCurrentPartnerType(atomicUnit.dashboard.partnerType);
       setCurrentScale(atomicUnit.dashboard.projectScale);
