@@ -506,13 +506,9 @@ const App: React.FC = () => {
     // Freeze current session before switching
     await freezeCurrentSession();
     
-    // [RFP FIX] Cancel ongoing RFP generation when switching sessions
-    if (rfpAbortControllerRef.current) {
-      console.log(`[App] Aborting RFP generation for session ${activeSessionId} before switch`);
-      rfpAbortControllerRef.current.abort();
-      rfpAbortControllerRef.current = null;
-      setRfpGeneratingSessionId(null);
-    }
+    // [RFP FIX] Do NOT abort RFP generation on session switch
+    // RFP generation continues in background (same as AI Insight)
+    // Result will be saved to owner session's atomic unit via backgroundUpdate
     
     // [FIX] Do NOT clear job polling on session switch!
     // The background job should continue polling until completion
@@ -1257,10 +1253,9 @@ const App: React.FC = () => {
       }
       console.error('[App] RFP generation failed:', error);
     } finally {
-      // Only update React loading state if still on the same session
-      if (activeSessionIdRef.current === ownerSessionId) {
-        setRfpGeneratingSessionId(null);
-      }
+      // [RFP FIX] Always clear generating state when RFP completes
+      // This ensures the loading indicator stops even if user switched sessions
+      setRfpGeneratingSessionId(null);
       if (rfpAbortControllerRef.current === abortController) {
         rfpAbortControllerRef.current = null;
       }
