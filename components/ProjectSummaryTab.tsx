@@ -81,8 +81,8 @@ const AIAssistantSection: React.FC<{
   loading?: boolean; 
   error?: string;
 }> = ({ insight, loading, error }) => {
-  const parsedInsight = useMemo<AIInsightData | null>(() => {
-    if (!insight) return null;
+  const { parsedInsight, parseError } = useMemo<{ parsedInsight: AIInsightData | null; parseError: string | null }>(() => {
+    if (!insight) return { parsedInsight: null, parseError: null };
     try {
       let jsonStr = insight.trim();
       const jsonMatch = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
@@ -90,14 +90,16 @@ const AIAssistantSection: React.FC<{
         jsonStr = jsonMatch[1];
       }
       jsonStr = jsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      return JSON.parse(jsonStr);
+      return { parsedInsight: JSON.parse(jsonStr), parseError: null };
     } catch (e) {
       console.error('Failed to parse AI insight JSON:', e);
-      return null;
+      return { parsedInsight: null, parseError: 'AI 응답 형식을 파싱하는데 실패했습니다. 다시 시도해주세요.' };
     }
   }, [insight]);
 
-  if (error) {
+  const displayError = error || parseError;
+
+  if (displayError) {
     return (
       <div className="mb-8">
         <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase mb-3">
@@ -108,7 +110,7 @@ const AIAssistantSection: React.FC<{
             <Icons.Alert size={18} />
             <span className="text-sm font-medium">분석 오류</span>
           </div>
-          <p className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-red-500 dark:text-red-400">{displayError}</p>
         </div>
       </div>
     );
