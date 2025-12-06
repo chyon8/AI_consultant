@@ -54,7 +54,7 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   const handleGenerateRFP = async () => {
     setIsGenerating(true);
     setRfpContent('');
-    setShowResult(false);
+    setShowResult(true);
     setCopied(false);
 
     let content = '';
@@ -66,14 +66,13 @@ export const RFPTab: React.FC<RFPTabProps> = ({
         projectSummary,
         (chunk) => {
           content += chunk;
+          setRfpContent(content);
         },
         (error) => {
           console.error('RFP generation error:', error);
         },
         modelId
       );
-      setRfpContent(content);
-      setShowResult(true);
     } catch (error) {
       console.error('RFP generation failed:', error);
     } finally {
@@ -172,21 +171,24 @@ export const RFPTab: React.FC<RFPTabProps> = ({
           )}
         </button>
 
-        {showResult && !isGenerating && rfpContent && (
+        {showResult && (
           <div className="mt-6 space-y-3 animate-fade-in">
             <div className="flex items-center justify-between">
               <h5 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 <Icons.File size={16} />
                 생성된 공고문
+                {isGenerating && (
+                  <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                )}
               </h5>
               <button
                 onClick={handleCopy}
-                disabled={!rfpContent}
+                disabled={!rfpContent || isGenerating}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   copied 
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
+                } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {copied ? (
                   <>
@@ -205,8 +207,9 @@ export const RFPTab: React.FC<RFPTabProps> = ({
               ref={textareaRef}
               value={rfpContent}
               onChange={(e) => setRfpContent(e.target.value)}
+              readOnly={isGenerating}
               className="w-full p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
-              style={{ resize: 'both', minHeight: '384px', maxHeight: '800px', overflow: 'auto' }}
+              style={{ resize: 'vertical', minHeight: '384px', maxHeight: '80vh', overflow: 'auto' }}
             />
           </div>
         )}
