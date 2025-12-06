@@ -38,6 +38,7 @@ interface DashboardProps {
   progressiveState?: ProgressiveLoadingState;
   isAnalyzing?: boolean;
   projectOverview?: ProjectOverview | null;
+  summary?: { keyPoints: string[]; risks: string[]; recommendations: string[] } | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -58,7 +59,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   referencedFiles = [],
   progressiveState,
   isAnalyzing = false,
-  projectOverview = null
+  projectOverview = null,
+  summary = null
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -286,7 +288,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isAnalyzing && progressiveState && !progressiveState.summaryReady ? (
                 <TabSkeleton type="summary" />
               ) : (
-                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} />
+                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} summary={progressiveState?.summary || summary} />
               )
             )}
             {activeTab === TabView.ESTIMATION && (

@@ -2,9 +2,16 @@ import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Icons } from './Icons';
 
+interface SummaryData {
+  keyPoints: string[];
+  risks: string[];
+  recommendations: string[];
+}
+
 interface ProjectSummaryTabProps {
   content: string;
   aiInsight?: string;
+  summary?: SummaryData | null;
 }
 
 interface ProjectInfo {
@@ -137,53 +144,10 @@ function parseStep1Content(content: string): ParsedData {
   return result;
 }
 
-export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, aiInsight }) => {
+export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, aiInsight, summary }) => {
   const parsedData = useMemo(() => parseStep1Content(content), [content]);
 
-  // DEBUG: Show raw data sources
-  const debugMode = true; // Set to false to hide debug info
-  
-  if (debugMode) {
-    return (
-      <div className="space-y-6 p-4">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-          <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-200 mb-3">🔍 DEBUG: Raw Data Sources</h3>
-          
-          {/* AI Insight from /api/insight */}
-          <div className="mb-4">
-            <div className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
-              📌 aiInsight (from /api/insight - generateInsight prompt)
-            </div>
-            <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-60 border">
-              {aiInsight ? aiInsight : '(empty - showing default placeholder)'}
-            </pre>
-          </div>
-          
-          {/* Content from PART1_PROMPT */}
-          <div className="mb-4">
-            <div className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
-              📌 content (from PART1_PROMPT - projectSummaryContent/rawMarkdown)
-            </div>
-            <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-60 border whitespace-pre-wrap">
-              {content ? content.substring(0, 2000) + (content.length > 2000 ? '...[truncated]' : '') : '(empty)'}
-            </pre>
-          </div>
-          
-          {/* Parsed Data */}
-          <div>
-            <div className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1">
-              📌 parsedData (extracted from content)
-            </div>
-            <pre className="bg-white dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-60 border">
-              {JSON.stringify(parsedData, null, 2)}
-            </pre>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!content) {
+  if (!content && !summary) {
     return (
       <div className="min-h-[500px] flex items-center justify-center">
         <div className="text-center">
@@ -252,6 +216,70 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({ content, a
           </div>
         </div>
       </div>
+
+      {/* Summary Section - from json:summary */}
+      {summary && (summary.keyPoints.length > 0 || summary.risks.length > 0 || summary.recommendations.length > 0) && (
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-[0.2em] uppercase">
+            프로젝트 요약
+          </h3>
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden divide-y divide-slate-50 dark:divide-slate-800">
+            {/* Key Points */}
+            {summary.keyPoints.length > 0 && (
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icons.Check size={16} className="text-emerald-500" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">핵심 포인트</span>
+                </div>
+                <ul className="space-y-2">
+                  {summary.keyPoints.map((point, idx) => (
+                    <li key={idx} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                      <span className="text-emerald-500 mt-1">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Risks */}
+            {summary.risks.length > 0 && (
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icons.Alert size={16} className="text-amber-500" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">리스크</span>
+                </div>
+                <ul className="space-y-2">
+                  {summary.risks.map((risk, idx) => (
+                    <li key={idx} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                      <span className="text-amber-500 mt-1">•</span>
+                      <span>{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Recommendations */}
+            {summary.recommendations.length > 0 && (
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icons.Zap size={16} className="text-blue-500" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">권장사항</span>
+                </div>
+                <ul className="space-y-2">
+                  {summary.recommendations.map((rec, idx) => (
+                    <li key={idx} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                      <span className="text-blue-500 mt-1">•</span>
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Project Info Card */}
       {hasProjectInfo && (
