@@ -11,17 +11,29 @@ interface RFPTabProps {
   currentPartnerType: PartnerType;
   onGenerateRFP?: () => void;
   modelId?: string;
+  rfpContent?: string;
+  onRfpContentChange?: (content: string) => void;
 }
 
 export const RFPTab: React.FC<RFPTabProps> = ({
   modules,
   currentPartnerType,
   onGenerateRFP,
-  modelId
+  modelId,
+  rfpContent: externalRfpContent,
+  onRfpContentChange
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [rfpContent, setRfpContent] = useState('');
-  const [showResult, setShowResult] = useState(false);
+  const [localRfpContent, setLocalRfpContent] = useState('');
+  const rfpContent = externalRfpContent !== undefined ? externalRfpContent : localRfpContent;
+  const setRfpContent = (content: string) => {
+    if (onRfpContentChange) {
+      onRfpContentChange(content);
+    } else {
+      setLocalRfpContent(content);
+    }
+  };
+  const [showResult, setShowResult] = useState(!!rfpContent);
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

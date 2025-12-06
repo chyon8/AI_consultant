@@ -111,3 +111,38 @@ When adding new data fields that must persist across session switches, follow th
 
 ### Critical Rule
 **Session data must NEVER leak between sessions.** When switching sessions, ALL data must be restored from the target session's storage. The auto-save effect must include ALL fields to prevent overwriting with null/undefined values.
+
+## Session Isolation Rules (절대 위반 금지)
+
+### Golden Rule
+**"A Chat Interface and its corresponding Dashboard are a SINGLE, INDEPENDENT ATOMIC UNIT."**
+- Unit A (Chat A + Dashboard A) MUST be completely invisible to Unit B (Chat B + Dashboard B)
+- They share NOTHING in terms of transient state (loading indicators, temporary data, progress bars)
+
+### Implementation Rules
+
+1. **전역 useState 금지**
+   - ❌ `const [isLoading, setIsLoading] = useState(false)` - 전역 로딩 상태 금지
+   - ✅ `const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null)` - 세션 ID로 키잉
+
+2. **모든 Transient State는 sessionId로 키잉**
+   - 로딩 상태, 에러 상태, 임시 데이터 등 모든 일시적 상태는 세션 ID와 연결
+   - 현재 세션과 일치할 때만 UI에 표시
+
+3. **상태 업데이트 시 세션 검증 필수**
+   ```typescript
+   if (ownerSessionId !== activeSessionIdRef.current) {
+     console.warn('BLOCKED: Session mismatch');
+     return; // 차단
+   }
+   ```
+
+4. **세션 전환 시 완전 복원**
+   - 모든 transient state 포함하여 atomic unit에 저장
+   - 세션 전환 시 해당 세션의 모든 상태 복원
+
+### Persisted Fields (세션별 저장 필수)
+- `modules`, `partnerType`, `projectScale`, `estimationStep`
+- `projectSummaryContent`, `aiInsight`, `aiInsightLoading`, `aiInsightError`
+- `referencedFiles`, `projectOverview`, `summary`
+- `rfpContent` (공고 생성 결과)

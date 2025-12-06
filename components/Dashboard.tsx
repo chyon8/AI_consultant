@@ -42,6 +42,8 @@ interface DashboardProps {
   isAnalyzing?: boolean;
   projectOverview?: ProjectOverview | null;
   summary?: { keyPoints: string[]; risks: string[]; recommendations: string[] } | null;
+  rfpContent?: string;
+  onRfpContentChange?: (content: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -66,7 +68,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   progressiveState,
   isAnalyzing = false,
   projectOverview = null,
-  summary = null
+  summary = null,
+  rfpContent = '',
+  onRfpContentChange
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -332,6 +336,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 currentPartnerType={currentPartnerType}
                 onGenerateRFP={() => setIsRFPOpen(true)}
                 modelId={rfpModelId}
+                rfpContent={rfpContent}
+                onRfpContentChange={onRfpContentChange}
               />
             )}
           </div>

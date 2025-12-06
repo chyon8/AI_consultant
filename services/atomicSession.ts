@@ -22,6 +22,7 @@ export interface AtomicSessionUnit {
     referencedFiles: InputSource[];
     projectOverview?: ProjectOverview | null;
     summary?: ParsedSummary | null;
+    rfpContent?: string;
   };
   meta: {
     title: string;

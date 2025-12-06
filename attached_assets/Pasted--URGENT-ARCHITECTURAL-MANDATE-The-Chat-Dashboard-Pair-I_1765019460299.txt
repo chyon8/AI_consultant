@@ -1,0 +1,45 @@
+**URGENT ARCHITECTURAL MANDATE: The "Chat-Dashboard Pair" Isolation Rule**
+
+**Context:**
+You are failing to understand the core data structure.
+**Current Issue:** State is bleeding between sessions. Actions in "Chat A" affect "Dashboard B". This is unacceptable.
+
+**THE GOLDEN RULE (Read Carefully):**
+**"A Chat Interface and its corresponding Dashboard are a SINGLE, INDEPENDENT ATOMIC UNIT."**
+*   **Unit A (Chat A + Dashboard A)** MUST be completely invisible to **Unit B (Chat B + Dashboard B)**.
+*   They share **NOTHING** in terms of transient state (loading indicators, temporary data, progress bars).
+
+**Required Technical Refactor:**
+
+1.  **State Structuring (Keyed by ID):**
+    *   Stop storing state globally like `currentDashboardState` or `isChatLoading`.
+    *   **REQUIRED Structure:** All state must be nested under the specific Project/Session ID.
+    *   *Example:*
+        ```javascript
+        // globalStore
+        sessions: {
+          "project_A_id": {
+             chatHistory: [...],
+             dashboardData: {...},
+             isGenerating: true, // Only for A
+             currentStep: "planning"
+          },
+          "project_B_id": {
+             chatHistory: [...],
+             dashboardData: {...},
+             isGenerating: false, // B is idle
+             currentStep: null
+          }
+        }
+        ```
+
+2.  **Strict Component Logic:**
+    *   When the `ChatComponent` or `DashboardComponent` renders, it must subscribe **ONLY** to the state slice matching the `currentProjectId` from the URL/Router.
+    *   If I am in Project B, the component must **ignore** any updates happening in Project A's state.
+
+3.  **Persistence & Re-hydration:**
+    *   Since the state is stored by ID in a global store (not local component state), navigating away from Project A to Project B and coming back to Project A should **instantly restore** Project A's last known state (e.g., still showing "Generating...").
+    *   **Do not reset** the state on unmount.
+
+**Summary:**
+Treat every Project ID as a separate "universe." No data or loading state should ever cross the boundary between Project A and Project B. Fix this data structure immediately.

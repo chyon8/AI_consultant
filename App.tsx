@@ -85,6 +85,9 @@ const App: React.FC = () => {
   const [aiInsightError, setAiInsightError] = useState<string>('');
   const [insightLoadingSessionId, setInsightLoadingSessionId] = useState<string | null>(null);
 
+  // RFP Content (session-scoped)
+  const [rfpContent, setRfpContent] = useState<string>('');
+
   // Project Overview (프로젝트 개요, 기술 스택)
   const [projectOverview, setProjectOverview] = useState<ProjectOverview | null>(null);
 
@@ -332,6 +335,7 @@ const App: React.FC = () => {
     setAiInsight('');
     setProjectOverview(null);
     setReferencedFiles([]);
+    setRfpContent('');
   };
 
   // Handle delete session - show confirmation modal
@@ -491,6 +495,7 @@ const App: React.FC = () => {
         unit.dashboard.aiInsightError = aiInsightError;
         unit.dashboard.referencedFiles = referencedFiles;
         unit.dashboard.projectOverview = projectOverview;
+        unit.dashboard.rfpContent = rfpContent;
       });
     }
     
@@ -512,6 +517,7 @@ const App: React.FC = () => {
     setAiInsightLoading(false);
     setAiInsightError('');
     setProjectOverview(null);
+    setRfpContent('');
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
     setEstimationStep('SCOPE');
@@ -1963,6 +1969,8 @@ const App: React.FC = () => {
                   progressiveState={progressiveState}
                   isAnalyzing={isAnalyzing}
                   projectOverview={projectOverview}
+                  rfpContent={rfpContent}
+                  onRfpContentChange={setRfpContent}
                 />
               </div>
             )}
