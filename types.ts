@@ -146,6 +146,7 @@ export interface DashboardState {
   referencedFiles?: InputSource[];
   projectOverview?: ProjectOverview | null;
   summary?: ParsedSummary | null;
+  rfpContent?: string; // RFP generation result
 }
 
 export type ChatActionType = 

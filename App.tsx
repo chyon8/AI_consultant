@@ -239,11 +239,12 @@ const App: React.FC = () => {
         aiInsight,
         referencedFiles,
         projectOverview,
-        summary: progressiveState?.summary || null
+        summary: progressiveState?.summary || null,
+        rfpContent
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent]);
 
   // Handle visibility change - check job status when tab becomes active
   useEffect(() => {
@@ -568,6 +569,7 @@ const App: React.FC = () => {
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
             atomicUnit.dashboard.projectOverview = session.dashboardState.projectOverview || null;
             atomicUnit.dashboard.summary = session.dashboardState.summary || null;
+            atomicUnit.dashboard.rfpContent = session.dashboardState.rfpContent || '';
           }
           console.log(`[App] Created and populated atomic unit for legacy session: ${sessionId}`);
         }
@@ -626,6 +628,7 @@ const App: React.FC = () => {
             atomicUnit.dashboard.referencedFiles = session.dashboardState.referencedFiles || [];
             atomicUnit.dashboard.projectOverview = session.dashboardState.projectOverview || null;
             atomicUnit.dashboard.summary = session.dashboardState.summary || null;
+            atomicUnit.dashboard.rfpContent = session.dashboardState.rfpContent || '';
           }
           
           // Persist the sync
@@ -1221,9 +1224,16 @@ const App: React.FC = () => {
         selectedModules,
         projectSummary,
         (chunk) => {
-          // [SESSION ISOLATION] Only update if still on the same session
+          // [SESSION ISOLATION] Always accumulate for owner session, but only update UI if still active
+          content += chunk;
+          
+          // Save to atomic unit on every chunk (persists even if session switches)
+          sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+            unit.dashboard.rfpContent = content;
+          });
+          
+          // Only update React state if still on the same session
           if (activeSessionIdRef.current === ownerSessionId) {
-            content += chunk;
             setRfpContent(content);
           }
         },
