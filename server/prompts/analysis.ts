@@ -284,9 +284,9 @@ export const ASSISTANT_PROMPT = `
   ],
   "technical_scope": {
     "required_tech": "클라이언트 지정 필수 기술",
-    "suggested_stack": "제안 기술 스택",
     "resources_done": "준비된 자원 (기획서, 디자인 등)",
-    "resources_todo": "개발할 자원 (수행 과업 리스트)"
+    "stack_explain": "기술에 대한 설명 (쉽게 설명),
+    "tech_advise": "기술 구현 시 주의 점"
   },
   "checkpoints": [
     "Boss가 확인해야 할 질문 1 (예산/일정 검증)",
