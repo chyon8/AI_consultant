@@ -36,16 +36,24 @@ export interface ParsedSummary {
   recommendations: string[];
 }
 
+export interface ParsedProjectOverview {
+  projectTitle: string;
+  businessGoals: string;
+  coreValues: string[];
+  techStack: { layer: string; items: string[] }[];
+}
+
 export interface ParsedAnalysisResult {
   projectTitle: string;
   modules: ParsedModule[];
   estimates: ParsedEstimates;
   schedule?: ParsedSchedule;
   summary?: ParsedSummary;
+  projectOverview?: ParsedProjectOverview;
   rawMarkdown: string;
 }
 
-export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
+export type StageType = 'projectOverview' | 'modules' | 'estimates' | 'schedule' | 'summary';
 
 export interface StagedParseResult {
   stage: StageType;
@@ -54,6 +62,7 @@ export interface StagedParseResult {
 }
 
 const STAGE_MARKERS = {
+  projectOverview: '<!-- STAGE_PROJECT_OVERVIEW_COMPLETE -->',
   modules: '<!-- STAGE_MODULES_COMPLETE -->',
   estimates: '<!-- STAGE_ESTIMATES_COMPLETE -->',
   schedule: '<!-- STAGE_SCHEDULE_COMPLETE -->',
@@ -67,7 +76,7 @@ export interface StageDetectionResult {
 }
 
 export function detectCompletedStages(accumulatedText: string, alreadyDetected: Set<StageType>): StageDetectionResult | null {
-  const stages: StageType[] = ['modules', 'estimates', 'schedule', 'summary'];
+  const stages: StageType[] = ['projectOverview', 'modules', 'estimates', 'schedule', 'summary'];
   
   for (const stage of stages) {
     if (alreadyDetected.has(stage)) continue;
@@ -92,6 +101,16 @@ export function detectCompletedStages(accumulatedText: string, alreadyDetected: 
   }
   
   return null;
+}
+
+export function parseProjectOverviewStage(data: any): ParsedProjectOverview {
+  const overview = data.projectOverview || data;
+  return {
+    projectTitle: overview.projectTitle || '프로젝트',
+    businessGoals: overview.businessGoals || '',
+    coreValues: overview.coreValues || [],
+    techStack: overview.techStack || []
+  };
 }
 
 export function parseModulesStage(data: any): { projectTitle: string; modules: ParsedModule[] } {
@@ -130,6 +149,7 @@ export function parseSummaryStage(data: any): ParsedSummary {
 
 export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResult | null {
   try {
+    const projectOverviewMatch = fullResponse.match(/```json:projectOverview\s*([\s\S]*?)```/);
     const modulesMatch = fullResponse.match(/```json:modules\s*([\s\S]*?)```/);
     const estimatesMatch = fullResponse.match(/```json:estimates\s*([\s\S]*?)```/);
     const scheduleMatch = fullResponse.match(/```json:schedule\s*([\s\S]*?)```/);
@@ -157,12 +177,14 @@ export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResul
       };
     }
     
+    const projectOverviewData = projectOverviewMatch ? JSON.parse(projectOverviewMatch[1].trim()) : null;
     const modulesData = JSON.parse(modulesMatch[1].trim());
     const estimatesData = estimatesMatch ? JSON.parse(estimatesMatch[1].trim()) : null;
     const scheduleData = scheduleMatch ? JSON.parse(scheduleMatch[1].trim()) : null;
     const summaryData = summaryMatch ? JSON.parse(summaryMatch[1].trim()) : null;
     
     const rawMarkdown = fullResponse
+      .replace(/```json:projectOverview[\s\S]*?```/g, '')
       .replace(/```json:modules[\s\S]*?```/g, '')
       .replace(/```json:estimates[\s\S]*?```/g, '')
       .replace(/```json:schedule[\s\S]*?```/g, '')
@@ -170,8 +192,13 @@ export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResul
       .replace(/<!-- STAGE_\w+_COMPLETE -->/g, '')
       .trim();
     
+    // Get project title from projectOverview first, fall back to modulesData
+    const projectTitle = projectOverviewData 
+      ? parseProjectOverviewStage(projectOverviewData).projectTitle 
+      : (modulesData.projectTitle || '프로젝트');
+    
     return {
-      projectTitle: modulesData.projectTitle || '프로젝트',
+      projectTitle,
       modules: modulesData.modules || [],
       estimates: estimatesData ? parseEstimatesStage(estimatesData) : {
         typeA: { minCost: 0, maxCost: 0, duration: '미정' },
@@ -180,6 +207,7 @@ export function parseAnalysisResponse(fullResponse: string): ParsedAnalysisResul
       },
       schedule: scheduleData ? parseScheduleStage(scheduleData) : undefined,
       summary: summaryData ? parseSummaryStage(summaryData) : undefined,
+      projectOverview: projectOverviewData ? parseProjectOverviewStage(projectOverviewData) : undefined,
       rawMarkdown
     };
   } catch (error) {

@@ -193,7 +193,7 @@ export interface ChatSession {
   dashboardState?: DashboardState;
 }
 
-export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
+export type StageType = 'projectOverview' | 'modules' | 'estimates' | 'schedule' | 'summary';
 
 export interface StagedResult {
   stage: StageType;
@@ -214,6 +214,7 @@ export interface ParsedSummary {
 }
 
 export interface ProgressiveLoadingState {
+  projectOverviewReady: boolean;
   modulesReady: boolean;
   estimatesReady: boolean;
   scheduleReady: boolean;

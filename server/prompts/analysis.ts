@@ -8,17 +8,44 @@ export const PART1_PROMPT = `# PROMPT METADATA
 
 ---
 
-## 📦 STAGE 1: 모듈 및 기능 정의
+## 📦 STAGE 1: 프로젝트 분석 및 기능 정의
+
+### 1.1 프로젝트 개요
+*   [Mode: Strategic & Technical]
+*   프로젝트명: 명확하고 구체적인 프로젝트 이름
+*   비즈니스 목표: 프로젝트의 핵심 목적과 기대 효과
+*   핵심 가치: 프로젝트가 제공하는 3-5개의 핵심 가치
+*   시스템 아키텍처 & 기술 스택: SW(FE/BE, Infra), HW(MCU, BOM) 제안
+
+**1.1 완료 후 반드시 JSON 블록 출력:**
+
+\`\`\`json:projectOverview
+{
+  "projectOverview": {
+    "projectTitle": "프로젝트 제목",
+    "businessGoals": "비즈니스 목표 설명",
+    "coreValues": ["핵심 가치 1", "핵심 가치 2", "핵심 가치 3"],
+    "techStack": [
+      { "layer": "Frontend", "items": ["React", "TypeScript"] },
+      { "layer": "Backend", "items": ["Node.js", "Express"] },
+      { "layer": "Database", "items": ["PostgreSQL"] },
+      { "layer": "Infrastructure", "items": ["AWS", "Docker"] }
+    ]
+  }
+}
+\`\`\`
+
+<!-- STAGE_PROJECT_OVERVIEW_COMPLETE -->
+
+### 1.2 기능 명세 (Functional Specifications)
 *   [Mode: Technical & Logical]
 *   고객의 요구사항을 기술적 언어로 변환하여 구조화합니다.
-*   프로젝트 개요: 비즈니스 목표 및 핵심 가치.
-*   시스템 아키텍처 & 기술 스택: SW(FE/BE, Infra), HW(MCU, BOM) 제안.
-*   기능 명세 (Functional Specifications):
+*   기능 명세:
     - 반드시 '핵심 모듈(Module) > 세부 기능(Detail Features)'의 계층 구조로 작성
     - 예시: [회원 모듈]: 소셜 로그인, 회원가입/탈퇴, 마이페이지
     - 예시: [결제 모듈]: PG사 연동, 결제 이력 조회, 환불 처리
 
-**STAGE 1 완료 후 반드시 JSON 블록 출력:**
+**1.2 완료 후 반드시 JSON 블록 출력:**
 
 \`\`\`json:modules
 {

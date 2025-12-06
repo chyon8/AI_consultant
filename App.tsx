@@ -135,6 +135,7 @@ const App: React.FC = () => {
 
   // Progressive Loading State - tracks which stages have loaded
   const [progressiveState, setProgressiveState] = useState<ProgressiveLoadingState>({
+    projectOverviewReady: false,
     modulesReady: false,
     estimatesReady: false,
     scheduleReady: false,
@@ -460,6 +461,7 @@ const App: React.FC = () => {
           setCurrentView('detail');
           // [FIX] Reset progressiveState to show skeletons while resuming
           setProgressiveState({
+            projectOverviewReady: false,
             modulesReady: false,
             estimatesReady: false,
             scheduleReady: false,
@@ -530,7 +532,8 @@ const App: React.FC = () => {
     setCurrentJobId(null);
     // [GL-01 FIX] Reset progressive state to prevent stale skeleton display
     setProgressiveState({
-      modulesReady: true, // Default to true for completed sessions
+      projectOverviewReady: true, // Default to true for completed sessions
+      modulesReady: true,
       estimatesReady: true,
       scheduleReady: true,
       summaryReady: true,
@@ -1213,6 +1216,7 @@ const App: React.FC = () => {
       acknowledgedStagesPerJob.current[jobId] = [];
     }
     setProgressiveState({
+      projectOverviewReady: false,
       modulesReady: false,
       estimatesReady: false,
       scheduleReady: false,
@@ -1248,8 +1252,24 @@ const App: React.FC = () => {
           processedStagesRef.current.add(stageKey);
           
           switch (staged.stage) {
+            case 'projectOverview': {
+              const overview = staged.data.projectOverview || staged.data;
+              setProjectOverview({
+                projectTitle: overview.projectTitle || '',
+                businessGoals: overview.businessGoals || '',
+                coreValues: overview.coreValues || [],
+                techStack: overview.techStack || []
+              });
+              setProgressiveState(prev => ({ ...prev, projectOverviewReady: true }));
+              
+              if (overview.projectTitle) {
+                updateSessionTitle(ownerSessionId, overview.projectTitle.substring(0, 30).trim());
+              }
+              console.log(`[App] PROGRESSIVE: Project Overview loaded`);
+              break;
+            }
             case 'modules': {
-              const { projectTitle, modules: parsedModules } = staged.data;
+              const { modules: parsedModules } = staged.data;
               const convertedModules = parsedModules.map((m: any) => ({
                 id: m.id || `mod_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                 name: m.name,
@@ -1270,21 +1290,6 @@ const App: React.FC = () => {
               
               setModules(convertedModules);
               setProgressiveState(prev => ({ ...prev, modulesReady: true }));
-              
-              // Set project overview with available data
-              const techCategories = [...new Set(convertedModules.map((m: any) => m.category).filter(Boolean))] as string[];
-              setProjectOverview({
-                projectTitle: projectTitle || '',
-                businessGoals: staged.data.businessGoals || '',
-                coreValues: staged.data.coreValues || [],
-                techStack: techCategories.length > 0 ? [
-                  { layer: 'Modules', items: techCategories }
-                ] : []
-              });
-              
-              if (projectTitle) {
-                updateSessionTitle(ownerSessionId, projectTitle.substring(0, 30).trim());
-              }
               console.log(`[App] PROGRESSIVE: Modules loaded (${convertedModules.length} modules)`);
               break;
             }
@@ -1364,6 +1369,7 @@ const App: React.FC = () => {
             
             // Mark all stages as complete
             setProgressiveState({
+              projectOverviewReady: true,
               modulesReady: true,
               estimatesReady: true,
               scheduleReady: true,
@@ -1453,6 +1459,7 @@ const App: React.FC = () => {
     
     // [PC-01 FIX] Reset progressive state on abort
     setProgressiveState({
+      projectOverviewReady: true,
       modulesReady: true,
       estimatesReady: true,
       scheduleReady: true,
@@ -1633,6 +1640,7 @@ const App: React.FC = () => {
       // [IMMEDIATE SKELETON] Switch to detail view immediately with all skeletons showing
       // Progressive loading will replace skeletons with real content as data arrives
       setProgressiveState({
+        projectOverviewReady: false,
         modulesReady: false,
         estimatesReady: false,
         scheduleReady: false,
