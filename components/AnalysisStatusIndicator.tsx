@@ -87,7 +87,7 @@ export const AnalysisStatusIndicator: React.FC<AnalysisStatusIndicatorProps> = (
           ${isTransitioning ? 'opacity-0' : 'opacity-100'}
         `}
       >
-        <span className="text-sm font-medium text-gray-500 dark:text-gray-300">
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-300 animate-text-blink">
           {STAGE_MESSAGES[displayedStage]}
         </span>
       </div>
@@ -100,18 +100,18 @@ export const AnalysisStatusIndicator: React.FC<AnalysisStatusIndicatorProps> = (
             rounded-full
           "
         >
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <span 
               className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-typing-dot"
-              style={{ animationDelay: '0ms' }}
+              style={{ animationDelay: '0s' }}
             />
             <span 
               className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-typing-dot"
-              style={{ animationDelay: '150ms' }}
+              style={{ animationDelay: '0.2s' }}
             />
             <span 
               className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-typing-dot"
-              style={{ animationDelay: '300ms' }}
+              style={{ animationDelay: '0.4s' }}
             />
           </div>
         </div>
