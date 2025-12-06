@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, ModuleItem, ChatAction, FileAttachment, FileValidationError } from '../types';
+import { Message, ModuleItem, ChatAction, FileAttachment, FileValidationError, ProgressiveLoadingState } from '../types';
 import { Icons } from './Icons';
 import { FileAttachmentError } from './FileAttachmentError';
+import { AnalysisStatusIndicator } from './AnalysisStatusIndicator';
 import { validateFiles, createFileAttachment, createImageThumbnailUrl, isImageFile, FILE_CONSTANTS } from '../utils/fileValidation';
 
 function getWebSocketUrl(): string {
@@ -80,6 +81,8 @@ interface ChatInterfaceProps {
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
   onChatAction?: (action: ChatAction) => { success: boolean; error?: string };
   modelSettings?: ChatModelSettings;
+  isAnalyzing?: boolean;
+  progressiveState?: ProgressiveLoadingState;
 }
 
 function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
@@ -153,7 +156,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   modules, 
   setModules,
   onChatAction,
-  modelSettings
+  modelSettings,
+  isAnalyzing = false,
+  progressiveState
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -605,6 +610,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           );
         })}
+        
+        {isAnalyzing && (
+          <AnalysisStatusIndicator 
+            isAnalyzing={isAnalyzing}
+            progressiveState={progressiveState}
+          />
+        )}
         
         {pendingAction && (
           <div className="flex w-full gap-4 flex-row animate-slide-up">

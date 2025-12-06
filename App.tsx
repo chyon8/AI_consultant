@@ -1838,6 +1838,8 @@ const App: React.FC = () => {
                     classifyUserIntent: aiModelSettings.classifyUserIntent,
                     streamChatResponse: aiModelSettings.streamChatResponse
                   }}
+                  isAnalyzing={isAnalyzing}
+                  progressiveState={progressiveState}
                 />
                 {/* Restore button when chat-only */}
                 {splitMode === 'chat-only' && (
