@@ -33,6 +33,8 @@ interface DashboardProps {
   onScaleChange: (scale: ProjectScale) => void;
   projectSummaryContent: string;
   aiInsight?: string;
+  aiInsightLoading?: boolean;
+  aiInsightError?: string;
   rfpModelId?: string;
   referencedFiles?: InputSource[];
   progressiveState?: ProgressiveLoadingState;
@@ -55,6 +57,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onScaleChange,
   projectSummaryContent,
   aiInsight,
+  aiInsightLoading = false,
+  aiInsightError = '',
   rfpModelId,
   referencedFiles = [],
   progressiveState,
@@ -288,7 +292,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isAnalyzing && progressiveState && !progressiveState.summaryReady ? (
                 <TabSkeleton type="summary" />
               ) : (
-                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} summary={progressiveState?.summary || summary} />
+                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} aiInsightLoading={aiInsightLoading} aiInsightError={aiInsightError} summary={progressiveState?.summary || summary} />
               )
             )}
             {activeTab === TabView.ESTIMATION && (

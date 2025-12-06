@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { PART1_PROMPT, PART2_PROMPT, INSIGHT_PROMPT } from '../prompts/analysis';
+import { PART1_PROMPT, PART2_PROMPT, ASSISTANT_PROMPT } from '../prompts/analysis';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
@@ -153,12 +153,18 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
   const model = modelId || DEFAULT_MODEL;
   console.log('[claudeService] generateInsight using model:', model);
 
-  const prompt = INSIGHT_PROMPT
-    .replace('{projectName}', params.projectName || '미정')
-    .replace('{businessGoals}', params.businessGoals || '미정')
-    .replace('{coreValues}', params.coreValues.join(', ') || '미정')
-    .replace('{moduleCount}', String(params.moduleCount))
-    .replace('{featureCount}', String(params.featureCount));
+  const contextInfo = `
+# 클라이언트 요구사항 컨텍스트
+- 프로젝트명: ${params.projectName || "미정"}
+- 비즈니스 목표: ${params.businessGoals || "미정"}
+- 핵심 가치: ${params.coreValues.join(", ") || "미정"}
+- 모듈 수: ${params.moduleCount}개
+- 기능 수: ${params.featureCount}개
+
+위 정보를 기반으로 분석해주세요.
+`;
+
+  const prompt = ASSISTANT_PROMPT + contextInfo;
 
   try {
     const response = await anthropic.messages.create({

@@ -68,7 +68,7 @@ export const AI_FUNCTION_MAP: AIFunctionConfig[] = [
     file: 'insightService.ts',
     functionName: 'generateInsight',
     defaultModel: 'gemini-2.5-flash',
-    promptVar: 'INSIGHT_PROMPT',
+    promptVar: 'ASSISTANT_PROMPT',
     description: '프로젝트 인사이트 생성'
   }
 ];

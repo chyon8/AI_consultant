@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { INSIGHT_PROMPT } from "../prompts/analysis";
+import { ASSISTANT_PROMPT } from "../prompts/analysis";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -19,14 +19,18 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
   
   console.log('[insightService] generateInsight using model:', model);
 
-  const prompt = INSIGHT_PROMPT.replace(
-    "{projectName}",
-    params.projectName || "미정",
-  )
-    .replace("{businessGoals}", params.businessGoals || "미정")
-    .replace("{coreValues}", params.coreValues.join(", ") || "미정")
-    .replace("{moduleCount}", String(params.moduleCount))
-    .replace("{featureCount}", String(params.featureCount));
+  const contextInfo = `
+# 클라이언트 요구사항 컨텍스트
+- 프로젝트명: ${params.projectName || "미정"}
+- 비즈니스 목표: ${params.businessGoals || "미정"}
+- 핵심 가치: ${params.coreValues.join(", ") || "미정"}
+- 모듈 수: ${params.moduleCount}개
+- 기능 수: ${params.featureCount}개
+
+위 정보를 기반으로 분석해주세요.
+`;
+
+  const prompt = ASSISTANT_PROMPT + contextInfo;
 
   try {
     const response = await ai.models.generateContent({
@@ -41,13 +45,11 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
       },
     });
 
-    // 전체 response 구조 디버깅
     console.log(
       "[InsightService] Full response:",
       JSON.stringify(response, null, 2).substring(0, 1500),
     );
 
-    // 여러 경로 시도
     const text =
       response.text ??
       (response as any).candidates?.[0]?.content?.parts?.[0]?.text ??
@@ -57,6 +59,6 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
     return text.trim();
   } catch (error) {
     console.error("[InsightService] Error generating insight:", error);
-    return "오류입니다. 다시 시도해주세요.";
+    return JSON.stringify({ error: "오류입니다. 다시 시도해주세요." });
   }
 }

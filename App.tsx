@@ -81,6 +81,8 @@ const App: React.FC = () => {
   
   // AI Insight for Project Summary
   const [aiInsight, setAiInsight] = useState<string>('');
+  const [aiInsightLoading, setAiInsightLoading] = useState<boolean>(false);
+  const [aiInsightError, setAiInsightError] = useState<string>('');
 
   // Project Overview (프로젝트 개요, 기술 스택)
   const [projectOverview, setProjectOverview] = useState<ProjectOverview | null>(null);
@@ -1098,6 +1100,10 @@ const App: React.FC = () => {
     moduleCount: number;
     featureCount: number;
   }) => {
+    setAiInsightLoading(true);
+    setAiInsightError('');
+    setAiInsight('');
+    
     try {
       console.log('[App] Generating AI insight for:', params.projectName, 'with model:', aiModelSettings.generateInsight);
       const response = await fetch('/api/insight', {
@@ -1111,10 +1117,17 @@ const App: React.FC = () => {
         if (data.success && data.insight) {
           console.log('[App] AI insight generated:', data.insight.substring(0, 100));
           setAiInsight(data.insight);
+        } else {
+          setAiInsightError(data.error || 'AI 분석 결과를 가져오지 못했습니다.');
         }
+      } else {
+        setAiInsightError('AI 분석 요청에 실패했습니다.');
       }
     } catch (error) {
       console.error('[App] Failed to generate AI insight:', error);
+      setAiInsightError('AI 분석 중 오류가 발생했습니다.');
+    } finally {
+      setAiInsightLoading(false);
     }
   };
 
@@ -1901,6 +1914,8 @@ const App: React.FC = () => {
                   onScaleChange={handleScaleChange}
                   projectSummaryContent={projectSummaryContent}
                   aiInsight={aiInsight}
+                  aiInsightLoading={aiInsightLoading}
+                  aiInsightError={aiInsightError}
                   rfpModelId={aiModelSettings.generateRFP}
                   referencedFiles={referencedFiles}
                   progressiveState={progressiveState}
