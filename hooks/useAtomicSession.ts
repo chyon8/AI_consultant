@@ -77,9 +77,21 @@ export function useAtomicSession(): [AtomicSessionState, AtomicSessionActions, A
 
   const syncStateFromUnit = useCallback((unit: AtomicSessionUnit) => {
     console.log(`[useAtomicSession] SYNC: Loading atomic unit ${unit.sessionId}`);
+    
+    const cleanedMessages = unit.chat.messages.map(msg => {
+      if (msg.isStreaming) {
+        console.log(`[useAtomicSession] Cleaning orphan streaming message: ${msg.id}`);
+        const interruptedText = msg.text 
+          ? `${msg.text}\n\n_(응답이 중단되었습니다)_`
+          : '_(응답이 중단되었습니다)_';
+        return { ...msg, text: interruptedText, isStreaming: false };
+      }
+      return msg;
+    });
+    
     setState({
       sessionId: unit.sessionId,
-      messages: unit.chat.messages,
+      messages: cleanedMessages,
       modules: unit.dashboard.modules,
       partnerType: unit.dashboard.partnerType,
       projectScale: unit.dashboard.projectScale,
@@ -87,8 +99,8 @@ export function useAtomicSession(): [AtomicSessionState, AtomicSessionActions, A
       projectSummaryContent: unit.dashboard.projectSummaryContent,
       aiInsight: unit.dashboard.aiInsight,
       referencedFiles: unit.dashboard.referencedFiles,
-      isLoading: unit.meta.isLoading,
-      isStreaming: unit.chat.isStreaming,
+      isLoading: false,
+      isStreaming: false,
       title: unit.meta.title
     });
   }, []);

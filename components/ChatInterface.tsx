@@ -446,6 +446,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       typingManager.startTyping(updateDisplay, 10);
 
+      let streamCompleted = false;
+      
       await new Promise<void>((resolve, reject) => {
         ws.onmessage = (event) => {
           try {
@@ -459,6 +461,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             
             if (data.type === 'done') {
               console.log('[WebSocket] Stream complete');
+              streamCompleted = true;
               ws.close();
               setTimeout(() => resolve(), 500);
             }
@@ -479,6 +482,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         
         ws.onclose = () => {
           console.log('[WebSocket] Connection closed');
+          if (!streamCompleted) {
+            console.log('[WebSocket] Stream interrupted - cleaning up');
+            typingManager.reset();
+            const currentText = extractDisplayText(fullResponseText);
+            const interruptedText = currentText 
+              ? `${currentText}\n\n_(응답이 중단되었습니다)_`
+              : '_(응답이 중단되었습니다)_';
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMsgId 
+                ? { ...msg, text: interruptedText, isStreaming: false } 
+                : msg
+            ));
+            setIsLoading(false);
+            resolve();
+          }
         };
         
         ws.onerror = (error) => {
