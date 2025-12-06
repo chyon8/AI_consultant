@@ -506,6 +506,8 @@ const App: React.FC = () => {
     setReferencedFiles([]);
     setProjectSummaryContent('');
     setAiInsight('');
+    setAiInsightLoading(false);
+    setAiInsightError('');
     setProjectOverview(null);
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
