@@ -98,16 +98,21 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
   const prompt = ASSISTANT_PROMPT + contextInfo;
 
   try {
+    const isThinkingModel = model.includes('thinking') || model.includes('gemini-3');
+    const config: any = {
+      temperature: isThinkingModel ? undefined : 0.7,
+      maxOutputTokens: 8000,
+    };
+    if (isThinkingModel) {
+      config.thinkingConfig = {
+        thinkingBudget: 2048,
+      };
+    }
+    
     const response = await ai.models.generateContent({
       model: model,
       contents: prompt,
-      config: {
-        temperature: 0.7,
-        maxOutputTokens: 8000,
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
-      },
+      config,
     });
 
     console.log(
