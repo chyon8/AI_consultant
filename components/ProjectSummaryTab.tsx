@@ -27,9 +27,9 @@ interface AIInsightData {
   }>;
   technical_scope: {
     required_tech: string;
-    suggested_stack: string;
     resources_done: string;
-    resources_todo: string;
+    stack_explain: string;
+    tech_advise: string;
   };
   checkpoints: string[];
   so_what: {
@@ -109,9 +109,9 @@ const AIAssistantSection: React.FC<{
         gap_analysis: parsed.gap_analysis || [],
         technical_scope: {
           required_tech: parsed.technical_scope?.required_tech || '',
-          suggested_stack: parsed.technical_scope?.suggested_stack || '',
+          stack_explain: parsed.technical_scope?.stack_explain || '',
           resources_done: parsed.technical_scope?.resources_done || '',
-          resources_todo: parsed.technical_scope?.resources_todo || '',
+          tech_advise: parsed.technical_scope?.tech_advise || '',
         },
         checkpoints: parsed.checkpoints || [],
         so_what: {
@@ -308,16 +308,16 @@ const AIAssistantSection: React.FC<{
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.required_tech || '-'}</p>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">제안 스택</p>
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.suggested_stack || '-'}</p>
-            </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">준비된 자원</p>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.resources_done || '-'}</p>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">개발할 자원</p>
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.resources_todo || '-'}</p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">기술 설명</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.stack_explain || '-'}</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">기술 주의점</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{parsedInsight.technical_scope.tech_advise || '-'}</p>
             </div>
           </div>
         </div>
