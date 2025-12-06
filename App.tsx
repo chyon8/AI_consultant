@@ -26,7 +26,7 @@ import {
   AtomicSessionUnit,
   createIsolationGuard
 } from './services/atomicSession';
-import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo } from './services/apiService';
+import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo, generateRFP } from './services/apiService';
 import { 
   sessionSandbox, 
   SessionSnapshot, 
@@ -87,6 +87,9 @@ const App: React.FC = () => {
 
   // RFP Content (session-scoped)
   const [rfpContent, setRfpContent] = useState<string>('');
+  // RFP generating state keyed by session ID (세션 격리 규칙 준수)
+  const [rfpGeneratingSessionId, setRfpGeneratingSessionId] = useState<string | null>(null);
+  const rfpAbortControllerRef = useRef<AbortController | null>(null);
 
   // Project Overview (프로젝트 개요, 기술 스택)
   const [projectOverview, setProjectOverview] = useState<ProjectOverview | null>(null);
@@ -502,6 +505,14 @@ const App: React.FC = () => {
     // Freeze current session before switching
     await freezeCurrentSession();
     
+    // [RFP FIX] Cancel ongoing RFP generation when switching sessions
+    if (rfpAbortControllerRef.current) {
+      console.log(`[App] Aborting RFP generation for session ${activeSessionId} before switch`);
+      rfpAbortControllerRef.current.abort();
+      rfpAbortControllerRef.current = null;
+      setRfpGeneratingSessionId(null);
+    }
+    
     // [FIX] Do NOT clear job polling on session switch!
     // The background job should continue polling until completion
     // Result will be saved to the correct owner session via saveResultToSessionStorage
@@ -675,6 +686,8 @@ const App: React.FC = () => {
       setAiInsightError(atomicUnit.dashboard.aiInsightError || '');
       setReferencedFiles(atomicUnit.dashboard.referencedFiles);
       setProjectOverview(atomicUnit.dashboard.projectOverview || null);
+      // [RFP FIX] Restore rfpContent from atomic unit
+      setRfpContent(atomicUnit.dashboard.rfpContent || '');
       
       // [SESSION PERSISTENCE] Update progressiveState with session-specific data
       setProgressiveState({
@@ -1176,6 +1189,71 @@ const App: React.FC = () => {
         setAiInsightLoading(false);
       }
       setInsightLoadingSessionId(null);
+    }
+  };
+
+  // Generate RFP via API (session-scoped with AbortController)
+  const handleRfpGenerate = async (selectedModules: ModuleItem[], projectSummary: string) => {
+    const ownerSessionId = activeSessionIdRef.current;
+    if (!ownerSessionId) {
+      console.error('[App] Cannot generate RFP: no active session');
+      return;
+    }
+
+    console.log(`[App] RFP generation started for session: ${ownerSessionId}`);
+    
+    // Cancel any existing RFP generation
+    if (rfpAbortControllerRef.current) {
+      rfpAbortControllerRef.current.abort();
+    }
+    
+    // Create new AbortController
+    const abortController = new AbortController();
+    rfpAbortControllerRef.current = abortController;
+    
+    setRfpGeneratingSessionId(ownerSessionId);
+    setRfpContent('');
+    
+    let content = '';
+    
+    try {
+      await generateRFP(
+        selectedModules,
+        projectSummary,
+        (chunk) => {
+          // [SESSION ISOLATION] Only update if still on the same session
+          if (activeSessionIdRef.current === ownerSessionId) {
+            content += chunk;
+            setRfpContent(content);
+          }
+        },
+        (error) => {
+          console.error('[App] RFP generation error:', error);
+        },
+        aiModelSettings.generateRFP,
+        abortController.signal
+      );
+      
+      // [SESSION ISOLATION] Save to owner session's atomic unit
+      sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+        unit.dashboard.rfpContent = content;
+      });
+      
+      console.log(`[App] RFP generation complete for session: ${ownerSessionId}`);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log(`[App] RFP generation aborted for session: ${ownerSessionId}`);
+        return;
+      }
+      console.error('[App] RFP generation failed:', error);
+    } finally {
+      // Only update React loading state if still on the same session
+      if (activeSessionIdRef.current === ownerSessionId) {
+        setRfpGeneratingSessionId(null);
+      }
+      if (rfpAbortControllerRef.current === abortController) {
+        rfpAbortControllerRef.current = null;
+      }
     }
   };
 
@@ -1956,12 +2034,15 @@ const App: React.FC = () => {
                   aiInsightLoading={aiInsightLoading}
                   aiInsightError={aiInsightError}
                   onGenerateInsight={() => {
-                    const userMessage = messages.find(m => m.role === 'user');
+                    const selectedModules = modules.filter(m => m.isSelected);
+                    const selectedFeatures = selectedModules.reduce((acc, m) => 
+                      acc + m.subFeatures.filter(s => s.isSelected).length, 0);
                     generateAiInsight({
                       projectName: projectOverview?.projectTitle || '',
                       businessGoals: projectOverview?.businessGoals || '',
                       coreValues: projectOverview?.coreValues || [],
-                      originalInput: userMessage?.text || projectSummaryContent || ''
+                      moduleCount: selectedModules.length,
+                      featureCount: selectedFeatures
                     });
                   }}
                   rfpModelId={aiModelSettings.generateRFP}
@@ -1971,6 +2052,8 @@ const App: React.FC = () => {
                   projectOverview={projectOverview}
                   rfpContent={rfpContent}
                   onRfpContentChange={setRfpContent}
+                  isRfpGenerating={rfpGeneratingSessionId === activeSessionId}
+                  onRfpGenerate={handleRfpGenerate}
                 />
               </div>
             )}

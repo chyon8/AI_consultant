@@ -1,10 +1,9 @@
 
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ModuleItem, PartnerType } from '../types';
 import { Icons } from './Icons';
 import { calculateSchedule } from '../services/scheduleEngine';
-import { generateRFP } from '../services/apiService';
 
 interface RFPTabProps {
   modules: ModuleItem[];
@@ -13,6 +12,8 @@ interface RFPTabProps {
   modelId?: string;
   rfpContent?: string;
   onRfpContentChange?: (content: string) => void;
+  isRfpGenerating?: boolean;
+  onRfpGenerate?: (modules: ModuleItem[], projectSummary: string) => void;
 }
 
 export const RFPTab: React.FC<RFPTabProps> = ({
@@ -21,9 +22,10 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   onGenerateRFP,
   modelId,
   rfpContent: externalRfpContent,
-  onRfpContentChange
+  onRfpContentChange,
+  isRfpGenerating = false,
+  onRfpGenerate
 }) => {
-  const [isGenerating, setIsGenerating] = useState(false);
   const [localRfpContent, setLocalRfpContent] = useState('');
   const rfpContent = externalRfpContent !== undefined ? externalRfpContent : localRfpContent;
   const setRfpContent = (content: string) => {
@@ -36,6 +38,12 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   const [showResult, setShowResult] = useState(!!rfpContent);
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (rfpContent) {
+      setShowResult(true);
+    }
+  }, [rfpContent]);
 
   const selectedModules = modules.filter(m => m.isSelected);
   
@@ -63,32 +71,14 @@ export const RFPTab: React.FC<RFPTabProps> = ({
     acc + m.subFeatures.filter(s => s.isSelected).length
   , 0);
 
-  const handleGenerateRFP = async () => {
-    setIsGenerating(true);
-    setRfpContent('');
+  const handleGenerateRFP = () => {
     setShowResult(true);
     setCopied(false);
 
-    let content = '';
     const projectSummary = `총 ${selectedModules.length}개 모듈, 예상 비용 ${(totalCost / 10000).toLocaleString()}만원, 예상 기간 ${scheduleResult.totalDuration.toFixed(1)}개월`;
 
-    try {
-      await generateRFP(
-        selectedModules,
-        projectSummary,
-        (chunk) => {
-          content += chunk;
-          setRfpContent(content);
-        },
-        (error) => {
-          console.error('RFP generation error:', error);
-        },
-        modelId
-      );
-    } catch (error) {
-      console.error('RFP generation failed:', error);
-    } finally {
-      setIsGenerating(false);
+    if (onRfpGenerate) {
+      onRfpGenerate(selectedModules, projectSummary);
     }
   };
 
@@ -163,14 +153,14 @@ export const RFPTab: React.FC<RFPTabProps> = ({
         </p>
         <button
           onClick={handleGenerateRFP}
-          disabled={isGenerating}
+          disabled={isRfpGenerating}
           className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-            isGenerating 
+            isRfpGenerating 
               ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed' 
               : 'bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900'
           }`}
         >
-          {isGenerating ? (
+          {isRfpGenerating ? (
             <>
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               <span>생성 중...</span>
@@ -189,18 +179,18 @@ export const RFPTab: React.FC<RFPTabProps> = ({
               <h5 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 <Icons.File size={16} />
                 생성된 공고문
-                {isGenerating && (
+                {isRfpGenerating && (
                   <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 )}
               </h5>
               <button
                 onClick={handleCopy}
-                disabled={!rfpContent || isGenerating}
+                disabled={!rfpContent || isRfpGenerating}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   copied 
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                } ${isRfpGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {copied ? (
                   <>
@@ -219,7 +209,7 @@ export const RFPTab: React.FC<RFPTabProps> = ({
               ref={textareaRef}
               value={rfpContent}
               onChange={(e) => setRfpContent(e.target.value)}
-              readOnly={isGenerating}
+              readOnly={isRfpGenerating}
               className="w-full p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               style={{ resize: 'vertical', minHeight: '384px', maxHeight: '80vh', overflow: 'auto' }}
             />

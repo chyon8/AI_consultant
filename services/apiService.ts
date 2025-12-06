@@ -202,7 +202,8 @@ export async function generateRFP(
   summary: string,
   onChunk: (chunk: string) => void,
   onError?: (error: string) => void,
-  modelId?: string
+  modelId?: string,
+  signal?: AbortSignal
 ): Promise<void> {
   const response = await fetch('/api/rfp', {
     method: 'POST',
@@ -210,6 +211,7 @@ export async function generateRFP(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ modules, summary, modelId }),
+    signal,
   });
 
   if (!response.ok) {
@@ -223,33 +225,41 @@ export async function generateRFP(
 
   const decoder = new TextDecoder();
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    const chunk = decoder.decode(value);
-    const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
 
-    for (const line of lines) {
-      try {
-        const data = JSON.parse(line.slice(6));
-        if (data.chunk) {
-          onChunk(data.chunk);
-        }
-        if (data.error) {
-          if (onError) {
-            onError(data.error);
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.chunk) {
+            onChunk(data.chunk);
           }
-          throw new Error(data.error);
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message !== 'RFP generation failed') {
-          if (onError) {
-            throw e;
+          if (data.error) {
+            if (onError) {
+              onError(data.error);
+            }
+            throw new Error(data.error);
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message !== 'RFP generation failed') {
+            if (onError) {
+              throw e;
+            }
           }
         }
       }
     }
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      console.log('[FE] RFP generation aborted');
+      return;
+    }
+    throw e;
   }
 }
 
