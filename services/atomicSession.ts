@@ -1,4 +1,4 @@
-import { Message, ModuleItem, PartnerType, ProjectScale, EstimationStep, DashboardState, InputSource } from '../types';
+import { Message, ModuleItem, PartnerType, ProjectScale, EstimationStep, DashboardState, InputSource, ProjectOverview } from '../types';
 import { INITIAL_MESSAGES, INITIAL_MODULES } from '../constants';
 
 export interface AtomicSessionUnit {
@@ -18,6 +18,7 @@ export interface AtomicSessionUnit {
     projectSummaryContent: string;
     aiInsight: string;
     referencedFiles: InputSource[];
+    projectOverview?: ProjectOverview | null;
   };
   meta: {
     title: string;

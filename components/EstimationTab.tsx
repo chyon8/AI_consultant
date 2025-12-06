@@ -6,6 +6,13 @@ import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
 import { calculateSchedule } from '../services/scheduleEngine';
 
+interface ProjectOverview {
+  projectTitle: string;
+  businessGoals: string;
+  coreValues: string[];
+  techStack: { layer: string; items: string[] }[];
+}
+
 interface EstimationTabProps {
   modules: ModuleItem[];
   onToggleModule: (moduleId: string) => void;
@@ -16,6 +23,8 @@ interface EstimationTabProps {
   estimationStep: EstimationStep;
   currentScale: ProjectScale;
   onScaleChange: (scale: ProjectScale) => void;
+  projectOverview?: ProjectOverview | null;
+  isLoading?: boolean;
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -26,7 +35,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   onSelectPartnerType,
   estimationStep,
   currentScale,
-  onScaleChange
+  onScaleChange,
+  projectOverview,
+  isLoading = false
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
 
@@ -79,6 +90,114 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   const finalMonths = scheduleResult.totalDuration;
 
   // --- UI Renders ---
+
+  // Skeleton component for loading state
+  const Skeleton = ({ className = '' }: { className?: string }) => (
+    <div className={`animate-pulse bg-slate-200 dark:bg-slate-700 rounded ${className}`} />
+  );
+
+  // Render project overview section
+  const renderProjectOverview = () => {
+    const hasData = projectOverview && (projectOverview.projectTitle || projectOverview.businessGoals || projectOverview.techStack.length > 0);
+    
+    if (isLoading || !hasData) {
+      // Skeleton UI
+      return (
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-800">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Skeleton className="w-5 h-5 rounded" />
+              <Skeleton className="w-32 h-5" />
+            </div>
+            <div className="space-y-3">
+              <Skeleton className="w-3/4 h-4" />
+              <Skeleton className="w-full h-4" />
+              <Skeleton className="w-2/3 h-4" />
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Skeleton className="w-24 h-4 mb-3" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="w-16 h-6 rounded-lg" />
+                <Skeleton className="w-20 h-6 rounded-lg" />
+                <Skeleton className="w-14 h-6 rounded-lg" />
+                <Skeleton className="w-18 h-6 rounded-lg" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Actual data display
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-800">
+        {/* Project Title & Goals */}
+        {(projectOverview.projectTitle || projectOverview.businessGoals) && (
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Icons.Dashboard size={18} className="text-slate-400" />
+              <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                프로젝트 개요
+              </h4>
+            </div>
+            {projectOverview.projectTitle && (
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                {projectOverview.projectTitle}
+              </h3>
+            )}
+            {projectOverview.businessGoals && (
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {projectOverview.businessGoals}
+              </p>
+            )}
+            {projectOverview.coreValues.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {projectOverview.coreValues.map((value, idx) => (
+                  <span 
+                    key={idx}
+                    className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-md"
+                  >
+                    {value}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tech Stack */}
+        {projectOverview.techStack.length > 0 && (
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Icons.Zap size={16} className="text-slate-400" />
+              <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                기술 스택 제안
+              </h4>
+            </div>
+            <div className="space-y-3">
+              {projectOverview.techStack.map((layer, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <span className="text-xs font-medium text-slate-400 dark:text-slate-500 w-20 pt-1 shrink-0">
+                    {layer.layer}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {layer.items.map((item, iIdx) => (
+                      <span 
+                        key={iIdx}
+                        className="px-2.5 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-md"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderAnalysisGraph = () => {
     const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE A' : 
@@ -256,8 +375,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       {/* RESULT step: 상세 견적 content */}
       {!isBlind && renderDetailTab()}
 
-      {/* SCOPE step: Module List */}
+      {/* SCOPE step: Project Overview + Module List */}
       {isBlind && <div className="space-y-6">
+        {/* Project Overview Section */}
+        {renderProjectOverview()}
+        
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
            <Icons.Briefcase size={20} />
            {isBlind ? '기능 범위 설계 (Scope)' : '선택된 기능 명세'}

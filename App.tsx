@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -81,6 +81,9 @@ const App: React.FC = () => {
   
   // AI Insight for Project Summary
   const [aiInsight, setAiInsight] = useState<string>('');
+
+  // Project Overview (프로젝트 개요, 기술 스택)
+  const [projectOverview, setProjectOverview] = useState<ProjectOverview | null>(null);
 
   // Partner Type State
   const [currentPartnerType, setCurrentPartnerType] = useState<PartnerType>('STUDIO');
@@ -224,11 +227,12 @@ const App: React.FC = () => {
         estimationStep,
         projectSummaryContent,
         aiInsight,
-        referencedFiles
+        referencedFiles,
+        projectOverview
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview]);
 
   // Handle visibility change - check job status when tab becomes active
   useEffect(() => {
@@ -331,6 +335,7 @@ const App: React.FC = () => {
     setEstimationStep('SCOPE');
     setProjectSummaryContent('');
     setAiInsight('');
+    setProjectOverview(null);
     setReferencedFiles([]);
   };
 
@@ -497,6 +502,7 @@ const App: React.FC = () => {
         unit.dashboard.projectSummaryContent = projectSummaryContent;
         unit.dashboard.aiInsight = aiInsight;
         unit.dashboard.referencedFiles = referencedFiles;
+        unit.dashboard.projectOverview = projectOverview;
       });
     }
     
@@ -515,6 +521,7 @@ const App: React.FC = () => {
     setReferencedFiles([]);
     setProjectSummaryContent('');
     setAiInsight('');
+    setProjectOverview(null);
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
     setEstimationStep('SCOPE');
@@ -637,6 +644,7 @@ const App: React.FC = () => {
       setProjectSummaryContent(atomicUnit.dashboard.projectSummaryContent);
       setAiInsight(atomicUnit.dashboard.aiInsight);
       setReferencedFiles(atomicUnit.dashboard.referencedFiles);
+      setProjectOverview(atomicUnit.dashboard.projectOverview || null);
       
       if (atomicUnit.chat.messages.length > INITIAL_MESSAGES.length) {
         setCurrentView('detail');
@@ -1103,6 +1111,7 @@ const App: React.FC = () => {
     const newMessages = [...INITIAL_MESSAGES, userMsg, aiMsg];
     
     // Build dashboard state for session storage
+    const techCategories = [...new Set(convertedModules.map((m: any) => m.category).filter(Boolean))] as string[];
     const dashboardState: DashboardState = {
       modules: convertedModules,
       partnerType: 'STUDIO',
@@ -1110,7 +1119,13 @@ const App: React.FC = () => {
       estimationStep: 'SCOPE',
       projectSummaryContent: result.rawMarkdown || '',
       aiInsight: '',
-      referencedFiles: []
+      referencedFiles: [],
+      projectOverview: {
+        projectTitle: result.projectTitle || '',
+        businessGoals: result.businessGoals || '',
+        coreValues: result.coreValues || [],
+        techStack: techCategories.length > 0 ? [{ layer: 'Modules', items: techCategories }] : []
+      }
     };
     
     // Commit to session's scoped storage (localStorage)
@@ -1127,6 +1142,7 @@ const App: React.FC = () => {
       unit.dashboard.projectSummaryContent = dashboardState.projectSummaryContent;
       unit.dashboard.aiInsight = dashboardState.aiInsight;
       unit.dashboard.referencedFiles = dashboardState.referencedFiles;
+      unit.dashboard.projectOverview = dashboardState.projectOverview;
     });
     
     if (!updateSuccess) {
@@ -1146,6 +1162,7 @@ const App: React.FC = () => {
           unit.dashboard.projectSummaryContent = dashboardState.projectSummaryContent;
           unit.dashboard.aiInsight = dashboardState.aiInsight;
           unit.dashboard.referencedFiles = dashboardState.referencedFiles;
+          unit.dashboard.projectOverview = dashboardState.projectOverview;
         });
         console.log(`[App] Created and populated atomic unit for session ${targetSessionId}`);
       } else {
@@ -1253,6 +1270,17 @@ const App: React.FC = () => {
               
               setModules(convertedModules);
               setProgressiveState(prev => ({ ...prev, modulesReady: true }));
+              
+              // Set project overview with available data
+              const techCategories = [...new Set(convertedModules.map((m: any) => m.category).filter(Boolean))] as string[];
+              setProjectOverview({
+                projectTitle: projectTitle || '',
+                businessGoals: staged.data.businessGoals || '',
+                coreValues: staged.data.coreValues || [],
+                techStack: techCategories.length > 0 ? [
+                  { layer: 'Modules', items: techCategories }
+                ] : []
+              });
               
               if (projectTitle) {
                 updateSessionTitle(ownerSessionId, projectTitle.substring(0, 30).trim());
@@ -1824,6 +1852,7 @@ const App: React.FC = () => {
                   referencedFiles={referencedFiles}
                   progressiveState={progressiveState}
                   isAnalyzing={isAnalyzing}
+                  projectOverview={projectOverview}
                 />
               </div>
             )}

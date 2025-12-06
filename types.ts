@@ -128,6 +128,13 @@ export interface PresetDetail {
 export type EstimationStep = 'SCOPE' | 'RESULT' | 'REGISTER';
 export type ProjectScale = 'MVP' | 'STANDARD' | 'HIGH_END';
 
+export interface ProjectOverview {
+  projectTitle: string;
+  businessGoals: string;
+  coreValues: string[];
+  techStack: { layer: string; items: string[] }[];
+}
+
 export interface DashboardState {
   sessionId?: string; // Owner session ID for state isolation validation
   modules: ModuleItem[];
@@ -137,6 +144,7 @@ export interface DashboardState {
   projectSummaryContent?: string;
   aiInsight?: string;
   referencedFiles?: InputSource[];
+  projectOverview?: ProjectOverview | null;
 }
 
 export type ChatActionType = 

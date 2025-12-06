@@ -12,6 +12,13 @@ import { RFPModal } from './RFPModal';
 import { InputSourcesBadge } from './InputSourcesBadge';
 import { TabSkeleton } from './SkeletonLoader';
 
+interface ProjectOverview {
+  projectTitle: string;
+  businessGoals: string;
+  coreValues: string[];
+  techStack: { layer: string; items: string[] }[];
+}
+
 interface DashboardProps {
   modules: ModuleItem[];
   setModules: React.Dispatch<React.SetStateAction<ModuleItem[]>>;
@@ -30,6 +37,7 @@ interface DashboardProps {
   referencedFiles?: InputSource[];
   progressiveState?: ProgressiveLoadingState;
   isAnalyzing?: boolean;
+  projectOverview?: ProjectOverview | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -49,7 +57,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   rfpModelId,
   referencedFiles = [],
   progressiveState,
-  isAnalyzing = false
+  isAnalyzing = false,
+  projectOverview = null
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -294,6 +303,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   estimationStep={estimationStep}
                   currentScale={currentScale}
                   onScaleChange={onScaleChange}
+                  projectOverview={projectOverview}
+                  isLoading={isAnalyzing && (!progressiveState || !progressiveState.modulesReady)}
                 />
               )
             )}
