@@ -588,6 +588,28 @@ wss.on('connection', (ws: WebSocket) => {
         
         let enhancedHistory = [...history];
         
+        // 채팅 메시지에서 URL 자동 감지
+        const lastMessage = history[history.length - 1];
+        const urlsFromMessage: string[] = [];
+        if (lastMessage && lastMessage.role === 'user') {
+          const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
+          const matches = lastMessage.text.match(urlRegex);
+          if (matches) {
+            for (const url of matches) {
+              // 기존 urls 배열에 없는 URL만 추가
+              if (!urls?.includes(url) && !urlsFromMessage.includes(url)) {
+                urlsFromMessage.push(url);
+              }
+            }
+            if (urlsFromMessage.length > 0) {
+              console.log('[WebSocket Chat] Auto-detected URLs from message:', urlsFromMessage.length);
+            }
+          }
+        }
+        
+        // 기존 urls와 자동 감지된 URL 합치기
+        const allUrls = [...(urls || []), ...urlsFromMessage];
+        
         interface ChatFileData {
           type: 'text' | 'image';
           name: string;
@@ -635,7 +657,7 @@ wss.on('connection', (ws: WebSocket) => {
           }
         }
         
-        if (urls && urls.length > 0) {
+        if (allUrls && allUrls.length > 0) {
           const isPrivateUrl = (urlString: string): boolean => {
             try {
               const parsedUrl = new URL(urlString);
@@ -702,7 +724,7 @@ wss.on('connection', (ws: WebSocket) => {
             }
           };
           
-          for (const url of urls) {
+          for (const url of allUrls) {
             try {
               if (isPrivateUrl(url)) {
                 console.warn('[WebSocket Chat] Blocked private URL:', url);
