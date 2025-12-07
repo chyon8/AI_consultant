@@ -55,7 +55,8 @@ import {
   Search,
   Pencil,
   Wrench,
-  Link2
+  Link2,
+  Star
 } from 'lucide-react';
 
 export const Icons = {
@@ -115,5 +116,6 @@ export const Icons = {
   Search: Search,
   Pencil: Pencil,
   Tools: Wrench,
-  Link: Link2
+  Link: Link2,
+  Star: Star
 };

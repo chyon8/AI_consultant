@@ -194,6 +194,8 @@ export interface ChatAction {
 export interface ChatSession {
   id: string;
   title: string;
+  customTitle?: string;
+  isFavorite?: boolean;
   createdAt: number;
   messages: Message[];
   isLoading?: boolean;
