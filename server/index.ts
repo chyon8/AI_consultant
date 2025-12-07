@@ -251,11 +251,16 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 app.post('/api/rfp', async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('Transfer-Encoding', 'chunked');
   res.flushHeaders();
+
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 100);
 
   try {
     const { modules, summary, modelId } = req.body;
@@ -263,17 +268,21 @@ app.post('/api/rfp', async (req, res) => {
     console.log('[RFP] Generating RFP with model:', modelId || 'default');
 
     await generateRFP(modules, summary, (chunk: string) => {
-      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      const padding = ' '.repeat(2048);
+      res.write(`data: ${JSON.stringify({ chunk })}${padding}\n\n`);
       if (typeof (res as any).flush === 'function') {
         (res as any).flush();
       }
     }, modelId);
 
+    clearInterval(heartbeat);
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   } catch (error) {
+    clearInterval(heartbeat);
     console.error('RFP generation error:', error);
     res.write(`data: ${JSON.stringify({ error: 'RFP generation failed' })}\n\n`);
   } finally {
+    clearInterval(heartbeat);
     res.end();
   }
 });
