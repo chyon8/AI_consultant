@@ -83,7 +83,6 @@ interface ChatInterfaceProps {
   modelSettings?: ChatModelSettings;
   isAnalyzing?: boolean;
   progressiveState?: ProgressiveLoadingState;
-  isRfpGenerating?: boolean;
 }
 
 function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
@@ -159,8 +158,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onChatAction,
   modelSettings,
   isAnalyzing = false,
-  progressiveState,
-  isRfpGenerating = false
+  progressiveState
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -372,7 +370,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && attachedFiles.length === 0) || isLoading || isRfpGenerating) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
 
     let uploadedAttachments: FileAttachment[] = [];
     
@@ -719,7 +717,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             className={`p-2 transition-colors ${
-              attachedFiles.length >= FILE_CONSTANTS.MAX_FILES || isRfpGenerating
+              attachedFiles.length >= FILE_CONSTANTS.MAX_FILES
                 ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
                 : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
@@ -727,7 +725,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               ? `최대 ${FILE_CONSTANTS.MAX_FILES}개 파일까지 첨부 가능` 
               : '파일 첨부'
             }
-            disabled={attachedFiles.length >= FILE_CONSTANTS.MAX_FILES || isRfpGenerating}
+            disabled={attachedFiles.length >= FILE_CONSTANTS.MAX_FILES}
           >
             <Icons.Attach size={20} />
           </button>
@@ -735,17 +733,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isLoading && !isRfpGenerating && !pendingAction && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder={attachedFiles.length > 0 
               ? "파일과 함께 보낼 메시지를 입력하세요..." 
               : "예: 결제 모듈 제거해줘, MVP로 줄여줘..."
             }
             className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
-            disabled={isLoading || !!pendingAction || isRfpGenerating}
+            disabled={isLoading || !!pendingAction}
           />
           <button
             onClick={handleSend}
-            disabled={isLoading || (!input.trim() && attachedFiles.length === 0) || !!pendingAction || isRfpGenerating}
+            disabled={isLoading || (!input.trim() && attachedFiles.length === 0) || !!pendingAction}
             className={`p-2 transition-colors duration-200 ${
               (input.trim() || attachedFiles.length > 0)
                 ? 'text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400' 

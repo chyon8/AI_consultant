@@ -87,7 +87,7 @@ interface ModuleInfo {
   subFeatures: { name: string; isSelected: boolean }[];
 }
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-3-pro-preview';
 
 export async function generateRFP(
   modules: ModuleInfo[],

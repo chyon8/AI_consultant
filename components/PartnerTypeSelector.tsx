@@ -6,10 +6,9 @@ import { PARTNER_PRESETS } from '../constants';
 interface PartnerTypeSelectorProps {
   currentType: PartnerType;
   onSelect: (type: PartnerType) => void;
-  isDisabled?: boolean;
 }
 
-export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ currentType, onSelect, isDisabled = false }) => {
+export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ currentType, onSelect }) => {
   const typeLabels: Record<PartnerType, { label: string; subtitle: string }> = {
     AI_NATIVE: { label: 'TYPE A', subtitle: 'AI 네이티브' },
     STUDIO: { label: 'TYPE B', subtitle: '스튜디오' },
@@ -33,13 +32,12 @@ export const PartnerTypeSelector: React.FC<PartnerTypeSelectorProps> = ({ curren
           return (
             <button
               key={type}
-              onClick={() => !isDisabled && onSelect(type)}
-              disabled={isDisabled}
+              onClick={() => onSelect(type)}
               className={`group relative p-5 text-left transition-all duration-200 border rounded-xl ${
                 isSelected
                   ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
-              } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
+              }`}
             >
               <div className="mb-4">
                 <span className={`text-[10px] font-medium tracking-wide px-2 py-1 rounded-md ${

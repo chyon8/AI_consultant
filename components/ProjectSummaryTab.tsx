@@ -50,7 +50,6 @@ interface ProjectSummaryTabProps {
   aiInsightError?: string;
   summary?: SummaryData | null;
   onGenerateInsight?: () => void;
-  isRfpGenerating?: boolean;
 }
 
 const SkeletonCard: React.FC<{ lines?: number }> = ({ lines = 3 }) => (
@@ -391,8 +390,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
   aiInsightLoading, 
   aiInsightError, 
   summary,
-  onGenerateInsight,
-  isRfpGenerating = false
+  onGenerateInsight
 }) => {
   if (!summary && !aiInsight && !aiInsightLoading) {
     return (
@@ -434,10 +432,7 @@ export const ProjectSummaryTab: React.FC<ProjectSummaryTabProps> = ({
             </div>
             <button
               onClick={onGenerateInsight}
-              disabled={isRfpGenerating}
-              className={`w-full px-4 py-3 text-white font-medium rounded-lg transition-opacity flex items-center justify-center ${
-                isRfpGenerating ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90'
-              }`}
+              className="w-full px-4 py-3 text-white font-medium rounded-lg transition-opacity hover:opacity-90 flex items-center justify-center"
               style={{ backgroundColor: '#534CEC' }}
             >
               AI 어시스턴트 생성

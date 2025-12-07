@@ -2025,7 +2025,6 @@ const App: React.FC = () => {
                   }}
                   isAnalyzing={isAnalyzing}
                   progressiveState={progressiveState}
-                  isRfpGenerating={activeSessionId ? rfpGeneratingSessions.has(activeSessionId) : false}
                 />
                 {/* Restore button when chat-only */}
                 {splitMode === 'chat-only' && (
