@@ -341,6 +341,76 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.post('/api/fetch-url', async (req, res) => {
+  try {
+    const { url } = req.body;
+    
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ success: false, error: 'URL is required' });
+    }
+
+    const urlPattern = /^https?:\/\/.+/i;
+    if (!urlPattern.test(url)) {
+      return res.status(400).json({ success: false, error: 'Invalid URL format' });
+    }
+
+    console.log('[FetchURL] Fetching:', url);
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+      },
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (!response.ok) {
+      return res.status(400).json({ success: false, error: `Failed to fetch URL: ${response.status}` });
+    }
+
+    const html = await response.text();
+    
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : url;
+
+    let textContent = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const maxLength = 50000;
+    if (textContent.length > maxLength) {
+      textContent = textContent.substring(0, maxLength) + '... (truncated)';
+    }
+
+    console.log('[FetchURL] Extracted text length:', textContent.length, 'Title:', title);
+
+    res.json({ 
+      success: true, 
+      title,
+      url,
+      content: textContent,
+      wordCount: textContent.split(/\s+/).length
+    });
+  } catch (error: any) {
+    console.error('[FetchURL] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch URL' });
+  }
+});
+
 app.get('/api/jobs/session/:sessionId', (req, res) => {
   const { sessionId } = req.params;
   const jobs = jobRegistry.getJobsBySession(sessionId);

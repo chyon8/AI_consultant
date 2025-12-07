@@ -26,7 +26,7 @@ import {
   AtomicSessionUnit,
   createIsolationGuard
 } from './services/atomicSession';
-import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo, generateRFP } from './services/apiService';
+import { analyzeProject, readFileAsData, uploadAndExtractFiles, FileData, ParsedAnalysisResult, UploadedFileInfo, generateRFP, extractUrls, fetchUrlContent } from './services/apiService';
 import { 
   sessionSandbox, 
   SessionSnapshot, 
@@ -1801,6 +1801,37 @@ const App: React.FC = () => {
     try {
       let fileDataList: FileData[] = [];
       
+      // [URL SUPPORT] Detect and fetch URL content from input text
+      const urls = extractUrls(text || '');
+      if (urls.length > 0) {
+        console.log('[App] Detected URLs in input:', urls);
+        for (const url of urls) {
+          const urlResult = await fetchUrlContent(url);
+          if (urlResult.success && urlResult.content) {
+            console.log('[App] URL content fetched:', urlResult.title, 'words:', urlResult.wordCount);
+            fileDataList.push({
+              type: 'text',
+              name: urlResult.title || url,
+              content: `[웹페이지: ${urlResult.title || url}]\nURL: ${url}\n\n${urlResult.content}`
+            });
+            
+            // Track as referenced source
+            const urlSource: InputSource = {
+              id: `url-${Date.now()}`,
+              filename: url,
+              originalName: urlResult.title || url,
+              mimeType: 'text/html',
+              extractedText: urlResult.content,
+              wordCount: urlResult.wordCount,
+              createdAt: new Date()
+            };
+            setReferencedFiles(prev => [...prev, urlSource]);
+          } else {
+            console.warn('[App] Failed to fetch URL:', url, urlResult.error);
+          }
+        }
+      }
+      
       // Upload files and extract text server-side (stay on landing page during analysis)
       if (files.length > 0) {
         console.log('[App] Uploading and extracting files server-side...');
@@ -1810,7 +1841,7 @@ const App: React.FC = () => {
           throw new Error(uploadResponse.error?.message || '파일 업로드에 실패했습니다.');
         }
         
-        fileDataList = extractedData;
+        fileDataList = [...fileDataList, ...extractedData];
         
         // Track referenced files for badge display
         if (uploadResponse.files) {
@@ -1824,7 +1855,7 @@ const App: React.FC = () => {
             pageCount: f.extraction?.pageCount,
             createdAt: new Date()
           }));
-          setReferencedFiles(inputSources);
+          setReferencedFiles(prev => [...prev, ...inputSources]);
           console.log('[App] Referenced files tracked:', inputSources.map(s => s.originalName));
         }
       }

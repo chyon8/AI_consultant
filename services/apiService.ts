@@ -1,3 +1,33 @@
+export interface UrlFetchResult {
+  success: boolean;
+  title?: string;
+  url?: string;
+  content?: string;
+  wordCount?: number;
+  error?: string;
+}
+
+export function extractUrls(text: string): string[] {
+  const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
+  const matches = text.match(urlPattern);
+  return matches ? [...new Set(matches)] : [];
+}
+
+export async function fetchUrlContent(url: string): Promise<UrlFetchResult> {
+  try {
+    const response = await fetch('/api/fetch-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to fetch URL' };
+  }
+}
+
 export interface ParsedSubFeature {
   id: string;
   name: string;
