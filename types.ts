@@ -41,7 +41,9 @@ export type FileValidationErrorCode =
   | 'MAX_FILES_EXCEEDED'
   | 'DUPLICATE_FILE'
   | 'EMPTY_FILE'
-  | 'UPLOAD_FAILED';
+  | 'UPLOAD_FAILED'
+  | 'INVALID_URL'
+  | 'DUPLICATE_URL';
 
 export interface FileValidationError {
   code: FileValidationErrorCode;
@@ -72,6 +74,7 @@ export interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   attachments?: FileAttachment[];
+  urls?: string[];
 }
 
 export interface ProjectState {

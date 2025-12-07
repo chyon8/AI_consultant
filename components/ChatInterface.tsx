@@ -150,6 +150,11 @@ interface AttachedFileWithPreview {
   previewUrl?: string;
 }
 
+interface AttachedUrl {
+  id: string;
+  url: string;
+}
+
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   setMessages, 
@@ -164,6 +169,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFileWithPreview[]>([]);
+  const [attachedUrls, setAttachedUrls] = useState<AttachedUrl[]>([]);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInputValue, setUrlInputValue] = useState('');
   const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
@@ -229,6 +237,45 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const removeFile = useCallback((id: string) => {
     setAttachedFiles(prev => prev.filter(f => f.id !== id));
+  }, []);
+
+  const addUrl = useCallback(() => {
+    const trimmedUrl = urlInputValue.trim();
+    if (!trimmedUrl) return;
+    
+    const urlPattern = /^(https?:\/\/)?[\w\-.]+(\.[\w\-.]+)+[/\w\-._~:/?#[\]@!$&'()*+,;=%]*$/i;
+    if (!urlPattern.test(trimmedUrl)) {
+      setValidationErrors(prev => [...prev, {
+        code: 'INVALID_URL',
+        message: '올바른 URL 형식이 아닙니다.',
+        details: 'http:// 또는 https://로 시작하는 URL을 입력해주세요.'
+      }]);
+      return;
+    }
+    
+    const finalUrl = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`;
+    
+    const isDuplicate = attachedUrls.some(u => u.url === finalUrl);
+    if (isDuplicate) {
+      setValidationErrors(prev => [...prev, {
+        code: 'DUPLICATE_URL',
+        message: '이미 추가된 URL입니다.'
+      }]);
+      return;
+    }
+    
+    const newUrl: AttachedUrl = {
+      id: `url-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      url: finalUrl
+    };
+    
+    setAttachedUrls(prev => [...prev, newUrl]);
+    setUrlInputValue('');
+    setShowUrlInput(false);
+  }, [urlInputValue, attachedUrls]);
+
+  const removeUrl = useCallback((id: string) => {
+    setAttachedUrls(prev => prev.filter(u => u.id !== id));
   }, []);
 
   const dismissError = useCallback((index: number) => {
@@ -370,7 +417,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0 && attachedUrls.length === 0) || isLoading) return;
 
     let uploadedAttachments: FileAttachment[] = [];
     
@@ -378,17 +425,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       uploadedAttachments = await uploadFiles(attachedFiles);
     }
 
+    const urlsToSend = [...attachedUrls];
+
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
       text: input,
       timestamp: new Date(),
       attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
+      urls: urlsToSend.length > 0 ? urlsToSend.map(u => u.url) : undefined,
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setAttachedFiles([]);
+    setAttachedUrls([]);
     setIsLoading(true);
 
     const aiMsgId = (Date.now() + 1).toString();
@@ -415,15 +466,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             ? `\n\n[첨부파일: ${uploadedAttachments.map(a => a.name).join(', ')}]`
             : '';
           
+          const urlInfo = urlsToSend.length > 0
+            ? `\n\n[참조 URL: ${urlsToSend.map(u => u.url).join(', ')}]`
+            : '';
+          
           ws.send(JSON.stringify({
             type: 'chat',
-            history: [...messages, { ...userMsg, text: userMsg.text + attachmentInfo }].map(m => ({
+            history: [...messages, { ...userMsg, text: userMsg.text + attachmentInfo + urlInfo }].map(m => ({
               role: m.role,
               text: m.text
             })),
             currentModules: modules,
             modelSettings: modelSettings,
             attachments: uploadedAttachments,
+            urls: urlsToSend.map(u => u.url),
           }));
           resolve();
         };
@@ -540,12 +596,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setIsLoading(false);
   };
 
-  const renderMessageAttachments = (attachments?: FileAttachment[]) => {
-    if (!attachments || attachments.length === 0) return null;
+  const renderMessageAttachments = (attachments?: FileAttachment[], urls?: string[]) => {
+    if ((!attachments || attachments.length === 0) && (!urls || urls.length === 0)) return null;
     
     return (
       <div className="flex flex-wrap gap-2 mt-2">
-        {attachments.map(attachment => (
+        {attachments?.map(attachment => (
           <div
             key={attachment.id}
             className="flex items-center gap-2 px-2 py-1.5 bg-white/50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700"
@@ -557,6 +613,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
             <span className="text-xs text-slate-600 dark:text-slate-400 max-w-[120px] truncate">
               {attachment.name}
+            </span>
+          </div>
+        ))}
+        {urls?.map((url, idx) => (
+          <div
+            key={`url-${idx}`}
+            className="flex items-center gap-2 px-2 py-1.5 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+          >
+            <Icons.Link size={14} className="text-blue-500" />
+            <span className="text-xs text-blue-600 dark:text-blue-400 max-w-[150px] truncate">
+              {url}
             </span>
           </div>
         ))}
@@ -619,7 +686,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2">
                       <ReactMarkdown>{msg.text}</ReactMarkdown>
                     </div>
-                    {isUser && renderMessageAttachments(msg.attachments)}
+                    {isUser && renderMessageAttachments(msg.attachments, msg.urls)}
                     {msg.isStreaming && (
                         <div className="inline-flex items-center gap-1 ml-1">
                           <span className="w-1.5 h-1.5 bg-indigo-500 dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}/>
@@ -674,7 +741,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       <div className="p-6 bg-white dark:bg-slate-950 border-t border-transparent dark:border-slate-800 transition-colors">
-        {attachedFiles.length > 0 && (
+        {(attachedFiles.length > 0 || attachedUrls.length > 0) && (
           <div className="mb-3 flex flex-wrap gap-2">
             {attachedFiles.map((af) => (
               <div
@@ -706,6 +773,61 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </button>
               </div>
             ))}
+            {attachedUrls.map((au) => (
+              <div
+                key={au.id}
+                className="group relative flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+              >
+                <Icons.Link size={16} className="text-blue-500" />
+                <span className="text-xs text-blue-700 dark:text-blue-300 max-w-[180px] truncate">
+                  {au.url}
+                </span>
+                <button
+                  onClick={() => removeUrl(au.id)}
+                  className="ml-1 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                >
+                  <Icons.Close size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {showUrlInput && (
+          <div className="mb-3 flex items-center gap-2">
+            <Icons.Link size={16} className="text-blue-500" />
+            <input
+              type="text"
+              value={urlInputValue}
+              onChange={(e) => setUrlInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addUrl();
+                } else if (e.key === 'Escape') {
+                  setShowUrlInput(false);
+                  setUrlInputValue('');
+                }
+              }}
+              placeholder="https://example.com"
+              className="flex-1 py-2 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+            <button
+              onClick={addUrl}
+              className="px-3 py-2 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              추가
+            </button>
+            <button
+              onClick={() => {
+                setShowUrlInput(false);
+                setUrlInputValue('');
+              }}
+              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            >
+              <Icons.Close size={16} />
+            </button>
           </div>
         )}
         
@@ -733,13 +855,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           >
             <Icons.Attach size={20} />
           </button>
+          <button
+            onClick={() => setShowUrlInput(true)}
+            className={`p-2 transition-colors ${
+              showUrlInput
+                ? 'text-blue-500'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+            title="URL 추가"
+          >
+            <Icons.Link size={20} />
+          </button>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder={attachedFiles.length > 0 
-              ? "파일과 함께 보낼 메시지를 입력하세요..." 
+            placeholder={attachedFiles.length > 0 || attachedUrls.length > 0
+              ? "첨부 자료와 함께 보낼 메시지를 입력하세요..." 
               : "예: 결제 모듈 제거해줘, MVP로 줄여줘..."
             }
             className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
@@ -747,9 +880,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           />
           <button
             onClick={handleSend}
-            disabled={isLoading || (!input.trim() && attachedFiles.length === 0) || !!pendingAction}
+            disabled={isLoading || (!input.trim() && attachedFiles.length === 0 && attachedUrls.length === 0) || !!pendingAction}
             className={`p-2 transition-colors duration-200 ${
-              (input.trim() || attachedFiles.length > 0)
+              (input.trim() || attachedFiles.length > 0 || attachedUrls.length > 0)
                 ? 'text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400' 
                 : 'text-slate-200 dark:text-slate-700'
             }`}

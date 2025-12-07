@@ -54,7 +54,8 @@ import {
   ArrowRight,
   Search,
   Pencil,
-  Wrench
+  Wrench,
+  Link2
 } from 'lucide-react';
 
 export const Icons = {
@@ -113,5 +114,6 @@ export const Icons = {
   ArrowRight: ArrowRight,
   Search: Search,
   Pencil: Pencil,
-  Tools: Wrench
+  Tools: Wrench,
+  Link: Link2
 };

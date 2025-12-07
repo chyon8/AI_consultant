@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import * as ipaddr from 'ipaddr.js';
 import { analyzeProject, generateRFP, generateInsight, streamChatResponse, InsightParams } from './services/aiRouter';
 import { extractTextFromFile, isExtractableDocument, ExtractionResult } from './services/textExtractor';
 import { parseAnalysisResponse, detectCompletedStages, StageType } from './services/responseParser';
@@ -579,11 +580,123 @@ wss.on('connection', (ws: WebSocket) => {
       console.log('[WebSocket] Received message type:', data.type);
       
       if (data.type === 'chat') {
-        const { history, currentModules, modelSettings } = data;
+        const { history, currentModules, modelSettings, urls } = data;
         
         console.log('[WebSocket Chat] Using model settings:', modelSettings || 'default');
+        console.log('[WebSocket Chat] URLs to fetch:', urls?.length || 0);
         
-        await streamChatResponse(history, currentModules, (chunk: string) => {
+        let enhancedHistory = [...history];
+        
+        if (urls && urls.length > 0) {
+          let urlContents: string[] = [];
+          
+          const isPrivateUrl = (urlString: string): boolean => {
+            try {
+              const parsedUrl = new URL(urlString);
+              const protocol = parsedUrl.protocol.toLowerCase();
+              if (protocol !== 'http:' && protocol !== 'https:') return true;
+              
+              let hostname = parsedUrl.hostname.toLowerCase();
+              
+              if (hostname.startsWith('[') && hostname.endsWith(']')) {
+                hostname = hostname.slice(1, -1);
+              }
+              
+              const reservedTLDs = ['.local', '.internal', '.localhost', '.arpa', '.test', '.example', '.invalid', '.onion'];
+              if (reservedTLDs.some(tld => hostname.endsWith(tld))) return true;
+              if (hostname === 'localhost') return true;
+              
+              if (ipaddr.isValid(hostname)) {
+                const addr = ipaddr.parse(hostname);
+                
+                if (addr.kind() === 'ipv4') {
+                  const ipv4 = addr as ipaddr.IPv4;
+                  const range = ipv4.range();
+                  const privateRanges = ['loopback', 'private', 'linkLocal', 'carrierGradeNat', 'broadcast', 'unspecified'];
+                  if (privateRanges.includes(range)) return true;
+                  if (range === 'reserved') return true;
+                }
+                
+                if (addr.kind() === 'ipv6') {
+                  const ipv6 = addr as ipaddr.IPv6;
+                  const range = ipv6.range();
+                  const privateRanges = ['loopback', 'uniqueLocal', 'linkLocal', 'unspecified', 'reserved', 'discard'];
+                  if (privateRanges.includes(range)) return true;
+                  
+                  if (ipv6.isIPv4MappedAddress()) {
+                    const mappedIPv4 = ipv6.toIPv4Address();
+                    const mappedRange = mappedIPv4.range();
+                    const ipv4PrivateRanges = ['loopback', 'private', 'linkLocal', 'carrierGradeNat', 'broadcast', 'unspecified', 'reserved'];
+                    if (ipv4PrivateRanges.includes(mappedRange)) return true;
+                  }
+                }
+              } else {
+                if (/^\d+$/.test(hostname)) return true;
+                if (/^0x[0-9a-f]+$/i.test(hostname)) return true;
+                if (/^0[0-7]+(\.[0-7]+)*$/.test(hostname)) return true;
+                
+                const parts = hostname.split('.');
+                if (parts.every(p => /^\d+$/.test(p) || /^0x[0-9a-f]+$/i.test(p) || /^0[0-7]+$/.test(p))) {
+                  return true;
+                }
+              }
+              
+              return false;
+            } catch {
+              return true;
+            }
+          };
+          
+          for (const url of urls) {
+            try {
+              if (isPrivateUrl(url)) {
+                console.warn('[WebSocket Chat] Blocked private URL:', url);
+                continue;
+              }
+              
+              console.log('[WebSocket Chat] Fetching URL:', url);
+              const response = await fetch(url, {
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                },
+                signal: AbortSignal.timeout(15000)
+              });
+              
+              if (response.ok) {
+                const html = await response.text();
+                const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+                const title = titleMatch ? titleMatch[1].trim() : url;
+                
+                let textContent = html
+                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                  .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+                  .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .substring(0, 10000);
+                
+                urlContents.push(`[웹페이지: ${title}]\nURL: ${url}\n\n${textContent}`);
+                console.log('[WebSocket Chat] URL content fetched:', title);
+              }
+            } catch (err: any) {
+              console.warn('[WebSocket Chat] Failed to fetch URL:', url, err.message);
+            }
+          }
+          
+          if (urlContents.length > 0 && enhancedHistory.length > 0) {
+            const lastIdx = enhancedHistory.length - 1;
+            enhancedHistory[lastIdx] = {
+              ...enhancedHistory[lastIdx],
+              text: enhancedHistory[lastIdx].text + '\n\n--- 참조 웹페이지 내용 ---\n' + urlContents.join('\n\n---\n\n')
+            };
+          }
+        }
+        
+        await streamChatResponse(enhancedHistory, currentModules, (chunk: string) => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'chunk', chunk }));
           }
