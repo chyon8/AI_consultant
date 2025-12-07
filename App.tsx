@@ -87,9 +87,10 @@ const App: React.FC = () => {
 
   // RFP Content (session-scoped)
   const [rfpContent, setRfpContent] = useState<string>('');
-  // RFP generating state keyed by session ID (세션 격리 규칙 준수)
-  const [rfpGeneratingSessionId, setRfpGeneratingSessionId] = useState<string | null>(null);
-  const rfpAbortControllerRef = useRef<AbortController | null>(null);
+  // RFP generating state - Map to track which sessions are currently generating (concurrent support)
+  const [rfpGeneratingSessions, setRfpGeneratingSessions] = useState<Set<string>>(new Set());
+  // Per-session AbortController Map for concurrent RFP generation
+  const rfpAbortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   // Project Overview (프로젝트 개요, 기술 스택)
   const [projectOverview, setProjectOverview] = useState<ProjectOverview | null>(null);
@@ -688,6 +689,18 @@ const App: React.FC = () => {
       // [RFP FIX] Restore rfpContent from atomic unit
       setRfpContent(atomicUnit.dashboard.rfpContent || '');
       
+      // [RFP ISOLATION FIX] Restore rfpGenerating state from atomic unit
+      // If this session was generating in background, re-add to generating set
+      if (atomicUnit.dashboard.rfpGenerating) {
+        setRfpGeneratingSessions(prev => new Set(prev).add(sessionId));
+      } else {
+        setRfpGeneratingSessions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(sessionId);
+          return newSet;
+        });
+      }
+      
       // [SESSION PERSISTENCE] Update progressiveState with session-specific data
       setProgressiveState({
         projectOverviewReady: true,
@@ -1191,7 +1204,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Generate RFP via API (session-scoped with AbortController)
+  // Generate RFP via API (session-scoped with per-session AbortController for concurrency)
   const handleRfpGenerate = async (selectedModules: ModuleItem[], projectSummary: string) => {
     const ownerSessionId = activeSessionIdRef.current;
     if (!ownerSessionId) {
@@ -1201,17 +1214,30 @@ const App: React.FC = () => {
 
     console.log(`[App] RFP generation started for session: ${ownerSessionId}`);
     
-    // Cancel any existing RFP generation
-    if (rfpAbortControllerRef.current) {
-      rfpAbortControllerRef.current.abort();
+    // [CONCURRENCY FIX] Cancel only THIS session's existing RFP generation (not other sessions)
+    const existingController = rfpAbortControllersRef.current.get(ownerSessionId);
+    if (existingController) {
+      existingController.abort();
+      rfpAbortControllersRef.current.delete(ownerSessionId);
     }
     
-    // Create new AbortController
+    // Create new AbortController for THIS session
     const abortController = new AbortController();
-    rfpAbortControllerRef.current = abortController;
+    rfpAbortControllersRef.current.set(ownerSessionId, abortController);
     
-    setRfpGeneratingSessionId(ownerSessionId);
-    setRfpContent('');
+    // [SESSION ISOLATION] Add this session to generating set
+    setRfpGeneratingSessions(prev => new Set(prev).add(ownerSessionId));
+    
+    // Update atomic unit to track generating state
+    sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+      unit.dashboard.rfpGenerating = true;
+      unit.dashboard.rfpContent = '';
+    });
+    
+    // Only clear React state if still on the same session
+    if (activeSessionIdRef.current === ownerSessionId) {
+      setRfpContent('');
+    }
     
     let content = '';
     
@@ -1240,24 +1266,38 @@ const App: React.FC = () => {
         abortController.signal
       );
       
-      // [SESSION ISOLATION] Save to owner session's atomic unit
+      // [SESSION ISOLATION] Save final content to owner session's atomic unit
       sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
         unit.dashboard.rfpContent = content;
+        unit.dashboard.rfpGenerating = false;
       });
       
       console.log(`[App] RFP generation complete for session: ${ownerSessionId}`);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         console.log(`[App] RFP generation aborted for session: ${ownerSessionId}`);
+        // Still clear generating state on abort
+        sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+          unit.dashboard.rfpGenerating = false;
+        });
         return;
       }
       console.error('[App] RFP generation failed:', error);
+      // Clear generating state on error
+      sessionCoupler.backgroundUpdate(ownerSessionId, (unit) => {
+        unit.dashboard.rfpGenerating = false;
+      });
     } finally {
-      // [RFP FIX] Always clear generating state when RFP completes
-      // This ensures the loading indicator stops even if user switched sessions
-      setRfpGeneratingSessionId(null);
-      if (rfpAbortControllerRef.current === abortController) {
-        rfpAbortControllerRef.current = null;
+      // [CONCURRENCY FIX] Remove this session from generating set
+      setRfpGeneratingSessions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ownerSessionId);
+        return newSet;
+      });
+      
+      // Clean up this session's AbortController
+      if (rfpAbortControllersRef.current.get(ownerSessionId) === abortController) {
+        rfpAbortControllersRef.current.delete(ownerSessionId);
       }
     }
   };
@@ -2057,7 +2097,7 @@ const App: React.FC = () => {
                   projectOverview={projectOverview}
                   rfpContent={rfpContent}
                   onRfpContentChange={setRfpContent}
-                  isRfpGenerating={rfpGeneratingSessionId === activeSessionId}
+                  isRfpGenerating={activeSessionId ? rfpGeneratingSessions.has(activeSessionId) : false}
                   onRfpGenerate={handleRfpGenerate}
                 />
               </div>

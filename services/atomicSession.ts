@@ -23,6 +23,7 @@ export interface AtomicSessionUnit {
     projectOverview?: ProjectOverview | null;
     summary?: ParsedSummary | null;
     rfpContent?: string;
+    rfpGenerating?: boolean;
   };
   meta: {
     title: string;
@@ -109,7 +110,8 @@ class SessionCoupler {
         aiInsight: '',
         aiInsightLoading: false,
         aiInsightError: '',
-        referencedFiles: []
+        referencedFiles: [],
+        rfpGenerating: false
       },
       meta: {
         title,

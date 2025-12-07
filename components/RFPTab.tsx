@@ -42,6 +42,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   useEffect(() => {
     if (rfpContent) {
       setShowResult(true);
+    } else {
+      setShowResult(false);
     }
   }, [rfpContent]);
 
