@@ -636,8 +636,6 @@ wss.on('connection', (ws: WebSocket) => {
         }
         
         if (urls && urls.length > 0) {
-          let urlContents: string[] = [];
-          
           const isPrivateUrl = (urlString: string): boolean => {
             try {
               const parsedUrl = new URL(urlString);
@@ -736,20 +734,18 @@ wss.on('connection', (ws: WebSocket) => {
                   .trim()
                   .substring(0, 10000);
                 
-                urlContents.push(`[웹페이지: ${title}]\nURL: ${url}\n\n${textContent}`);
-                console.log('[WebSocket Chat] URL content fetched:', title);
+                const urlContent = `[웹페이지: ${title}]\nURL: ${url}\n\n${textContent}`;
+                // URL 내용을 fileDataList에 추가 (프로젝트 생성과 동일한 방식)
+                fileDataList.push({
+                  type: 'text' as const,
+                  name: title || url,
+                  content: urlContent
+                });
+                console.log('[WebSocket Chat] URL content fetched:', title, 'length:', textContent.length);
               }
             } catch (err: any) {
               console.warn('[WebSocket Chat] Failed to fetch URL:', url, err.message);
             }
-          }
-          
-          if (urlContents.length > 0 && enhancedHistory.length > 0) {
-            const lastIdx = enhancedHistory.length - 1;
-            enhancedHistory[lastIdx] = {
-              ...enhancedHistory[lastIdx],
-              text: enhancedHistory[lastIdx].text + '\n\n--- 참조 웹페이지 내용 ---\n' + urlContents.join('\n\n---\n\n')
-            };
           }
         }
         
