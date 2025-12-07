@@ -650,9 +650,15 @@ wss.on('connection', (ws: WebSocket) => {
                 hostname = hostname.slice(1, -1);
               }
               
+              if (hostname === 'localhost') return true;
+              
               const reservedTLDs = ['.local', '.internal', '.localhost', '.arpa', '.test', '.example', '.invalid', '.onion'];
               if (reservedTLDs.some(tld => hostname.endsWith(tld))) return true;
-              if (hostname === 'localhost') return true;
+              
+              const hasLetters = /[a-z]/i.test(hostname);
+              if (hasLetters) {
+                return false;
+              }
               
               if (ipaddr.isValid(hostname)) {
                 const addr = ipaddr.parse(hostname);
@@ -679,11 +685,6 @@ wss.on('connection', (ws: WebSocket) => {
                   }
                 }
               } else {
-                const hasLetters = /[a-z]/i.test(hostname);
-                if (hasLetters) {
-                  return false;
-                }
-                
                 if (/^\d+$/.test(hostname)) return true;
                 if (/^0x[0-9a-f]+$/i.test(hostname)) return true;
                 if (/^0[0-7]+(\.[0-7]+)*$/.test(hostname)) return true;
