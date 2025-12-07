@@ -24,6 +24,7 @@ export interface AtomicSessionUnit {
     summary?: ParsedSummary | null;
     rfpContent?: string;
     rfpGenerating?: boolean;
+    memoContent?: string;
   };
   meta: {
     title: string;
@@ -111,7 +112,8 @@ class SessionCoupler {
         aiInsightLoading: false,
         aiInsightError: '',
         referencedFiles: [],
-        rfpGenerating: false
+        rfpGenerating: false,
+        memoContent: ''
       },
       meta: {
         title,

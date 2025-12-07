@@ -7,6 +7,7 @@ import { ProjectSummaryTab } from './ProjectSummaryTab';
 import { EstimationTab } from './EstimationTab';
 import { ExecutionPlanTab } from './ExecutionPlanTab';
 import { RFPTab } from './RFPTab';
+import { MemoTab } from './MemoTab';
 import { ReportBuilderModal } from './ReportBuilderModal';
 import { RFPModal } from './RFPModal';
 import { InputSourcesBadge } from './InputSourcesBadge';
@@ -47,6 +48,8 @@ interface DashboardProps {
   isRfpGenerating?: boolean;
   onRfpGenerate?: (modules: ModuleItem[], projectSummary: string) => void;
   onRfpCancel?: () => void;
+  memoContent?: string;
+  onMemoChange?: (content: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -76,7 +79,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onRfpContentChange,
   isRfpGenerating = false,
   onRfpGenerate,
-  onRfpCancel
+  onRfpCancel,
+  memoContent = '',
+  onMemoChange
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -123,6 +128,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     { id: TabView.ESTIMATION, label: '견적/예산', icon: Icons.Wallet },
     { id: TabView.EXECUTION_PLAN, label: '수행계획', icon: Icons.Calendar },
     { id: TabView.RFP, label: '공고작성', icon: Icons.File },
+    { id: TabView.MEMO, label: '메모', icon: Icons.Pencil },
   ];
 
   // Logic for Project DNA Analysis
@@ -347,6 +353,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 isRfpGenerating={isRfpGenerating}
                 onRfpGenerate={onRfpGenerate}
                 onRfpCancel={onRfpCancel}
+              />
+            )}
+            {activeTab === TabView.MEMO && (
+              <MemoTab
+                memoContent={memoContent || ''}
+                onMemoChange={onMemoChange || (() => {})}
               />
             )}
           </div>

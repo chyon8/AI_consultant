@@ -89,6 +89,9 @@ const App: React.FC = () => {
   const [rfpContent, setRfpContent] = useState<string>('');
   // RFP generating state - Map to track which sessions are currently generating (concurrent support)
   const [rfpGeneratingSessions, setRfpGeneratingSessions] = useState<Set<string>>(new Set());
+  
+  // Memo content (session-scoped)
+  const [memoContent, setMemoContent] = useState<string>('');
   // Per-session AbortController Map for concurrent RFP generation
   const rfpAbortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
@@ -241,11 +244,12 @@ const App: React.FC = () => {
         referencedFiles,
         projectOverview,
         summary: progressiveState?.summary || null,
-        rfpContent
+        rfpContent,
+        memoContent
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent, memoContent]);
 
   // Handle visibility change - check job status when tab becomes active
   useEffect(() => {
@@ -341,6 +345,7 @@ const App: React.FC = () => {
     setProjectOverview(null);
     setReferencedFiles([]);
     setRfpContent('');
+    setMemoContent('');
   };
 
   // Handle delete session - show confirmation modal
@@ -501,6 +506,7 @@ const App: React.FC = () => {
         unit.dashboard.referencedFiles = referencedFiles;
         unit.dashboard.projectOverview = projectOverview;
         unit.dashboard.rfpContent = rfpContent;
+        unit.dashboard.memoContent = memoContent;
       });
     }
     
@@ -527,6 +533,7 @@ const App: React.FC = () => {
     setAiInsightError('');
     setProjectOverview(null);
     setRfpContent('');
+    setMemoContent('');
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
     setEstimationStep('SCOPE');
@@ -688,6 +695,8 @@ const App: React.FC = () => {
       setProjectOverview(atomicUnit.dashboard.projectOverview || null);
       // [RFP FIX] Restore rfpContent from atomic unit
       setRfpContent(atomicUnit.dashboard.rfpContent || '');
+      // [MEMO] Restore memoContent from atomic unit
+      setMemoContent(atomicUnit.dashboard.memoContent || '');
       
       // [RFP ISOLATION FIX] Restore rfpGenerating state from atomic unit
       // If this session was generating in background, re-add to generating set
@@ -2146,6 +2155,8 @@ const App: React.FC = () => {
                   isRfpGenerating={activeSessionId ? rfpGeneratingSessions.has(activeSessionId) : false}
                   onRfpGenerate={handleRfpGenerate}
                   onRfpCancel={handleRfpCancel}
+                  memoContent={memoContent}
+                  onMemoChange={setMemoContent}
                 />
               </div>
             )}

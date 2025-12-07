@@ -98,6 +98,7 @@ export enum TabView {
   ESTIMATION = 'ESTIMATION',
   EXECUTION_PLAN = 'EXECUTION_PLAN',
   RFP = 'RFP',
+  MEMO = 'MEMO',
 }
 
 // Changed from MVP/STANDARD/ENTERPRISE to Partner Types
@@ -147,6 +148,7 @@ export interface DashboardState {
   projectOverview?: ProjectOverview | null;
   summary?: ParsedSummary | null;
   rfpContent?: string; // RFP generation result
+  memoContent?: string; // Session memo content
 }
 
 export type ChatActionType = 
