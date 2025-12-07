@@ -655,8 +655,11 @@ wss.on('connection', (ws: WebSocket) => {
               const reservedTLDs = ['.local', '.internal', '.localhost', '.arpa', '.test', '.example', '.invalid', '.onion'];
               if (reservedTLDs.some(tld => hostname.endsWith(tld))) return true;
               
+              // If hostname contains letters but is NOT an IPv6 address (no colons),
+              // it's a regular domain name - allow it
               const hasLetters = /[a-z]/i.test(hostname);
-              if (hasLetters) {
+              const isIPv6Format = hostname.includes(':');
+              if (hasLetters && !isIPv6Format) {
                 return false;
               }
               
