@@ -1302,6 +1302,21 @@ const App: React.FC = () => {
     }
   };
 
+  // Cancel RFP generation for active session
+  const handleRfpCancel = () => {
+    const ownerSessionId = activeSessionIdRef.current;
+    if (!ownerSessionId) {
+      console.warn('[App] Cannot cancel RFP: no active session');
+      return;
+    }
+
+    const controller = rfpAbortControllersRef.current.get(ownerSessionId);
+    if (controller) {
+      console.log(`[App] Cancelling RFP generation for session: ${ownerSessionId}`);
+      controller.abort();
+    }
+  };
+
   // [SCOPED STORAGE] Save analysis result to session-specific storage AND atomic unit
   const saveResultToSessionStorage = (targetSessionId: string, result: any, userMsg: Message) => {
     console.log(`[App] Saving result to session storage: ${targetSessionId}`);
@@ -2099,6 +2114,7 @@ const App: React.FC = () => {
                   onRfpContentChange={setRfpContent}
                   isRfpGenerating={activeSessionId ? rfpGeneratingSessions.has(activeSessionId) : false}
                   onRfpGenerate={handleRfpGenerate}
+                  onRfpCancel={handleRfpCancel}
                 />
               </div>
             )}

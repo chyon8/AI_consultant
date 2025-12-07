@@ -14,6 +14,7 @@ interface RFPTabProps {
   onRfpContentChange?: (content: string) => void;
   isRfpGenerating?: boolean;
   onRfpGenerate?: (modules: ModuleItem[], projectSummary: string) => void;
+  onRfpCancel?: () => void;
 }
 
 export const RFPTab: React.FC<RFPTabProps> = ({
@@ -24,7 +25,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   rfpContent: externalRfpContent,
   onRfpContentChange,
   isRfpGenerating = false,
-  onRfpGenerate
+  onRfpGenerate,
+  onRfpCancel
 }) => {
   const [localRfpContent, setLocalRfpContent] = useState('');
   const rfpContent = externalRfpContent !== undefined ? externalRfpContent : localRfpContent;
@@ -153,27 +155,38 @@ export const RFPTab: React.FC<RFPTabProps> = ({
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
           위 내용을 기반으로 입찰 공고문을 자동 생성합니다. 프로젝트 개요, 과업 범위, 기술 스택, 일정 등이 포함됩니다.
         </p>
-        <button
-          onClick={handleGenerateRFP}
-          disabled={isRfpGenerating}
-          className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-            isRfpGenerating 
-              ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed' 
-              : 'bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900'
-          }`}
-        >
-          {isRfpGenerating ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>생성 중...</span>
-            </>
-          ) : (
-            <>
-              <Icons.File size={18} />
-              <span>공고문 생성하기</span>
-            </>
+        <div className="flex gap-3">
+          <button
+            onClick={handleGenerateRFP}
+            disabled={isRfpGenerating}
+            className={`flex-1 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+              isRfpGenerating 
+                ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed' 
+                : 'bg-slate-900 dark:bg-white hover:bg-black dark:hover:bg-slate-200 text-white dark:text-slate-900'
+            }`}
+          >
+            {isRfpGenerating ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>생성 중...</span>
+              </>
+            ) : (
+              <>
+                <Icons.File size={18} />
+                <span>공고문 생성하기</span>
+              </>
+            )}
+          </button>
+          {isRfpGenerating && onRfpCancel && (
+            <button
+              onClick={onRfpCancel}
+              className="px-6 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all bg-red-500 hover:bg-red-600 text-white"
+            >
+              <Icons.Close size={18} />
+              <span>중단</span>
+            </button>
           )}
-        </button>
+        </div>
 
         {showResult && (
           <div className="mt-6 space-y-3 animate-fade-in">

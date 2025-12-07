@@ -46,6 +46,7 @@ interface DashboardProps {
   onRfpContentChange?: (content: string) => void;
   isRfpGenerating?: boolean;
   onRfpGenerate?: (modules: ModuleItem[], projectSummary: string) => void;
+  onRfpCancel?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -74,7 +75,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   rfpContent = '',
   onRfpContentChange,
   isRfpGenerating = false,
-  onRfpGenerate
+  onRfpGenerate,
+  onRfpCancel
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -344,6 +346,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onRfpContentChange={onRfpContentChange}
                 isRfpGenerating={isRfpGenerating}
                 onRfpGenerate={onRfpGenerate}
+                onRfpCancel={onRfpCancel}
               />
             )}
           </div>
