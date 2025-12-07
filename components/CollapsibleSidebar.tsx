@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ChatSession } from '../types';
 
@@ -11,6 +11,8 @@ interface CollapsibleSidebarProps {
   onSelectSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string, sessionTitle: string) => void;
   onAbortSession?: (sessionId: string) => void;
+  onRenameSession?: (sessionId: string, newTitle: string) => void;
+  onToggleFavorite?: (sessionId: string) => void;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -30,11 +32,51 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
   onNewChat,
   onSelectSession,
   onDeleteSession,
-  onAbortSession
+  onAbortSession,
+  onRenameSession,
+  onToggleFavorite
 }) => {
   const [isProjectExpanded, setIsProjectExpanded] = useState(true);
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   const sessionCount = (chatSessions || []).length;
+
+  const sortedSessions = [...(chatSessions || [])].sort((a, b) => {
+    if (a.isFavorite && !b.isFavorite) return -1;
+    if (!a.isFavorite && b.isFavorite) return 1;
+    return b.createdAt - a.createdAt;
+  });
+
+  useEffect(() => {
+    if (editingSessionId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingSessionId]);
+
+  const handleStartEditing = (session: ChatSession) => {
+    setEditingSessionId(session.id);
+    setEditingTitle(session.customTitle || session.title);
+  };
+
+  const handleFinishEditing = () => {
+    if (editingSessionId && editingTitle.trim() && onRenameSession) {
+      onRenameSession(editingSessionId, editingTitle.trim());
+    }
+    setEditingSessionId(null);
+    setEditingTitle('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleFinishEditing();
+    } else if (e.key === 'Escape') {
+      setEditingSessionId(null);
+      setEditingTitle('');
+    }
+  };
 
   return (
     <div 
@@ -112,7 +154,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                   isProjectExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                {(chatSessions || []).map((session) => (
+                {sortedSessions.map((session) => (
                   <div
                     key={session.id}
                     className={`relative group flex items-center pl-10 pr-2 py-2.5 transition-colors ${
@@ -123,28 +165,45 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                     onMouseEnter={() => setHoveredSessionId(session.id)}
                     onMouseLeave={() => setHoveredSessionId(null)}
                   >
-                    <button
-                      onClick={() => onSelectSession(session.id)}
-                      className="flex-1 flex flex-col items-start text-left min-w-0"
-                    >
-                      <span className={`text-sm truncate w-full ${
-                        activeSessionId === session.id 
-                          ? 'text-slate-900 dark:text-white font-medium' 
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {session.isLoading ? (
-                          <span className="flex items-center gap-2">
-                            <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                            <span>생성 중...</span>
-                          </span>
-                        ) : (
-                          session.title
-                        )}
-                      </span>
-                      <span className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                        {formatDate(session.createdAt)}
-                      </span>
-                    </button>
+                    {session.isFavorite && (
+                      <Icons.Star size={12} className="absolute left-6 top-3 text-yellow-500 fill-yellow-500" />
+                    )}
+                    
+                    {editingSessionId === session.id ? (
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onBlur={handleFinishEditing}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 text-sm px-2 py-1 rounded border border-indigo-400 dark:border-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => onSelectSession(session.id)}
+                        className="flex-1 flex flex-col items-start text-left min-w-0"
+                      >
+                        <span className={`text-sm truncate w-full ${
+                          activeSessionId === session.id 
+                            ? 'text-slate-900 dark:text-white font-medium' 
+                            : 'text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {session.isLoading ? (
+                            <span className="flex items-center gap-2">
+                              <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                              <span>생성 중...</span>
+                            </span>
+                          ) : (
+                            session.customTitle || session.title
+                          )}
+                        </span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                          {formatDate(session.createdAt)}
+                        </span>
+                      </button>
+                    )}
                     
                     {session.isLoading && onAbortSession ? (
                       <button
@@ -156,17 +215,47 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                       >
                         중단
                       </button>
-                    ) : hoveredSessionId === session.id && !session.isLoading && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteSession(session.id, session.title);
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                        title="삭제"
-                      >
-                        <Icons.Trash size={14} />
-                      </button>
+                    ) : hoveredSessionId === session.id && !session.isLoading && editingSessionId !== session.id && (
+                      <div className="flex items-center gap-0.5">
+                        {onToggleFavorite && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleFavorite(session.id);
+                            }}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              session.isFavorite 
+                                ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' 
+                                : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-yellow-500'
+                            }`}
+                            title={session.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
+                          >
+                            <Icons.Star size={14} className={session.isFavorite ? 'fill-yellow-500' : ''} />
+                          </button>
+                        )}
+                        {onRenameSession && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditing(session);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                            title="이름 변경"
+                          >
+                            <Icons.Pencil size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id, session.customTitle || session.title);
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          title="삭제"
+                        >
+                          <Icons.Trash size={14} />
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}

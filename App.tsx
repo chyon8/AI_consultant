@@ -55,7 +55,9 @@ import {
   updateSessionMessages, 
   updateSessionTitle,
   getSessionById,
-  updateSessionDashboardState
+  updateSessionDashboardState,
+  updateSessionCustomTitle,
+  toggleSessionFavorite
 } from './services/chatHistoryService';
 
 type AppView = 'landing' | 'detail';
@@ -381,6 +383,30 @@ const App: React.FC = () => {
   const handleCancelDelete = () => {
     setDeleteModalOpen(false);
     setSessionToDelete(null);
+  };
+
+  // Handle rename session
+  const handleRenameSession = (sessionId: string, newTitle: string) => {
+    // Update localStorage first using read-modify-write helper
+    updateSessionCustomTitle(sessionId, newTitle);
+    // Update React state to reflect change
+    setChatSessions(prev => prev.map(session => 
+      session.id === sessionId 
+        ? { ...session, customTitle: newTitle }
+        : session
+    ));
+  };
+
+  // Handle toggle favorite
+  const handleToggleFavorite = (sessionId: string) => {
+    // Update localStorage first using read-modify-write helper
+    const newFavorite = toggleSessionFavorite(sessionId);
+    // Update React state to reflect change
+    setChatSessions(prev => prev.map(session => 
+      session.id === sessionId 
+        ? { ...session, isFavorite: newFavorite }
+        : session
+    ));
   };
 
   // Freeze current session state before switching
@@ -2049,6 +2075,8 @@ const App: React.FC = () => {
           onSelectSession={handleSelectSession}
           onDeleteSession={handleDeleteSessionClick}
           onAbortSession={handleAbortAnalysis}
+          onRenameSession={handleRenameSession}
+          onToggleFavorite={handleToggleFavorite}
         />
 
         {/* Conditional View Rendering */}

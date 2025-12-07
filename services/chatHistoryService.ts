@@ -71,3 +71,24 @@ export const updateSessionDashboardState = (sessionId: string, dashboardState: D
     saveChatHistory(sessions);
   }
 };
+
+export const updateSessionCustomTitle = (sessionId: string, customTitle: string): void => {
+  const sessions = getChatHistory();
+  const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+  if (sessionIndex !== -1) {
+    sessions[sessionIndex].customTitle = customTitle;
+    saveChatHistory(sessions);
+  }
+};
+
+export const toggleSessionFavorite = (sessionId: string): boolean => {
+  const sessions = getChatHistory();
+  const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+  if (sessionIndex !== -1) {
+    const newFavorite = !sessions[sessionIndex].isFavorite;
+    sessions[sessionIndex].isFavorite = newFavorite;
+    saveChatHistory(sessions);
+    return newFavorite;
+  }
+  return false;
+};
