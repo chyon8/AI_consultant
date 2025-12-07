@@ -83,6 +83,7 @@ interface ChatInterfaceProps {
   modelSettings?: ChatModelSettings;
   isAnalyzing?: boolean;
   progressiveState?: ProgressiveLoadingState;
+  isRfpGenerating?: boolean;
 }
 
 function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
@@ -158,7 +159,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onChatAction,
   modelSettings,
   isAnalyzing = false,
-  progressiveState
+  progressiveState,
+  isRfpGenerating = false
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -739,11 +741,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               : "예: 결제 모듈 제거해줘, MVP로 줄여줘..."
             }
             className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
-            disabled={isLoading || !!pendingAction}
+            disabled={isLoading || !!pendingAction || isRfpGenerating}
           />
           <button
             onClick={handleSend}
-            disabled={isLoading || (!input.trim() && attachedFiles.length === 0) || !!pendingAction}
+            disabled={isLoading || (!input.trim() && attachedFiles.length === 0) || !!pendingAction || isRfpGenerating}
             className={`p-2 transition-colors duration-200 ${
               (input.trim() || attachedFiles.length > 0)
                 ? 'text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400' 

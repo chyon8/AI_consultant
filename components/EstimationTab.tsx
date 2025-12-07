@@ -25,6 +25,7 @@ interface EstimationTabProps {
   onScaleChange: (scale: ProjectScale) => void;
   projectOverview?: ProjectOverview | null;
   isLoading?: boolean;
+  isDisabled?: boolean;
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -37,7 +38,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   currentScale,
   onScaleChange,
   projectOverview,
-  isLoading = false
+  isLoading = false,
+  isDisabled = false
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
 
@@ -339,7 +341,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       {/* Partner Type Selector */}
       <PartnerTypeSelector 
         currentType={currentPartnerType} 
-        onSelect={onSelectPartnerType} 
+        onSelect={onSelectPartnerType}
+        isDisabled={isDisabled}
       />
       {/* Analysis Report */}
       {renderAnalysisGraph()}
@@ -410,6 +413,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                 <div
                   onClick={(e) => { 
                     e.stopPropagation(); 
+                    if (isDisabled) return; // Blocked during RFP generation
                     if (!isBlind) return; // Read-only in Step 2
                     if (!module.required) onToggleModule(module.id); 
                   }}
@@ -475,6 +479,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                               : 'bg-white dark:bg-slate-900 border-transparent'
                           } ${isBlind && !module.required ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800' : ''}`}
                           onClick={(e) => {
+                             if (isDisabled) return; // Blocked during RFP generation
                              if (!isBlind) return; // Read-only
                              e.stopPropagation();
                              if(module.required) return; // 필수 모듈의 하위 기능은 변경 불가

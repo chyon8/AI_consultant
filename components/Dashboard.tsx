@@ -302,7 +302,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isAnalyzing && progressiveState && !progressiveState.summaryReady ? (
                 <TabSkeleton type="summary" />
               ) : (
-                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} aiInsightLoading={aiInsightLoading} aiInsightError={aiInsightError} summary={progressiveState?.summary || summary} onGenerateInsight={onGenerateInsight} />
+                <ProjectSummaryTab content={projectSummaryContent} aiInsight={aiInsight} aiInsightLoading={aiInsightLoading} aiInsightError={aiInsightError} summary={progressiveState?.summary || summary} onGenerateInsight={onGenerateInsight} isRfpGenerating={isRfpGenerating} />
               )
             )}
             {activeTab === TabView.ESTIMATION && (
@@ -321,6 +321,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onScaleChange={onScaleChange}
                   projectOverview={projectOverview}
                   isLoading={isAnalyzing && (!progressiveState || !progressiveState.modulesReady)}
+                  isDisabled={isRfpGenerating}
                 />
               )
             )}
