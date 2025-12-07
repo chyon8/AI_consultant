@@ -286,11 +286,20 @@ export interface ChatModelSettings {
   streamChatResponse?: string;
 }
 
+export interface ChatFileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
+
 export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
   onChunk: (text: string) => void,
-  modelSettings?: ChatModelSettings
+  modelSettings?: ChatModelSettings,
+  fileDataList?: ChatFileData[]
 ): Promise<void> {
   if (!anthropic) {
     onChunk("<CHAT>\nAnthropic API Key가 설정되지 않았습니다.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
@@ -299,6 +308,7 @@ export async function streamChatResponse(
 
   const model = modelSettings?.streamChatResponse || DEFAULT_MODEL;
   console.log('[claudeService] streamChatResponse using model:', model);
+  console.log('[claudeService] fileDataList count:', fileDataList?.length || 0);
 
   const { totalCost, totalWeeks } = calculateTotals(currentModules);
   const modulesText = formatModulesForPrompt(currentModules);
@@ -314,10 +324,38 @@ ${modulesText}
 
   const fullSystemPrompt = CHAT_SYSTEM_PROMPT + projectState;
 
-  const messages = history.map(h => ({
+  const messages: any[] = history.slice(0, -1).map(h => ({
     role: (h.role === 'model' ? 'assistant' : h.role) as 'user' | 'assistant',
     content: h.text
   }));
+
+  const lastUserMessage = history[history.length - 1];
+  const lastUserContent: any[] = [{ type: 'text', text: lastUserMessage.text }];
+
+  if (fileDataList && fileDataList.length > 0) {
+    for (const fileData of fileDataList) {
+      if (fileData.type === 'image' && fileData.base64) {
+        console.log(`[claudeService] Adding image: ${fileData.name} (${fileData.mimeType})`);
+        lastUserContent.push({ type: 'text', text: `\n\n--- 첨부 이미지: ${fileData.name} ---` });
+        lastUserContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: fileData.mimeType || 'image/jpeg',
+            data: fileData.base64
+          }
+        });
+      } else if (fileData.type === 'text' && fileData.content) {
+        console.log(`[claudeService] Adding text file: ${fileData.name}`);
+        lastUserContent.push({ type: 'text', text: `\n\n--- 첨부파일: ${fileData.name} ---\n${fileData.content}` });
+      }
+    }
+  }
+
+  messages.push({
+    role: 'user',
+    content: lastUserContent
+  });
 
   try {
     const stream = await anthropic.messages.stream({

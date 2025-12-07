@@ -492,11 +492,20 @@ export interface ChatModelSettings {
   streamChatResponse?: string;
 }
 
+export interface ChatFileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
+
 export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
   onChunk: (text: string) => void,
-  modelSettings?: ChatModelSettings
+  modelSettings?: ChatModelSettings,
+  fileDataList?: ChatFileData[]
 ): Promise<void> {
   if (!GEMINI_API_KEY) {
     onChunk("<CHAT>\nAPI Key가 설정되지 않았습니다. GEMINI_API_KEY 환경 변수를 설정해주세요.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
@@ -548,9 +557,30 @@ ${modulesText}
     parts: [{ text: h.text }]
   }));
 
+  const lastUserParts: any[] = [{ text: lastUserMessage.text }];
+  
+  if (fileDataList && fileDataList.length > 0) {
+    console.log('[chatService] Adding', fileDataList.length, 'file(s) to chat context');
+    for (const fileData of fileDataList) {
+      if (fileData.type === 'image' && fileData.base64) {
+        console.log(`[chatService] Adding image: ${fileData.name} (${fileData.mimeType})`);
+        lastUserParts.push({ text: `\n\n--- 첨부 이미지: ${fileData.name} ---` });
+        lastUserParts.push({
+          inlineData: {
+            mimeType: fileData.mimeType || 'image/jpeg',
+            data: fileData.base64
+          }
+        });
+      } else if (fileData.type === 'text' && fileData.content) {
+        console.log(`[chatService] Adding text file: ${fileData.name}`);
+        lastUserParts.push({ text: `\n\n--- 첨부파일: ${fileData.name} ---\n${fileData.content}` });
+      }
+    }
+  }
+
   const contents = [
     ...previousHistory,
-    { role: 'user', parts: [{ text: lastUserMessage.text }] }
+    { role: 'user', parts: lastUserParts }
   ];
 
   try {

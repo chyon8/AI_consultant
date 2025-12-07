@@ -123,16 +123,26 @@ export interface ChatModelSettings {
   streamChatResponse?: string;
 }
 
+export interface ChatFileData {
+  type: 'text' | 'image';
+  name: string;
+  content?: string;
+  base64?: string;
+  mimeType?: string;
+}
+
 export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
   onChunk: (text: string) => void,
-  modelSettings?: ChatModelSettings
+  modelSettings?: ChatModelSettings,
+  fileDataList?: ChatFileData[]
 ): Promise<void> {
   const streamModel = modelSettings?.streamChatResponse || 'gemini-2.5-flash';
   const provider = getProviderFromModelId(streamModel);
   
   console.log(`[aiRouter] streamChatResponse - provider: ${provider}, model: ${streamModel}`);
+  console.log(`[aiRouter] fileDataList count: ${fileDataList?.length || 0}`);
   
   if (provider === 'anthropic') {
     if (!claudeService.isClaudeConfigured()) {
@@ -157,10 +167,10 @@ export async function streamChatResponse(
       return;
     }
     
-    return claudeService.streamChatResponse(history, currentModules, onChunk, modelSettings);
+    return claudeService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList);
   }
   
-  return chatService.streamChatResponse(history, currentModules, onChunk, modelSettings);
+  return chatService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList);
 }
 
 export function isProviderConfigured(provider: Provider): boolean {

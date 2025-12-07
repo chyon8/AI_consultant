@@ -580,12 +580,60 @@ wss.on('connection', (ws: WebSocket) => {
       console.log('[WebSocket] Received message type:', data.type);
       
       if (data.type === 'chat') {
-        const { history, currentModules, modelSettings, urls } = data;
+        const { history, currentModules, modelSettings, urls, attachments } = data;
         
         console.log('[WebSocket Chat] Using model settings:', modelSettings || 'default');
         console.log('[WebSocket Chat] URLs to fetch:', urls?.length || 0);
+        console.log('[WebSocket Chat] Attachments:', attachments?.length || 0);
         
         let enhancedHistory = [...history];
+        
+        interface ChatFileData {
+          type: 'text' | 'image';
+          name: string;
+          content?: string;
+          base64?: string;
+          mimeType?: string;
+        }
+        
+        const fileDataList: ChatFileData[] = [];
+        
+        if (attachments && attachments.length > 0) {
+          for (const attachment of attachments) {
+            try {
+              const filePath = attachment.serverPath || path.join(UPLOADS_DIR, attachment.id + path.extname(attachment.name));
+              
+              if (!fs.existsSync(filePath)) {
+                console.warn('[WebSocket Chat] File not found:', filePath);
+                continue;
+              }
+              
+              if (attachment.type === 'image') {
+                const fileBuffer = fs.readFileSync(filePath);
+                const base64Data = fileBuffer.toString('base64');
+                fileDataList.push({
+                  type: 'image',
+                  name: attachment.name,
+                  base64: base64Data,
+                  mimeType: attachment.mimeType || 'image/jpeg'
+                });
+                console.log('[WebSocket Chat] Loaded image:', attachment.name);
+              } else if (attachment.type === 'document') {
+                const extraction = await extractTextFromFile(filePath, attachment.mimeType);
+                if (extraction.success && extraction.text) {
+                  fileDataList.push({
+                    type: 'text',
+                    name: attachment.name,
+                    content: extraction.text
+                  });
+                  console.log('[WebSocket Chat] Extracted text from:', attachment.name);
+                }
+              }
+            } catch (err: any) {
+              console.warn('[WebSocket Chat] Failed to process attachment:', attachment.name, err.message);
+            }
+          }
+        }
         
         if (urls && urls.length > 0) {
           let urlContents: string[] = [];
@@ -631,6 +679,11 @@ wss.on('connection', (ws: WebSocket) => {
                   }
                 }
               } else {
+                const hasLetters = /[a-z]/i.test(hostname);
+                if (hasLetters) {
+                  return false;
+                }
+                
                 if (/^\d+$/.test(hostname)) return true;
                 if (/^0x[0-9a-f]+$/i.test(hostname)) return true;
                 if (/^0[0-7]+(\.[0-7]+)*$/.test(hostname)) return true;
@@ -696,11 +749,13 @@ wss.on('connection', (ws: WebSocket) => {
           }
         }
         
+        console.log('[WebSocket Chat] Calling streamChatResponse with', fileDataList.length, 'file(s)');
+        
         await streamChatResponse(enhancedHistory, currentModules, (chunk: string) => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'chunk', chunk }));
           }
-        }, modelSettings);
+        }, modelSettings, fileDataList);
         
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'done' }));
