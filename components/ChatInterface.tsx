@@ -750,13 +750,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 : 'text-slate-200 dark:text-slate-700'
             }`}
           >
-            {isLoading ? (
-              <div className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            ) : <Icons.Send size={20} />}
+            <Icons.Send size={20} />
           </button>
         </div>
       </div>
