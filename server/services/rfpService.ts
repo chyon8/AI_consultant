@@ -127,21 +127,16 @@ ${modulesSummary}
       { role: 'user', parts: [{ text: PART2_PROMPT + '\n\n---\n\n' + userContent }] }
     ],
     config: {
-      temperature: 1.0,
-      thinkingConfig: {
-        thinkingBudget: 8000,
-        includeThoughts: false
-      }
+      temperature: 1.0
     }
   });
 
   for await (const chunk of response) {
-    if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
-      for (const part of chunk.candidates[0].content.parts) {
-        if (part.text && !part.thought) {
-          onChunk(part.text);
-        }
-      }
+    const text = chunk.text;
+    console.log('[rfpService] Chunk received, text length:', text?.length || 0);
+    if (text) {
+      onChunk(text);
     }
   }
+  console.log('[rfpService] Streaming complete');
 }
