@@ -129,15 +129,19 @@ ${modulesSummary}
     config: {
       temperature: 1.0,
       thinkingConfig: {
-        thinkingBudget: 8000
+        thinkingBudget: 8000,
+        includeThoughts: false
       }
     }
   });
 
   for await (const chunk of response) {
-    const text = chunk.text;
-    if (text) {
-      onChunk(text);
+    if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
+      for (const part of chunk.candidates[0].content.parts) {
+        if (part.text && !part.thought) {
+          onChunk(part.text);
+        }
+      }
     }
   }
 }
