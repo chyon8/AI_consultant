@@ -621,7 +621,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </div>
                     {isUser && renderMessageAttachments(msg.attachments)}
                     {msg.isStreaming && (
-                        <span className="inline-block w-1.5 h-1.5 ml-1 bg-indigo-500 dark:bg-white rounded-full animate-ping"/>
+                        <div className="inline-flex items-center gap-1 ml-1">
+                          <span className="w-1.5 h-1.5 bg-indigo-500 dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}/>
+                          <span className="w-1.5 h-1.5 bg-indigo-500 dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}/>
+                          <span className="w-1.5 h-1.5 bg-indigo-500 dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}/>
+                        </div>
                     )}
                 </div>
               </div>
