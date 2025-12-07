@@ -372,7 +372,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleSend = async () => {
-    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading || isRfpGenerating) return;
 
     let uploadedAttachments: FileAttachment[] = [];
     
@@ -719,7 +719,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             className={`p-2 transition-colors ${
-              attachedFiles.length >= FILE_CONSTANTS.MAX_FILES
+              attachedFiles.length >= FILE_CONSTANTS.MAX_FILES || isRfpGenerating
                 ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
                 : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
@@ -727,7 +727,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               ? `최대 ${FILE_CONSTANTS.MAX_FILES}개 파일까지 첨부 가능` 
               : '파일 첨부'
             }
-            disabled={attachedFiles.length >= FILE_CONSTANTS.MAX_FILES}
+            disabled={attachedFiles.length >= FILE_CONSTANTS.MAX_FILES || isRfpGenerating}
           >
             <Icons.Attach size={20} />
           </button>
@@ -735,7 +735,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isLoading && !isRfpGenerating && !pendingAction && handleSend()}
             placeholder={attachedFiles.length > 0 
               ? "파일과 함께 보낼 메시지를 입력하세요..." 
               : "예: 결제 모듈 제거해줘, MVP로 줄여줘..."
