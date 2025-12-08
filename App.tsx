@@ -1156,6 +1156,7 @@ const App: React.FC = () => {
     coreValues: string[];
     moduleCount: number;
     featureCount: number;
+    originalInput: string;
   }) => {
     // [SESSION ISOLATION] Track which session initiated this request
     const ownerSessionId = activeSessionIdRef.current;
@@ -2170,7 +2171,8 @@ const App: React.FC = () => {
                       businessGoals: projectOverview?.businessGoals || '',
                       coreValues: projectOverview?.coreValues || [],
                       moduleCount: selectedModules.length,
-                      featureCount: selectedFeatures
+                      featureCount: selectedFeatures,
+                      originalInput: projectSummaryContent || ''
                     });
                   }}
                   rfpModelId={aiModelSettings.generateRFP}
