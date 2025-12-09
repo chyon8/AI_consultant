@@ -1889,7 +1889,8 @@ const App: React.FC = () => {
             extractedText: f.extraction?.text,
             wordCount: f.extraction?.wordCount,
             pageCount: f.extraction?.pageCount,
-            createdAt: new Date()
+            createdAt: new Date(),
+            processingMethod: f.processingMethod
           }));
           setReferencedFiles(prev => [...prev, ...inputSources]);
           console.log('[App] Referenced files tracked:', inputSources.map(s => s.originalName));
