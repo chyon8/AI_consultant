@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { PART1_PROMPT, PART2_PROMPT, ASSISTANT_PROMPT } from '../prompts/analysis';
+import { truncateFileContents } from '../utils/tokenLimit';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
@@ -35,13 +36,15 @@ export async function analyzeProject(
   console.log('[claudeService] analyzeProject using model:', model);
   console.log('[claudeService] fileDataList count:', fileDataList?.length || 0);
 
+  const truncatedFiles = truncateFileContents(userInput, fileDataList);
+
   const contentBlocks: any[] = [];
   
   contentBlocks.push({ type: 'text', text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + userInput });
   
-  if (fileDataList && fileDataList.length > 0) {
-    for (let i = 0; i < fileDataList.length; i++) {
-      const fileData = fileDataList[i];
+  if (truncatedFiles && truncatedFiles.length > 0) {
+    for (let i = 0; i < truncatedFiles.length; i++) {
+      const fileData = truncatedFiles[i];
       
       if (fileData.type === 'image' && fileData.base64) {
         console.log(`[claudeService] Adding image: ${fileData.name} (${fileData.mimeType})`);
@@ -55,8 +58,9 @@ export async function analyzeProject(
           }
         });
       } else if (fileData.type === 'text' && fileData.content) {
-        console.log(`[claudeService] Adding text file: ${fileData.name}`);
-        contentBlocks.push({ type: 'text', text: `\n\n--- 첨부파일 ${i + 1}: ${fileData.name} ---\n${fileData.content}` });
+        const truncatedNote = (fileData as any).truncated ? ' [일부 생략됨]' : '';
+        console.log(`[claudeService] Adding text file: ${fileData.name}${truncatedNote}`);
+        contentBlocks.push({ type: 'text', text: `\n\n--- 첨부파일 ${i + 1}: ${fileData.name}${truncatedNote} ---\n${fileData.content}` });
       }
     }
   }
