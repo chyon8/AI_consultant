@@ -198,11 +198,12 @@ app.post('/api/upload', upload.array('files', MAX_FILES), async (req, res) => {
 }, handleUploadError);
 
 interface FileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 app.post('/api/analyze', async (req, res) => {
@@ -612,11 +613,12 @@ wss.on('connection', (ws: WebSocket) => {
         const allUrls = [...(urls || []), ...urlsFromMessage];
         
         interface ChatFileData {
-          type: 'text' | 'image';
+          type: 'text' | 'image' | 'document';
           name: string;
           content?: string;
           base64?: string;
           mimeType?: string;
+          filePath?: string;
         }
         
         const fileDataList: ChatFileData[] = [];
@@ -637,20 +639,21 @@ wss.on('connection', (ws: WebSocket) => {
                 fileDataList.push({
                   type: 'image',
                   name: attachment.name,
+                  filePath: filePath,
                   base64: base64Data,
                   mimeType: attachment.mimeType || 'image/jpeg'
                 });
-                console.log('[WebSocket Chat] Loaded image:', attachment.name);
+                console.log('[WebSocket Chat] Added image with filePath and base64:', attachment.name);
               } else if (attachment.type === 'document') {
                 const extraction = await extractTextFromFile(filePath, attachment.mimeType);
-                if (extraction.success && extraction.text) {
-                  fileDataList.push({
-                    type: 'text',
-                    name: attachment.name,
-                    content: extraction.text
-                  });
-                  console.log('[WebSocket Chat] Extracted text from:', attachment.name);
-                }
+                fileDataList.push({
+                  type: 'document',
+                  name: attachment.name,
+                  filePath: filePath,
+                  content: extraction.success ? extraction.text : undefined,
+                  mimeType: attachment.mimeType
+                });
+                console.log('[WebSocket Chat] Added document with filePath and content:', attachment.name);
               }
             } catch (err: any) {
               console.warn('[WebSocket Chat] Failed to process attachment:', attachment.name, err.message);

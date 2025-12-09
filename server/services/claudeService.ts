@@ -15,11 +15,12 @@ export function isClaudeConfigured(): boolean {
 }
 
 export interface FileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 export async function analyzeProject(
@@ -57,6 +58,9 @@ export async function analyzeProject(
             data: fileData.base64
           }
         });
+      } else if (fileData.type === 'document' && fileData.content) {
+        console.log(`[claudeService] Adding document: ${fileData.name}`);
+        contentBlocks.push({ type: 'text', text: `\n\n--- 첨부 문서 ${i + 1}: ${fileData.name} ---\n${fileData.content}` });
       } else if (fileData.type === 'text' && fileData.content) {
         const truncatedNote = (fileData as any).truncated ? ' [일부 생략됨]' : '';
         console.log(`[claudeService] Adding text file: ${fileData.name}${truncatedNote}`);
@@ -291,11 +295,12 @@ export interface ChatModelSettings {
 }
 
 export interface ChatFileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 export async function streamChatResponse(
@@ -349,6 +354,9 @@ ${modulesText}
             data: fileData.base64
           }
         });
+      } else if (fileData.type === 'document' && fileData.content) {
+        console.log(`[claudeService] Adding document: ${fileData.name}`);
+        lastUserContent.push({ type: 'text', text: `\n\n--- 첨부 문서: ${fileData.name} ---\n${fileData.content}` });
       } else if (fileData.type === 'text' && fileData.content) {
         console.log(`[claudeService] Adding text file: ${fileData.name}`);
         lastUserContent.push({ type: 'text', text: `\n\n--- 첨부파일: ${fileData.name} ---\n${fileData.content}` });

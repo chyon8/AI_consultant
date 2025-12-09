@@ -7,11 +7,12 @@ import * as claudeService from './claudeService';
 type Provider = 'google' | 'anthropic';
 
 export interface FileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 function getProviderFromModelId(modelId: string): Provider {
@@ -73,8 +74,7 @@ export interface InsightParams {
   projectName: string;
   businessGoals: string;
   coreValues: string[];
-  moduleCount: number;
-  featureCount: number;
+  originalInput: string;
 }
 
 export async function generateInsight(params: InsightParams, modelId?: string): Promise<string> {
@@ -124,11 +124,12 @@ export interface ChatModelSettings {
 }
 
 export interface ChatFileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 export async function streamChatResponse(

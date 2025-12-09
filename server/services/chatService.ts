@@ -493,11 +493,12 @@ export interface ChatModelSettings {
 }
 
 export interface ChatFileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 export async function streamChatResponse(

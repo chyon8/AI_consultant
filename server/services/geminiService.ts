@@ -1,18 +1,66 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, createUserContent, createPartFromUri } from '@google/genai';
 import { PART1_PROMPT, ASSISTANT_PROMPT } from '../prompts/analysis';
-import { truncateFileContents } from '../utils/tokenLimit';
+import fs from 'fs';
+import path from 'path';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 export interface FileData {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   name: string;
   content?: string;
   base64?: string;
   mimeType?: string;
+  filePath?: string;
 }
 
 const DEFAULT_MODEL = 'gemini-3-pro-preview';
+
+const SUPPORTED_MIME_TYPES: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.txt': 'text/plain',
+  '.md': 'text/markdown',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+};
+
+function getMimeType(filePath: string, providedMimeType?: string): string {
+  if (providedMimeType) return providedMimeType;
+  const ext = path.extname(filePath).toLowerCase();
+  return SUPPORTED_MIME_TYPES[ext] || 'application/octet-stream';
+}
+
+async function uploadFileToGemini(ai: GoogleGenAI, filePath: string, mimeType: string): Promise<{ uri: string; mimeType: string } | null> {
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.error(`[geminiService] File not found: ${filePath}`);
+      return null;
+    }
+
+    console.log(`[geminiService] Uploading file to Gemini: ${filePath} (${mimeType})`);
+    
+    const uploadedFile = await ai.files.upload({
+      file: filePath,
+      config: { mimeType }
+    });
+
+    if (!uploadedFile.uri) {
+      console.error(`[geminiService] Upload failed - no URI returned`);
+      return null;
+    }
+
+    console.log(`[geminiService] File uploaded successfully: ${uploadedFile.name} -> ${uploadedFile.uri}`);
+    return { uri: uploadedFile.uri, mimeType: uploadedFile.mimeType || mimeType };
+  } catch (error: any) {
+    console.error(`[geminiService] Error uploading file:`, error.message);
+    return null;
+  }
+}
 
 export async function analyzeProject(
   userInput: string,
@@ -26,18 +74,16 @@ export async function analyzeProject(
   console.log('[geminiService] analyzeProject using model:', model);
   console.log('[geminiService] fileDataList count:', fileDataList?.length || 0);
 
-  const truncatedFiles = truncateFileContents(userInput, fileDataList);
-
   const parts: any[] = [];
   
   parts.push({ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + userInput });
   
-  if (truncatedFiles && truncatedFiles.length > 0) {
-    for (let i = 0; i < truncatedFiles.length; i++) {
-      const fileData = truncatedFiles[i];
+  if (fileDataList && fileDataList.length > 0) {
+    for (let i = 0; i < fileDataList.length; i++) {
+      const fileData = fileDataList[i];
       
       if (fileData.type === 'image' && fileData.base64) {
-        console.log(`[geminiService] Adding image: ${fileData.name} (${fileData.mimeType})`);
+        console.log(`[geminiService] Adding inline image: ${fileData.name} (${fileData.mimeType})`);
         parts.push({ text: `\n\n--- 첨부 이미지 ${i + 1}: ${fileData.name} ---` });
         parts.push({
           inlineData: {
@@ -45,10 +91,47 @@ export async function analyzeProject(
             data: fileData.base64
           }
         });
+      } else if (fileData.type === 'image' && fileData.filePath) {
+        const mimeType = getMimeType(fileData.filePath, fileData.mimeType);
+        const uploaded = await uploadFileToGemini(ai, fileData.filePath, mimeType);
+        if (uploaded) {
+          console.log(`[geminiService] Adding uploaded image: ${fileData.name}`);
+          parts.push({ text: `\n\n--- 첨부 이미지 ${i + 1}: ${fileData.name} ---` });
+          parts.push({
+            fileData: {
+              fileUri: uploaded.uri,
+              mimeType: uploaded.mimeType
+            }
+          });
+        } else if (fileData.base64) {
+          console.log(`[geminiService] Fallback to inline image for: ${fileData.name}`);
+          parts.push({ text: `\n\n--- 첨부 이미지 ${i + 1}: ${fileData.name} ---` });
+          parts.push({
+            inlineData: {
+              mimeType: fileData.mimeType || 'image/jpeg',
+              data: fileData.base64
+            }
+          });
+        }
+      } else if (fileData.type === 'document' && fileData.filePath) {
+        const mimeType = getMimeType(fileData.filePath, fileData.mimeType);
+        const uploaded = await uploadFileToGemini(ai, fileData.filePath, mimeType);
+        if (uploaded) {
+          console.log(`[geminiService] Adding uploaded document: ${fileData.name}`);
+          parts.push({ text: `\n\n--- 첨부 문서 ${i + 1}: ${fileData.name} ---` });
+          parts.push({
+            fileData: {
+              fileUri: uploaded.uri,
+              mimeType: uploaded.mimeType
+            }
+          });
+        } else if (fileData.content) {
+          console.log(`[geminiService] Fallback to text content for: ${fileData.name}`);
+          parts.push({ text: `\n\n--- 첨부파일 ${i + 1}: ${fileData.name} ---\n${fileData.content}` });
+        }
       } else if (fileData.type === 'text' && fileData.content) {
-        const truncatedNote = (fileData as any).truncated ? ' [일부 생략됨]' : '';
-        console.log(`[geminiService] Adding text file: ${fileData.name}${truncatedNote}`);
-        parts.push({ text: `\n\n--- 첨부파일 ${i + 1}: ${fileData.name}${truncatedNote} ---\n${fileData.content}` });
+        console.log(`[geminiService] Adding text content: ${fileData.name}`);
+        parts.push({ text: `\n\n--- 첨부파일 ${i + 1}: ${fileData.name} ---\n${fileData.content}` });
       }
     }
   }
