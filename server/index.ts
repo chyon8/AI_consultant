@@ -158,19 +158,21 @@ app.post('/api/upload', upload.array('files', MAX_FILES), async (req, res) => {
     
     const fileInfos = await Promise.all(files.map(async (f) => {
       const decodedName = decodeFilename(f.originalname);
+      const fileType = getFileType(f.originalname);
       const fileInfo: any = {
         id: f.filename.split('.')[0],
         filename: f.filename,
         originalName: decodedName,
         path: f.path,
         size: f.size,
-        type: getFileType(f.originalname),
+        type: fileType,
         mimeType: f.mimetype,
-        url: `/uploads/${f.filename}`
+        url: `/uploads/${f.filename}`,
+        processingMethod: fileType === 'image' ? 'inline' : 'parser'
       };
       
       if (isExtractableDocument(f.mimetype, f.originalname)) {
-        console.log(`[Upload] Extracting text from: ${decodedName}`);
+        console.log(`[Upload] Extracting text from: ${decodedName} (method: parser)`);
         const extraction = await extractTextFromFile(f.path, f.mimetype);
         fileInfo.extraction = extraction;
         if (extraction.success) {

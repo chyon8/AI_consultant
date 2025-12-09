@@ -52,6 +52,8 @@ export interface FileValidationError {
   details?: string;
 }
 
+export type FileProcessingMethod = 'gemini' | 'parser' | 'inline';
+
 export interface InputSource {
   id: string;
   filename: string;
@@ -61,6 +63,7 @@ export interface InputSource {
   wordCount?: number;
   pageCount?: number;
   createdAt: Date;
+  processingMethod?: FileProcessingMethod;
 }
 
 export interface ReferencedFilesState {
