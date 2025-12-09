@@ -3,7 +3,7 @@ import path from 'path';
 import * as mammoth from 'mammoth';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 
 export interface ExtractionResult {
   success: boolean;
@@ -54,9 +54,12 @@ export async function extractTextFromFile(filePath: string, mimeType: string): P
 async function extractFromPDF(filePath: string): Promise<ExtractionResult> {
   const dataBuffer = fs.readFileSync(filePath);
   
-  const pdfData = await pdfParse(dataBuffer);
-  let text = pdfData.text || '';
-  const pageCount = pdfData.numpages || 0;
+  const parser = new PDFParse({ data: dataBuffer });
+  const textResult = await parser.getText();
+  let text = textResult.text || '';
+  const pageCount = textResult.pages?.length || 0;
+  
+  await parser.destroy();
   
   if (text.length > MAX_EXTRACTED_LENGTH) {
     text = text.substring(0, MAX_EXTRACTED_LENGTH) + 
