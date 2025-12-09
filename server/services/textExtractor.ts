@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import * as mammoth from 'mammoth';
-import * as pdfParseModule from 'pdf-parse';
+import { createRequire } from 'module';
 
-const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 export interface ExtractionResult {
   success: boolean;
