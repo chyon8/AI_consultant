@@ -176,7 +176,8 @@ app.post('/api/upload', upload.array('files', MAX_FILES), async (req, res) => {
         const extraction = await extractTextFromFile(f.path, f.mimetype);
         fileInfo.extraction = extraction;
         if (extraction.success) {
-          console.log(`[Upload] Extracted ${extraction.wordCount} words from ${decodedName}`);
+          console.log(`[Upload] Extracted ${extraction.wordCount} words, ${extraction.text?.length || 0} chars from ${decodedName}`);
+          console.log(`[Upload] Text sample (first 500 chars): ${extraction.text?.substring(0, 500)}`);
         } else {
           console.log(`[Upload] Extraction failed for ${decodedName}: ${extraction.error}`);
         }
@@ -221,6 +222,14 @@ app.post('/api/analyze', async (req, res) => {
 
     console.log('[Analyze] Starting analysis for:', text?.substring(0, 100), 'with model:', modelId || 'default');
     console.log('[Analyze] File data count:', fileDataList?.length || 0);
+    if (fileDataList && fileDataList.length > 0) {
+      fileDataList.forEach((fd, idx) => {
+        console.log(`[Analyze] File ${idx + 1}: name=${fd.name}, type=${fd.type}, contentLength=${fd.content?.length || 0}, base64Length=${fd.base64?.length || 0}`);
+        if (fd.type === 'text' && fd.content) {
+          console.log(`[Analyze] File ${idx + 1} content sample (first 300 chars): ${fd.content.substring(0, 300)}`);
+        }
+      });
+    }
 
     await analyzeProject(text, fileDataList || [], (chunk: string) => {
       fullResponse += chunk;
@@ -529,6 +538,15 @@ app.post('/api/jobs/analyze', async (req, res) => {
       const detectedStages = new Set<StageType>();
       
       console.log(`[Job ${job.id}] Starting staged analysis in background`);
+      console.log(`[Job ${job.id}] fileDataList count: ${fileDataList?.length || 0}`);
+      if (fileDataList && fileDataList.length > 0) {
+        fileDataList.forEach((fd, idx) => {
+          console.log(`[Job ${job.id}] File ${idx + 1}: name=${fd.name}, type=${fd.type}, contentLength=${fd.content?.length || 0}`);
+          if (fd.type === 'text' && fd.content) {
+            console.log(`[Job ${job.id}] File ${idx + 1} content sample: ${fd.content.substring(0, 300)}`);
+          }
+        });
+      }
       
       await analyzeProject(text, fileDataList || [], (chunk: string) => {
         const currentJob = jobRegistry.getJob(job.id);
