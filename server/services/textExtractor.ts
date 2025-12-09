@@ -1,11 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import * as mammoth from 'mammoth';
+import * as pdfParseModule from 'pdf-parse';
 
-const loadPdfParse = async () => {
-  const module = await import('pdf-parse');
-  return module.default || module;
-};
+const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 
 export interface ExtractionResult {
   success: boolean;
@@ -54,7 +52,6 @@ export async function extractTextFromFile(filePath: string, mimeType: string): P
 }
 
 async function extractFromPDF(filePath: string): Promise<ExtractionResult> {
-  const pdfParse = await loadPdfParse();
   const dataBuffer = fs.readFileSync(filePath);
   const data = await pdfParse(dataBuffer);
   
