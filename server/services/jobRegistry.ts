@@ -1,6 +1,6 @@
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type JobType = 'analyze' | 'rfp' | 'chat';
-export type StageType = 'modules' | 'estimates' | 'schedule' | 'summary';
+export type StageType = 'projectOverview' | 'modules' | 'estimates' | 'schedule' | 'summary';
 
 export interface ChunkLog {
   sequence: number;

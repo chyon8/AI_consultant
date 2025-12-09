@@ -543,6 +543,7 @@ app.post('/api/jobs/analyze', async (req, res) => {
           jobRegistry.addStagedResult(job.id, stageResult.stage, stageResult.data);
           
           const stageProgress: Record<StageType, number> = {
+            projectOverview: 10,
             modules: 25,
             estimates: 50,
             schedule: 75,
