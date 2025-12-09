@@ -572,6 +572,9 @@ ${modulesText}
             data: fileData.base64
           }
         });
+      } else if (fileData.type === 'document' && fileData.content) {
+        console.log(`[chatService] Adding document: ${fileData.name}`);
+        lastUserParts.push({ text: `\n\n--- 첨부 문서: ${fileData.name} ---\n${fileData.content}` });
       } else if (fileData.type === 'text' && fileData.content) {
         console.log(`[chatService] Adding text file: ${fileData.name}`);
         lastUserParts.push({ text: `\n\n--- 첨부파일: ${fileData.name} ---\n${fileData.content}` });
