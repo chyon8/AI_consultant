@@ -76,7 +76,14 @@ export async function analyzeProject(
 
   const parts: any[] = [];
   
-  parts.push({ text: PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + userInput });
+  const fullPromptText = PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + userInput;
+  parts.push({ text: fullPromptText });
+  
+  console.log('='.repeat(80));
+  console.log('[geminiService] FULL PROMPT INPUT:');
+  console.log('='.repeat(80));
+  console.log(fullPromptText);
+  console.log('='.repeat(80));
   
   if (fileDataList && fileDataList.length > 0) {
     for (let i = 0; i < fileDataList.length; i++) {
