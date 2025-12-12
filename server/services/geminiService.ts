@@ -183,23 +183,23 @@ export async function generateInsight(params: InsightParams, modelId?: string): 
   
   console.log('[geminiService] generateInsight using model:', model);
 
-  const contextInfo = `
-# 클라이언트 요구사항 컨텍스트
-- 프로젝트명: ${params.projectName || "미정"}
-- 비즈니스 목표: ${params.businessGoals || "미정"}
-- 핵심 가치: ${params.coreValues.join(", ") || "미정"}
-
-## 원본 요구사항
-${params.originalInput || "없음"}
-
-위 정보를 기반으로 분석해주세요.
-`;
-
-  const prompt = ASSISTANT_PROMPT + contextInfo;
+  // User input only (original content)
+  const userMessage = params.originalInput || "없음";
+  
+  console.log('='.repeat(80));
+  console.log('[geminiService] INSIGHT - SYSTEM PROMPT:');
+  console.log('='.repeat(80));
+  console.log(ASSISTANT_PROMPT);
+  console.log('='.repeat(80));
+  console.log('[geminiService] INSIGHT - USER INPUT:');
+  console.log('='.repeat(80));
+  console.log(userMessage);
+  console.log('='.repeat(80));
 
   try {
     const isThinkingModel = model.includes('thinking') || model.includes('gemini-3');
     const config: any = {
+      systemInstruction: ASSISTANT_PROMPT,
       temperature: isThinkingModel ? undefined : 0.7,
       maxOutputTokens: 8000,
     };
@@ -211,7 +211,7 @@ ${params.originalInput || "없음"}
     
     const response = await ai.models.generateContent({
       model: model,
-      contents: prompt,
+      contents: userMessage,
       config,
     });
 
