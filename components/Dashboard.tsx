@@ -134,7 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Logic for Project DNA Analysis
   const selectedModules = modules.filter(m => m.isSelected);
   // Base total cost (before multiplier)
-  const baseTotalCost = selectedModules.reduce((acc, m) => acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0), 0);
+  const baseTotalCost = selectedModules.reduce((acc, m) => acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0), 0);
   
   // Dynamic Risk/Complexity Calculation
   let complexityScore = 1;

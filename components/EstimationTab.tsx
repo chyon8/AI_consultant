@@ -50,9 +50,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   };
 
   // --- Calculation Logic for Step 2 ---
-  // Base Development Cost
+  // Base Development Cost (subFeatures only, baseCost removed to avoid double counting)
   const baseDevCost = modules.filter(m => m.isSelected).reduce((acc, m) => 
-    acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
+    acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
   , 0);
 
   // Overhead Logic based on Partner Type
@@ -259,7 +259,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       {modules.filter(m => m.isSelected && m.subFeatures.some(s => s.isSelected)).map((module) => {
         const isExpanded = expandedIds.includes(module.id);
         const selectedSubs = module.subFeatures.filter(s => s.isSelected);
-        const moduleTotalCost = module.baseCost + selectedSubs.reduce((sum, s) => sum + s.price, 0);
+        const moduleTotalCost = selectedSubs.reduce((sum, s) => sum + s.price, 0);
         
         return (
           <div 
@@ -451,7 +451,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                    ) : (
                       // Step 2: Price Reveal
                       <p className={`text-lg font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-600'}`}>
-                        {(module.baseCost/10000).toLocaleString()}만원+
+                        {(module.subFeatures.filter(s => s.isSelected).reduce((sum, s) => sum + s.price, 0)/10000).toLocaleString()}만원
                       </p>
                    )}
                    <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>

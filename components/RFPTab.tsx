@@ -52,7 +52,7 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   const selectedModules = modules.filter(m => m.isSelected);
   
   const baseDevCost = selectedModules.reduce((acc, m) => 
-    acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
+    acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
   , 0);
 
   let totalCost = baseDevCost;

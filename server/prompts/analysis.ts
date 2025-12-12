@@ -58,8 +58,6 @@ export const PART1_PROMPT = `# PROMPT METADATA
       "name": "모듈명 기입 (예: 회원 모듈)",
       "description": "모듈 설명 기입",
       "category": "frontend|backend|database|infra|etc",
-      "baseCost": "모듈 비용 자동 산출 (Integer)",
-      "baseManMonths": "모듈 공수 자동 산출 (M/M)",
       "subFeatures": [
         {
           "id": "feat_1_1",

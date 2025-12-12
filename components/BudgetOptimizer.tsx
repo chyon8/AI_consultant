@@ -83,8 +83,8 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({ currentTotal, 
          // Then toggle optional modules
          if (!mod.required) {
              if (isAdding && !mod.isSelected) {
-                  // Approximate module cost (base + 1st subfeature)
-                  const estimatedCost = mod.baseCost + (mod.subFeatures[0]?.price || 0);
+                  // Approximate module cost (1st subfeature only)
+                  const estimatedCost = mod.subFeatures[0]?.price || 0;
                   if (current + estimatedCost <= target) {
                       mod.isSelected = true;
                       mod.subFeatures.forEach((s, i) => s.isSelected = i === 0); // Activate base feature
@@ -93,7 +93,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({ currentTotal, 
              } else if (!isAdding && mod.isSelected) {
                  if (current > target) {
                      mod.isSelected = false;
-                     current -= (mod.baseCost + mod.subFeatures.reduce((a,c) => a + (c.isSelected?c.price:0), 0));
+                     current -= mod.subFeatures.reduce((a,c) => a + (c.isSelected?c.price:0), 0);
                  }
              }
          }
@@ -103,7 +103,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({ currentTotal, 
 
   const calculateCost = (mods: ModuleItem[]) => {
     return mods.filter(m => m.isSelected).reduce((acc, m) => 
-        acc + m.baseCost + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
+        acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
     , 0);
   };
 
