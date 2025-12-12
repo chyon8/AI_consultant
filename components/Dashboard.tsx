@@ -329,6 +329,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onScaleChange={onScaleChange}
                   projectOverview={projectOverview}
                   isLoading={isAnalyzing && (!progressiveState || !progressiveState.modulesReady)}
+                  estimates={progressiveState?.estimates}
                 />
               )
             )}
