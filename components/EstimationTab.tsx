@@ -1,10 +1,9 @@
 
 
-import React, { useState, useMemo } from 'react';
-import { ModuleItem, PartnerType, EstimationStep, ProjectScale } from '../types';
+import React, { useState } from 'react';
+import { ModuleItem, PartnerType, EstimationStep, ProjectScale, ParsedEstimates } from '../types';
 import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
-import { calculateSchedule } from '../services/scheduleEngine';
 
 interface ProjectOverview {
   projectTitle: string;
@@ -25,6 +24,7 @@ interface EstimationTabProps {
   onScaleChange: (scale: ProjectScale) => void;
   projectOverview?: ProjectOverview | null;
   isLoading?: boolean;
+  estimates?: ParsedEstimates;
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -37,7 +37,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   currentScale,
   onScaleChange,
   projectOverview,
-  isLoading = false
+  isLoading = false,
+  estimates
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
 
@@ -49,45 +50,14 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     );
   };
 
-  // --- Calculation Logic for Step 2 ---
-  // Base Development Cost (subFeatures only, baseCost removed to avoid double counting)
-  const baseDevCost = modules.filter(m => m.isSelected).reduce((acc, m) => 
-    acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
-  , 0);
+  const getCurrentEstimate = () => {
+    if (!estimates) return null;
+    if (currentPartnerType === 'AGENCY') return estimates.typeA;
+    if (currentPartnerType === 'STUDIO') return estimates.typeB;
+    return estimates.typeC;
+  };
 
-  // Overhead Logic based on Partner Type
-  let pmCost = 0;
-  let qaCost = 0;
-  let devCost = baseDevCost;
-  let totalCost = 0;
-  let durationMultiplier = 1.0;
-
-  if (currentPartnerType === 'AGENCY') {
-    // Agency: Base + 20% PM + 10% QA
-    pmCost = baseDevCost * 0.2;
-    qaCost = baseDevCost * 0.1;
-    totalCost = devCost + pmCost + qaCost;
-    durationMultiplier = 1.2;
-  } else if (currentPartnerType === 'STUDIO') {
-    // Studio: Base + 10% Mgmt
-    pmCost = baseDevCost * 0.1;
-    qaCost = 0; // Integrated in dev
-    totalCost = devCost + pmCost;
-    durationMultiplier = 1.0;
-  } else {
-    // AI Native: Discounted Dev Cost, No Overhead
-    devCost = baseDevCost * 0.6; // AI Efficiency
-    pmCost = 0;
-    qaCost = 0;
-    totalCost = devCost;
-    durationMultiplier = 0.5;
-  }
-
-  const scheduleResult = useMemo(() => {
-    return calculateSchedule(modules, currentPartnerType);
-  }, [modules, currentPartnerType]);
-
-  const finalMonths = scheduleResult.totalDuration;
+  const currentEstimate = getCurrentEstimate();
 
   // --- UI Renders ---
 
@@ -203,45 +173,46 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   };
 
   const renderAnalysisGraph = () => {
-    const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE A' : 
-                         currentPartnerType === 'STUDIO' ? 'TYPE B' : 'TYPE C';
+    const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE C (AI 네이티브)' : 
+                         currentPartnerType === 'STUDIO' ? 'TYPE B (스튜디오)' : 'TYPE A (에이전시)';
     
-    const costItems = [
-      { label: '개발', value: devCost, show: true },
-      { label: 'PM', value: pmCost, show: pmCost > 0 },
-      { label: 'QA', value: qaCost, show: qaCost > 0 }
-    ].filter(item => item.show);
+    if (!currentEstimate) {
+      return (
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+            <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+          </div>
+        </div>
+      );
+    }
+
+    const minCost = currentEstimate.minCost;
+    const maxCost = currentEstimate.maxCost;
+    const duration = currentEstimate.duration;
 
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
-            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">{partnerLabel} 기준</p>
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">{partnerLabel}</p>
             <p className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {(totalCost / 10000).toLocaleString()}
+              {(minCost / 10000).toLocaleString()} ~ {(maxCost / 10000).toLocaleString()}
               <span className="text-base font-normal text-slate-400 ml-1">만원</span>
             </p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">예상 기간</p>
             <p className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {finalMonths.toFixed(1)}
-              <span className="text-base font-normal text-slate-400 ml-1">개월</span>
+              {duration || '-'}
             </p>
           </div>
         </div>
 
         <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-6">
-            {costItems.map((item, idx) => (
-              <div key={item.label} className="flex items-center gap-3">
-                <span className="text-xs text-slate-400">{item.label}</span>
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  {(item.value / 10000).toLocaleString()}만
-                </span>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {currentEstimate.description}
+          </p>
         </div>
       </div>
     );
@@ -259,7 +230,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       {modules.filter(m => m.isSelected && m.subFeatures.some(s => s.isSelected)).map((module) => {
         const isExpanded = expandedIds.includes(module.id);
         const selectedSubs = module.subFeatures.filter(s => s.isSelected);
-        const moduleTotalCost = selectedSubs.reduce((sum, s) => sum + s.price, 0);
         
         return (
           <div 
@@ -292,9 +262,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
               {/* Right Side Info */}
               <div className="flex flex-col items-end gap-2">
-                <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                  {(moduleTotalCost/10000).toLocaleString()}만원
-                </p>
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                  {selectedSubs.length}개 기능
+                </span>
                 <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                   <Icons.Down size={20} className="text-slate-300 dark:text-slate-600" />
                 </div>
@@ -307,10 +277,10 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
             >
               <div className="px-6 pb-6 pt-2 border-t border-slate-50 dark:border-slate-800/50">
                 <div className="grid gap-1">
-                  {module.subFeatures.filter(sub => sub.isSelected).map((sub) => (
+                  {selectedSubs.map((sub) => (
                     <div 
                       key={sub.id} 
-                      className="flex items-center justify-between py-2.5 px-4"
+                      className="flex items-center py-2.5 px-4"
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
@@ -318,10 +288,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                           {sub.name}
                         </span>
                       </div>
-                      
-                      <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                        +{(sub.price / 10000).toLocaleString()}만
-                      </span>
                     </div>
                   ))}
                 </div>
@@ -362,11 +328,15 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
           <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl w-full max-w-md border border-slate-200 dark:border-slate-800">
              <div className="flex justify-between mb-2">
                 <span className="text-slate-500 dark:text-slate-400">총 예상 견적</span>
-                <span className="font-bold text-slate-900 dark:text-white">{(totalCost/10000).toLocaleString()}만원</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {currentEstimate 
+                    ? `${(currentEstimate.minCost/10000).toLocaleString()} ~ ${(currentEstimate.maxCost/10000).toLocaleString()}만원`
+                    : '-'}
+                </span>
              </div>
              <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">예상 기간</span>
-                <span className="font-bold text-slate-900 dark:text-white">{finalMonths.toFixed(1)}개월</span>
+                <span className="font-bold text-slate-900 dark:text-white">{currentEstimate?.duration || '-'}</span>
              </div>
           </div>
        </div>
@@ -443,17 +413,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
                 {/* Right Side Info */}
                 <div className="flex flex-col items-end gap-2">
-                   {isBlind ? (
-                      // Step 1: Qualitative Feedback
-                      <span className={`text-xs font-semibold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400`}>
-                         {module.category}
-                      </span>
-                   ) : (
-                      // Step 2: Price Reveal
-                      <p className={`text-lg font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-600'}`}>
-                        {(module.subFeatures.filter(s => s.isSelected).reduce((sum, s) => sum + s.price, 0)/10000).toLocaleString()}만원
-                      </p>
-                   )}
+                   <span className={`text-xs font-semibold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400`}>
+                      {module.category}
+                   </span>
                    <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                       <Icons.Down size={20} className="text-slate-300 dark:text-slate-600" />
                    </div>
@@ -499,21 +461,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                               )}
                            </div>
                            
-                           {/* Right Side: Price or Qualitative Tag */}
+                           {/* Right Side: Qualitative Tag */}
                            <div className="flex items-center gap-6">
-                              {isBlind ? (
-                                sub.price > 5000000 ? (
-                                  <span className="text-xs font-bold text-amber-500 flex items-center gap-1">
-                                    <Icons.Warning size={12}/> 고비용 예상
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-slate-400">일반 기능</span>
-                                )
-                              ) : (
-                                <span className={`text-sm font-bold w-20 text-right ${sub.isSelected ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'}`}>
-                                  +{(sub.price / 10000).toLocaleString()}만
-                                </span>
-                              )}
+                              <span className="text-xs text-slate-400">
+                                {sub.manWeeks > 0 ? `${sub.manWeeks}주 소요` : ''}
+                              </span>
                            </div>
                         </div>
                       ))}
