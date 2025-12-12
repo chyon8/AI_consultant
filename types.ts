@@ -225,6 +225,19 @@ export interface ParsedSummary {
   recommendations: string[];
 }
 
+export interface EstimateTypeData {
+  minCost: number;
+  maxCost: number;
+  duration: string;
+  description: string;
+}
+
+export interface ParsedEstimates {
+  typeA: EstimateTypeData;
+  typeB: EstimateTypeData;
+  typeC: EstimateTypeData;
+}
+
 export interface ProgressiveLoadingState {
   projectOverviewReady: boolean;
   modulesReady: boolean;
@@ -233,4 +246,5 @@ export interface ProgressiveLoadingState {
   summaryReady: boolean;
   schedule?: ParsedSchedule;
   summary?: ParsedSummary;
+  estimates?: ParsedEstimates;
 }
