@@ -1572,8 +1572,32 @@ const App: React.FC = () => {
               break;
             }
             case 'estimates': {
-              setProgressiveState(prev => ({ ...prev, estimatesReady: true }));
-              console.log('[App] PROGRESSIVE: Estimates loaded');
+              const estimates = staged.data.estimates || staged.data;
+              setProgressiveState(prev => ({ 
+                ...prev, 
+                estimatesReady: true,
+                estimates: {
+                  typeA: {
+                    minCost: estimates.typeA?.minCost || 0,
+                    maxCost: estimates.typeA?.maxCost || 0,
+                    duration: estimates.typeA?.duration || '',
+                    description: estimates.typeA?.description || '대형 에이전시 (안정성)',
+                  },
+                  typeB: {
+                    minCost: estimates.typeB?.minCost || 0,
+                    maxCost: estimates.typeB?.maxCost || 0,
+                    duration: estimates.typeB?.duration || '',
+                    description: estimates.typeB?.description || '소규모 스튜디오 (가성비)',
+                  },
+                  typeC: {
+                    minCost: estimates.typeC?.minCost || 0,
+                    maxCost: estimates.typeC?.maxCost || 0,
+                    duration: estimates.typeC?.duration || '',
+                    description: estimates.typeC?.description || 'AI 네이티브 시니어 (생산성 혁신)',
+                  },
+                }
+              }));
+              console.log('[App] PROGRESSIVE: Estimates loaded', estimates);
               break;
             }
             case 'schedule': {
