@@ -91,10 +91,32 @@ export function detectCompletedStages(accumulatedText: string, alreadyDetected: 
       if (jsonMatch) {
         try {
           const data = JSON.parse(jsonMatch[1].trim());
-          console.log(`[Parser] Stage ${stage} complete, parsed data:`, Object.keys(data));
+          console.log(`[Parser] ========== Stage ${stage} COMPLETE ==========`);
+          console.log(`[Parser] Raw JSON:`, JSON.stringify(data, null, 2));
+          
+          if (stage === 'modules' && data.modules) {
+            console.log(`[Parser] MODULES DETAIL:`);
+            data.modules.forEach((mod: any, i: number) => {
+              console.log(`  [Module ${i+1}] ${mod.name}: baseCost=${mod.baseCost}, baseManMonths=${mod.baseManMonths}`);
+              if (mod.subFeatures) {
+                mod.subFeatures.forEach((sf: any) => {
+                  console.log(`    - ${sf.name}: price=${sf.price}, manWeeks=${sf.manWeeks}`);
+                });
+              }
+            });
+          }
+          
+          if (stage === 'estimates' && data.estimates) {
+            console.log(`[Parser] ESTIMATES DETAIL:`);
+            console.log(`  TypeA: ${data.estimates.typeA?.minCost} ~ ${data.estimates.typeA?.maxCost}, ${data.estimates.typeA?.duration}`);
+            console.log(`  TypeB: ${data.estimates.typeB?.minCost} ~ ${data.estimates.typeB?.maxCost}, ${data.estimates.typeB?.duration}`);
+            console.log(`  TypeC: ${data.estimates.typeC?.minCost} ~ ${data.estimates.typeC?.maxCost}, ${data.estimates.typeC?.duration}`);
+          }
+          
           return { stage, data, markerPosition: markerPos };
         } catch (e) {
           console.error(`[Parser] Failed to parse ${stage} JSON:`, e);
+          console.error(`[Parser] Raw match:`, jsonMatch[1]);
         }
       }
     }
