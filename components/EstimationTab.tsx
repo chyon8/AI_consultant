@@ -41,6 +41,12 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   estimates
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
+  
+  // Debug: Log modules and subfeature prices
+  console.log('[EstimationTab] modules prop received:', modules.map(m => ({
+    name: m.name,
+    subFeatures: m.subFeatures.map(sf => ({ name: sf.name, price: sf.price, manWeeks: sf.manWeeks }))
+  })));
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => 
@@ -463,11 +469,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                            
                            {/* Right Side: Price & Duration */}
                            <div className="flex items-center gap-4">
-                              {sub.price > 0 && (
-                                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                  {(sub.price / 10000).toLocaleString()}만원
-                                </span>
-                              )}
+                              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                {sub.price > 0 ? `${(sub.price / 10000).toLocaleString()}만원` : '-'}
+                              </span>
                               <span className="text-xs text-slate-400">
                                 {sub.manWeeks > 0 ? `${sub.manWeeks}주` : ''}
                               </span>
