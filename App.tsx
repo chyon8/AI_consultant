@@ -572,11 +572,12 @@ const App: React.FC = () => {
     setProgressiveState({
       projectOverviewReady: true, // Default to true for completed sessions
       modulesReady: true,
-      estimatesReady: true,
+      estimatesReady: true, // Will be overwritten in STEP 3 with actual data
       scheduleReady: true,
       summaryReady: true,
       schedule: null,
       summary: session?.dashboardState?.summary || null,
+      estimates: undefined, // Will be restored in STEP 3 from atomic unit
     });
     if (session) {
       // [ATOMIC UNIT] Ensure session exists in coupler BEFORE any switch
@@ -740,11 +741,12 @@ const App: React.FC = () => {
       setProgressiveState({
         projectOverviewReady: true,
         modulesReady: true,
-        estimatesReady: true,
-        scheduleReady: true,
-        summaryReady: true,
-        schedule: null,
+        estimatesReady: !!atomicUnit.dashboard.estimates,
+        scheduleReady: !!atomicUnit.dashboard.schedule,
+        summaryReady: !!atomicUnit.dashboard.summary,
+        schedule: atomicUnit.dashboard.schedule || null,
         summary: atomicUnit.dashboard.summary || null,
+        estimates: atomicUnit.dashboard.estimates || undefined,
       });
       
       if (atomicUnit.chat.messages.length > INITIAL_MESSAGES.length) {
@@ -1705,6 +1707,26 @@ const App: React.FC = () => {
               summaryReady: true,
               schedule: status.result.schedule,
               summary: status.result.summary,
+              estimates: status.result.estimates ? {
+                typeA: {
+                  minCost: status.result.estimates.typeA?.minCost || 0,
+                  maxCost: status.result.estimates.typeA?.maxCost || 0,
+                  duration: status.result.estimates.typeA?.duration || '',
+                  description: status.result.estimates.typeA?.description || ''
+                },
+                typeB: {
+                  minCost: status.result.estimates.typeB?.minCost || 0,
+                  maxCost: status.result.estimates.typeB?.maxCost || 0,
+                  duration: status.result.estimates.typeB?.duration || '',
+                  description: status.result.estimates.typeB?.description || ''
+                },
+                typeC: {
+                  minCost: status.result.estimates.typeC?.minCost || 0,
+                  maxCost: status.result.estimates.typeC?.maxCost || 0,
+                  duration: status.result.estimates.typeC?.duration || '',
+                  description: status.result.estimates.typeC?.description || ''
+                }
+              } : undefined,
             });
             
           } else {
