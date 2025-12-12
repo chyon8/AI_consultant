@@ -1,4 +1,4 @@
-import { Message, ModuleItem, PartnerType, ProjectScale, EstimationStep, DashboardState, InputSource, ProjectOverview, ParsedSummary } from '../types';
+import { Message, ModuleItem, PartnerType, ProjectScale, EstimationStep, DashboardState, InputSource, ProjectOverview, ParsedSummary, ParsedEstimates, ParsedSchedule } from '../types';
 import { INITIAL_MESSAGES, INITIAL_MODULES } from '../constants';
 
 export interface AtomicSessionUnit {
@@ -22,6 +22,8 @@ export interface AtomicSessionUnit {
     referencedFiles: InputSource[];
     projectOverview?: ProjectOverview | null;
     summary?: ParsedSummary | null;
+    estimates?: ParsedEstimates | null;
+    schedule?: ParsedSchedule | null;
     rfpContent?: string;
     rfpGenerating?: boolean;
     memoContent?: string;
