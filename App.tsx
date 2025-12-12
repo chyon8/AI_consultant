@@ -1598,6 +1598,10 @@ const App: React.FC = () => {
               setModules(convertedModules);
               setProgressiveState(prev => ({ ...prev, modulesReady: true }));
               console.log(`[App] PROGRESSIVE: Modules loaded (${convertedModules.length} modules)`);
+              console.log(`[App] PROGRESSIVE: SubFeature prices:`, convertedModules.map(m => ({
+                module: m.name,
+                subFeatures: m.subFeatures.map(sf => ({ name: sf.name, price: sf.price }))
+              })));
               break;
             }
             case 'estimates': {
