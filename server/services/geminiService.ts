@@ -76,13 +76,18 @@ export async function analyzeProject(
 
   const parts: any[] = [];
   
-  const fullPromptText = PART1_PROMPT + '\n\n---\n\n사용자 입력:\n' + userInput;
-  parts.push({ text: fullPromptText });
+  // User input as user message (system prompt is separate)
+  const userMessage = '사용자 입력:\n' + userInput;
+  parts.push({ text: userMessage });
   
   console.log('='.repeat(80));
-  console.log('[geminiService] FULL PROMPT INPUT:');
+  console.log('[geminiService] SYSTEM PROMPT:');
   console.log('='.repeat(80));
-  console.log(fullPromptText);
+  console.log(PART1_PROMPT);
+  console.log('='.repeat(80));
+  console.log('[geminiService] USER INPUT:');
+  console.log('='.repeat(80));
+  console.log(userMessage);
   console.log('='.repeat(80));
   
   if (fileDataList && fileDataList.length > 0) {
@@ -149,6 +154,7 @@ export async function analyzeProject(
       { role: 'user', parts: parts }
     ],
     config: {
+      systemInstruction: PART1_PROMPT,
       temperature: 1.0,
       thinkingConfig: {
         thinkingBudget: 8000
