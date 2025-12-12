@@ -1390,6 +1390,29 @@ const App: React.FC = () => {
     // Build dashboard state for session storage
     // Use AI-parsed techStack if available, otherwise empty array
     const parsedTechStack = result.projectOverview?.techStack || result.techStack || [];
+    
+    // Extract estimates from result
+    const parsedEstimates = result.estimates ? {
+      typeA: {
+        minCost: result.estimates.typeA?.minCost || 0,
+        maxCost: result.estimates.typeA?.maxCost || 0,
+        duration: result.estimates.typeA?.duration || '',
+        description: result.estimates.typeA?.description || ''
+      },
+      typeB: {
+        minCost: result.estimates.typeB?.minCost || 0,
+        maxCost: result.estimates.typeB?.maxCost || 0,
+        duration: result.estimates.typeB?.duration || '',
+        description: result.estimates.typeB?.description || ''
+      },
+      typeC: {
+        minCost: result.estimates.typeC?.minCost || 0,
+        maxCost: result.estimates.typeC?.maxCost || 0,
+        duration: result.estimates.typeC?.duration || '',
+        description: result.estimates.typeC?.description || ''
+      }
+    } : null;
+    
     const dashboardState: DashboardState = {
       modules: convertedModules,
       partnerType: 'STUDIO',
@@ -1423,6 +1446,8 @@ const App: React.FC = () => {
       unit.dashboard.referencedFiles = dashboardState.referencedFiles;
       unit.dashboard.projectOverview = dashboardState.projectOverview;
       unit.dashboard.summary = dashboardState.summary;
+      unit.dashboard.estimates = parsedEstimates;
+      unit.dashboard.schedule = result.schedule || null;
     });
     
     if (!updateSuccess) {
@@ -1444,6 +1469,8 @@ const App: React.FC = () => {
           unit.dashboard.referencedFiles = dashboardState.referencedFiles;
           unit.dashboard.projectOverview = dashboardState.projectOverview;
           unit.dashboard.summary = dashboardState.summary;
+          unit.dashboard.estimates = parsedEstimates;
+          unit.dashboard.schedule = result.schedule || null;
         });
         console.log(`[App] Created and populated atomic unit for session ${targetSessionId}`);
       } else {
