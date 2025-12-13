@@ -236,6 +236,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       {modules.filter(m => m.isSelected && m.subFeatures.some(s => s.isSelected)).map((module) => {
         const isExpanded = expandedIds.includes(module.id);
         const selectedSubs = module.subFeatures.filter(s => s.isSelected);
+        const moduleTotal = selectedSubs.reduce((sum, s) => sum + (s.price || 0), 0);
         
         return (
           <div 
@@ -252,6 +253,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                   <h5 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                     {module.name}
                   </h5>
+                  {moduleTotal > 0 && (
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {(moduleTotal / 10000).toLocaleString()}만원
+                    </span>
+                  )}
                   {module.isNew && (
                     <span className="text-[10px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-2 py-0.5 rounded-full animate-pulse">
                       ✨ New
@@ -376,6 +382,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
         {modules.map((module) => {
            const isSelected = module.isSelected;
            const isExpanded = expandedIds.includes(module.id);
+           const selectedSubs = module.subFeatures.filter(s => s.isSelected);
+           const moduleTotal = selectedSubs.reduce((sum, s) => sum + (s.price || 0), 0);
            
            return (
             <div 
@@ -412,6 +420,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                     <h5 className={`text-lg font-bold tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                       {module.name}
                     </h5>
+                    {moduleTotal > 0 && isSelected && (
+                      <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                        {(moduleTotal / 10000).toLocaleString()}만원
+                      </span>
+                    )}
                     {module.isNew && (
                       <span className="text-[10px] font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-2 py-0.5 rounded-full animate-pulse">
                         ✨ New
