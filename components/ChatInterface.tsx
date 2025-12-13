@@ -117,6 +117,9 @@ function parseAIResponse(fullText: string): { chatText: string; action: ChatActi
 
 function fixMarkdownSyntax(text: string): string {
   return text
+    .replace(/([.:])[\s]*-[\s]*([^\s-])/g, '$1\n\n- $2')
+    .replace(/([.:])[\s]*\*[\s]*([^\s*])/g, '$1\n\n* $2')
+    .replace(/([.:])[\s]*(\d+)\.[\s]*([^\s])/g, '$1\n\n$2. $3')
     .replace(/^-([^\s-])/gm, '- $1')
     .replace(/^\*([^\s*])/gm, '* $1')
     .replace(/^(\d+)\.([^\s])/gm, '$1. $2');
