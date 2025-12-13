@@ -88,8 +88,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
     return calculateSchedule(modules, currentPartnerType);
   }, [modules, currentPartnerType]);
 
-  const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE A (AI Native)' : 
-                       currentPartnerType === 'STUDIO' ? 'TYPE B (Studio)' : 'TYPE C (Agency)';
+  const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE C (AI 네이티브)' : 
+                       currentPartnerType === 'STUDIO' ? 'TYPE B (스튜디오)' : 'TYPE A (에이전시)';
 
   const totalFeatures = selectedModules.reduce((acc, m) => 
     acc + m.subFeatures.filter(s => s.isSelected).length
