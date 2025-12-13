@@ -142,6 +142,15 @@ function extractDisplayText(text: string): string {
   return fixMarkdownSyntax(displayText);
 }
 
+function extractDisplayTextForChunk(text: string): string {
+  return text
+    .replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '')
+    .replace(/<ACTION>[\s\S]*$/g, '')
+    .replace(/<\/ACTION>/g, '')
+    .replace(/<CHAT>/g, '')
+    .replace(/<\/CHAT>/g, '');
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -526,8 +535,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             
             if (data.type === 'chunk' && data.chunk) {
               fullResponseText += data.chunk;
-              const displayText = extractDisplayText(fullResponseText);
-              typingManager.addToBuffer(extractDisplayText(data.chunk));
+              typingManager.addToBuffer(extractDisplayTextForChunk(data.chunk));
             }
             
             if (data.type === 'done') {

@@ -379,11 +379,21 @@ export async function streamChatResponse(
       }
     });
 
+    let fullResponse = '';
     for await (const chunk of result) {
       if (chunk.text) {
+        fullResponse += chunk.text;
+        // Log first 3 chunks with escaped newlines to verify format
+        if (fullResponse.length < 500) {
+          console.log('[chatService] Chunk received:', JSON.stringify(chunk.text));
+        }
         onChunk(chunk.text);
       }
     }
+    // Log complete response with newlines escaped for debugging
+    console.log('[chatService] === FULL AI RESPONSE (first 1000 chars) ===');
+    console.log(JSON.stringify(fullResponse.substring(0, 1000)));
+    console.log('[chatService] === END RESPONSE ===');
   } catch (error) {
     console.error("Gemini Chat Error:", error);
     onChunk("<CHAT>\n죄송합니다. AI 서비스 연결 중 오류가 발생했습니다.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
