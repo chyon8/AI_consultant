@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { PART1_PROMPT, PART2_PROMPT, ASSISTANT_PROMPT } from '../prompts/analysis';
 import { truncateFileContents } from '../utils/tokenLimit';
+import { buildFullChatPrompt, ModuleItem as ChatModuleItem, ProjectOverview } from '../prompts/chat';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
@@ -214,81 +215,6 @@ interface ModuleItem {
   subFeatures: SubFeature[];
 }
 
-const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
-당신은 IT 프로젝트 견적 컨설턴트 AI입니다.
-사용자의 질문에 답변하고, 필요시 대시보드(모듈/기능/견적)를 제어합니다.
-
-# RESPONSE FORMAT (필수)
-응답은 반드시 다음 형식을 따르세요:
-
-<CHAT>
-사용자에게 보여줄 자연어 답변을 여기에 작성합니다.
-마크다운 형식 사용 가능합니다.
-</CHAT>
-
-<ACTION>
-{
-  "type": "action_type",
-  "intent": "command" | "general",
-  "payload": { ... }
-}
-</ACTION>
-
-# ACTION TYPES
-1. toggle_module: 기존 모듈 활성화/비활성화 토글
-2. toggle_feature: 기존 세부 기능 활성화/비활성화 토글
-3. add_feature: 기존 모듈에 새 기능 병합
-4. create_module: 신규 모듈 생성
-5. update_scale: 프로젝트 규모 변경
-6. no_action: 대시보드 변경 없음
-
-# RULES
-1. 한국어로 답변하세요.
-2. <CHAT>과 <ACTION> 태그는 반드시 포함해야 합니다.
-3. intent 필드는 ACTION에 반드시 포함해야 합니다.
-
-# CURRENT PROJECT STATE
-`;
-
-function formatModulesForPrompt(modules: ModuleItem[]): string {
-  const lines: string[] = [];
-  
-  modules.forEach(mod => {
-    const status = mod.isSelected ? '✅ 활성화' : '❌ 비활성화';
-    const required = mod.required ? ' (필수)' : '';
-    lines.push(`\n## ${mod.name} [${mod.id}] - ${status}${required}`);
-    lines.push(`   기본 비용: ${(mod.baseCost / 10000).toLocaleString()}만원`);
-    lines.push(`   기본 기간: ${mod.baseManMonths}MM`);
-    
-    if (mod.subFeatures.length > 0) {
-      lines.push(`   세부 기능:`);
-      mod.subFeatures.forEach(feat => {
-        const featStatus = feat.isSelected ? '✅' : '❌';
-        lines.push(`     - ${featStatus} ${feat.name} [${feat.id}]: ${(feat.price / 10000).toLocaleString()}만원, ${feat.manWeeks}주`);
-      });
-    }
-  });
-  
-  return lines.join('\n');
-}
-
-function calculateTotals(modules: ModuleItem[]): { totalCost: number; totalWeeks: number } {
-  let totalCost = 0;
-  let totalWeeks = 0;
-  
-  modules.filter(m => m.isSelected).forEach(mod => {
-    totalCost += mod.baseCost;
-    totalWeeks += mod.baseManMonths * 4;
-    
-    mod.subFeatures.filter(f => f.isSelected).forEach(feat => {
-      totalCost += feat.price;
-      totalWeeks += feat.manWeeks;
-    });
-  });
-  
-  return { totalCost, totalWeeks };
-}
-
 export interface ChatModelSettings {
   classifyUserIntent?: string;
   streamChatResponse?: string;
@@ -301,13 +227,6 @@ export interface ChatFileData {
   base64?: string;
   mimeType?: string;
   filePath?: string;
-}
-
-export interface ProjectOverview {
-  projectTitle: string;
-  businessGoals: string;
-  coreValues: string[];
-  techStack: { layer: string; items: string[] }[];
 }
 
 export async function streamChatResponse(
@@ -327,28 +246,11 @@ export async function streamChatResponse(
   console.log('[claudeService] streamChatResponse using model:', model);
   console.log('[claudeService] fileDataList count:', fileDataList?.length || 0);
 
-  const { totalCost, totalWeeks } = calculateTotals(currentModules);
-  const modulesText = formatModulesForPrompt(currentModules);
-  
-  const overviewSection = projectOverview ? `
-=== 프로젝트 개요 (유저 초기 입력) ===
-프로젝트명: ${projectOverview.projectTitle}
-비즈니스 목표: ${projectOverview.businessGoals}
-핵심 가치: ${projectOverview.coreValues.join(', ')}
-기술 스택: ${projectOverview.techStack.map(t => `${t.layer}: ${t.items.join(', ')}`).join(' | ')}
-` : '';
-  
-  const projectState = `
-${overviewSection}
-=== 현재 프로젝트 상태 ===
-총 예상 비용: ${(totalCost / 10000).toLocaleString()}만원
-총 예상 기간: 약 ${Math.ceil(totalWeeks / 4)}개월 (${totalWeeks}주)
-
-=== 모듈 상세 ===
-${modulesText}
-`;
-
-  const fullSystemPrompt = CHAT_SYSTEM_PROMPT + projectState;
+  const fullSystemPrompt = buildFullChatPrompt(
+    currentModules[0]?.name || 'IT 프로젝트',
+    currentModules as unknown as ChatModuleItem[],
+    projectOverview
+  );
 
   const messages: any[] = history.slice(0, -1).map(h => ({
     role: (h.role === 'model' ? 'assistant' : h.role) as 'user' | 'assistant',
