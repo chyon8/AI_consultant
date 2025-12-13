@@ -1412,19 +1412,22 @@ const App: React.FC = () => {
         minCost: result.estimates.typeA?.minCost || 0,
         maxCost: result.estimates.typeA?.maxCost || 0,
         duration: result.estimates.typeA?.duration || '',
-        description: result.estimates.typeA?.description || ''
+        description: result.estimates.typeA?.description || '',
+        breakdown: result.estimates.typeA?.breakdown
       },
       typeB: {
         minCost: result.estimates.typeB?.minCost || 0,
         maxCost: result.estimates.typeB?.maxCost || 0,
         duration: result.estimates.typeB?.duration || '',
-        description: result.estimates.typeB?.description || ''
+        description: result.estimates.typeB?.description || '',
+        breakdown: result.estimates.typeB?.breakdown
       },
       typeC: {
         minCost: result.estimates.typeC?.minCost || 0,
         maxCost: result.estimates.typeC?.maxCost || 0,
         duration: result.estimates.typeC?.duration || '',
-        description: result.estimates.typeC?.description || ''
+        description: result.estimates.typeC?.description || '',
+        breakdown: result.estimates.typeC?.breakdown
       }
     } : null;
     
@@ -1628,18 +1631,21 @@ const App: React.FC = () => {
                     maxCost: estimates.typeA?.maxCost || 0,
                     duration: estimates.typeA?.duration || '',
                     description: estimates.typeA?.description || '대형 에이전시 (안정성)',
+                    breakdown: estimates.typeA?.breakdown,
                   },
                   typeB: {
                     minCost: estimates.typeB?.minCost || 0,
                     maxCost: estimates.typeB?.maxCost || 0,
                     duration: estimates.typeB?.duration || '',
                     description: estimates.typeB?.description || '소규모 스튜디오 (가성비)',
+                    breakdown: estimates.typeB?.breakdown,
                   },
                   typeC: {
                     minCost: estimates.typeC?.minCost || 0,
                     maxCost: estimates.typeC?.maxCost || 0,
                     duration: estimates.typeC?.duration || '',
                     description: estimates.typeC?.description || 'AI 네이티브 시니어 (생산성 혁신)',
+                    breakdown: estimates.typeC?.breakdown,
                   },
                 }
               }));
@@ -1729,19 +1735,22 @@ const App: React.FC = () => {
                   minCost: status.result.estimates.typeA?.minCost || 0,
                   maxCost: status.result.estimates.typeA?.maxCost || 0,
                   duration: status.result.estimates.typeA?.duration || '',
-                  description: status.result.estimates.typeA?.description || ''
+                  description: status.result.estimates.typeA?.description || '',
+                  breakdown: status.result.estimates.typeA?.breakdown
                 },
                 typeB: {
                   minCost: status.result.estimates.typeB?.minCost || 0,
                   maxCost: status.result.estimates.typeB?.maxCost || 0,
                   duration: status.result.estimates.typeB?.duration || '',
-                  description: status.result.estimates.typeB?.description || ''
+                  description: status.result.estimates.typeB?.description || '',
+                  breakdown: status.result.estimates.typeB?.breakdown
                 },
                 typeC: {
                   minCost: status.result.estimates.typeC?.minCost || 0,
                   maxCost: status.result.estimates.typeC?.maxCost || 0,
                   duration: status.result.estimates.typeC?.duration || '',
-                  description: status.result.estimates.typeC?.description || ''
+                  description: status.result.estimates.typeC?.description || '',
+                  breakdown: status.result.estimates.typeC?.breakdown
                 }
               } : undefined,
             });
