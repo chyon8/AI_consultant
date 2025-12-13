@@ -155,6 +155,7 @@ export interface DashboardState {
   summary?: ParsedSummary | null;
   rfpContent?: string; // RFP generation result
   memoContent?: string; // Session memo content
+  workScope?: WorkScopeSelection; // 기획/디자인/개발 범위 선택
 }
 
 export type ChatActionType = 
@@ -225,11 +226,24 @@ export interface ParsedSummary {
   recommendations: string[];
 }
 
+export interface EstimateBreakdown {
+  planning: number;
+  design: number;
+  development: number;
+}
+
 export interface EstimateTypeData {
   minCost: number;
   maxCost: number;
   duration: string;
   description: string;
+  breakdown?: EstimateBreakdown;
+}
+
+export interface WorkScopeSelection {
+  planning: boolean;
+  design: boolean;
+  development: boolean;
 }
 
 export interface ParsedEstimates {

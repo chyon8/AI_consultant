@@ -18,10 +18,23 @@ export interface ParsedModule {
   subFeatures: ParsedSubFeature[];
 }
 
+export interface EstimateBreakdown {
+  planning: number;
+  design: number;
+  development: number;
+}
+
+export interface EstimateTypeData {
+  minCost: number;
+  maxCost: number;
+  duration: string;
+  breakdown?: EstimateBreakdown;
+}
+
 export interface ParsedEstimates {
-  typeA: { minCost: number; maxCost: number; duration: string };
-  typeB: { minCost: number; maxCost: number; duration: string };
-  typeC: { minCost: number; maxCost: number; duration: string };
+  typeA: EstimateTypeData;
+  typeB: EstimateTypeData;
+  typeC: EstimateTypeData;
 }
 
 export interface ParsedSchedule {
@@ -144,10 +157,22 @@ export function parseModulesStage(data: any): { projectTitle: string; modules: P
 
 export function parseEstimatesStage(data: any): ParsedEstimates {
   const estimates = data.estimates || data;
+  
+  const parseTypeData = (typeData: any): EstimateTypeData => ({
+    minCost: typeData?.minCost || 0,
+    maxCost: typeData?.maxCost || 0,
+    duration: typeData?.duration || '미정',
+    breakdown: typeData?.breakdown ? {
+      planning: typeData.breakdown.planning || 0,
+      design: typeData.breakdown.design || 0,
+      development: typeData.breakdown.development || 0
+    } : undefined
+  });
+  
   return {
-    typeA: estimates.typeA || { minCost: 0, maxCost: 0, duration: '미정' },
-    typeB: estimates.typeB || { minCost: 0, maxCost: 0, duration: '미정' },
-    typeC: estimates.typeC || { minCost: 0, maxCost: 0, duration: '미정' }
+    typeA: parseTypeData(estimates.typeA),
+    typeB: parseTypeData(estimates.typeB),
+    typeC: parseTypeData(estimates.typeC)
   };
 }
 
