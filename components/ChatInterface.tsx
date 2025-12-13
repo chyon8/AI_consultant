@@ -115,10 +115,17 @@ function parseAIResponse(fullText: string): { chatText: string; action: ChatActi
   return { chatText, action };
 }
 
+function fixMarkdownSyntax(text: string): string {
+  return text
+    .replace(/^-([^\s-])/gm, '- $1')
+    .replace(/^\*([^\s*])/gm, '* $1')
+    .replace(/^(\d+)\.([^\s])/gm, '$1. $2');
+}
+
 function extractDisplayText(text: string): string {
   const chatMatch = text.match(/<CHAT>([\s\S]*?)(<\/CHAT>|$)/);
   if (chatMatch) {
-    return chatMatch[1].trim();
+    return fixMarkdownSyntax(chatMatch[1].trim());
   }
   
   let displayText = text
@@ -129,7 +136,7 @@ function extractDisplayText(text: string): string {
     .replace(/<\/CHAT>/g, '')
     .trim();
   
-  return displayText;
+  return fixMarkdownSyntax(displayText);
 }
 
 function formatFileSize(bytes: number): string {
