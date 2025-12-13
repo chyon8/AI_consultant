@@ -420,7 +420,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                     <h5 className={`text-lg font-bold tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                       {module.name}
                     </h5>
-                    {moduleTotal > 0 && isSelected && (
+                    {!isBlind && moduleTotal > 0 && isSelected && (
                       <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
                         {(moduleTotal / 10000).toLocaleString()}만원
                       </span>
@@ -489,15 +489,17 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                               )}
                            </div>
                            
-                           {/* Right Side: Price & Duration */}
-                           <div className="flex items-center gap-4">
-                              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                {sub.price > 0 ? `${(sub.price / 10000).toLocaleString()}만원` : '-'}
-                              </span>
-                              <span className="text-xs text-slate-400">
-                                {sub.manWeeks > 0 ? `${sub.manWeeks}주` : ''}
-                              </span>
-                           </div>
+                           {/* Right Side: Price & Duration - only show after estimate button clicked */}
+                           {!isBlind && (
+                             <div className="flex items-center gap-4">
+                                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                  {sub.price > 0 ? `${(sub.price / 10000).toLocaleString()}만원` : '-'}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  {sub.manWeeks > 0 ? `${sub.manWeeks}주` : ''}
+                                </span>
+                             </div>
+                           )}
                         </div>
                       ))}
                     </div>
