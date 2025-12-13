@@ -198,25 +198,33 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     const duration = currentEstimate.duration;
 
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
-        <div className="grid grid-cols-2 gap-8 mb-6">
-          <div>
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 mb-8 border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-8 mb-6">
+          {/* Price Range */}
+          <div className="flex-1">
             <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">{partnerLabel}</p>
-            <p className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {(minCost / 10000).toLocaleString()} ~ {(maxCost / 10000).toLocaleString()}
-              <span className="text-base font-normal text-slate-400 ml-1">만원</span>
-            </p>
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+                {(minCost / 10000).toLocaleString()}
+              </span>
+              <span className="text-lg sm:text-xl text-slate-400 font-light mx-1">~</span>
+              <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+                {(maxCost / 10000).toLocaleString()}
+              </span>
+              <span className="text-sm sm:text-base font-medium text-slate-400 ml-1">만원</span>
+            </div>
           </div>
-          <div className="text-right">
+          {/* Duration */}
+          <div className="sm:text-right">
             <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">예상 기간</p>
-            <p className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
               {duration || '-'}
             </p>
           </div>
         </div>
 
-        <div className="pt-5 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
             {currentEstimate.description}
           </p>
         </div>
