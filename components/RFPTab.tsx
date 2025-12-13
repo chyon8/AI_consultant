@@ -1,7 +1,7 @@
 
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ModuleItem, PartnerType } from '../types';
+import { ModuleItem, PartnerType, ParsedEstimates } from '../types';
 import { Icons } from './Icons';
 import { calculateSchedule } from '../services/scheduleEngine';
 
@@ -15,6 +15,7 @@ interface RFPTabProps {
   isRfpGenerating?: boolean;
   onRfpGenerate?: (modules: ModuleItem[], projectSummary: string) => void;
   onRfpCancel?: () => void;
+  estimates?: ParsedEstimates;
 }
 
 export const RFPTab: React.FC<RFPTabProps> = ({
@@ -26,7 +27,8 @@ export const RFPTab: React.FC<RFPTabProps> = ({
   onRfpContentChange,
   isRfpGenerating = false,
   onRfpGenerate,
-  onRfpCancel
+  onRfpCancel,
+  estimates
 }) => {
   const [localRfpContent, setLocalRfpContent] = useState('');
   const rfpContent = externalRfpContent !== undefined ? externalRfpContent : localRfpContent;
@@ -51,18 +53,36 @@ export const RFPTab: React.FC<RFPTabProps> = ({
 
   const selectedModules = modules.filter(m => m.isSelected);
   
-  const baseDevCost = selectedModules.reduce((acc, m) => 
-    acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
-  , 0);
-
-  let totalCost = baseDevCost;
-  if (currentPartnerType === 'AGENCY') {
-    totalCost = baseDevCost * 1.3;
-  } else if (currentPartnerType === 'STUDIO') {
-    totalCost = baseDevCost * 1.1;
-  } else {
-    totalCost = baseDevCost * 0.6;
-  }
+  // Use AI-generated estimates if available, otherwise fallback to frontend calculation
+  const getCurrentEstimate = () => {
+    if (!estimates) return null;
+    if (currentPartnerType === 'AGENCY') return estimates.typeA;
+    if (currentPartnerType === 'STUDIO') return estimates.typeB;
+    return estimates.typeC;
+  };
+  
+  const currentEstimate = getCurrentEstimate();
+  
+  // Fallback calculation only if AI estimates not available
+  const fallbackCost = useMemo(() => {
+    const baseDevCost = selectedModules.reduce((acc, m) => 
+      acc + m.subFeatures.filter(s => s.isSelected).reduce((sa, s) => sa + s.price, 0)
+    , 0);
+    let cost = baseDevCost;
+    if (currentPartnerType === 'AGENCY') {
+      cost = baseDevCost * 1.3;
+    } else if (currentPartnerType === 'STUDIO') {
+      cost = baseDevCost * 1.1;
+    } else {
+      cost = baseDevCost * 0.6;
+    }
+    return cost;
+  }, [selectedModules, currentPartnerType]);
+  
+  // Use AI estimate if available, otherwise fallback
+  const totalCost = currentEstimate 
+    ? (currentEstimate.minCost + currentEstimate.maxCost) / 2 
+    : fallbackCost;
 
   const scheduleResult = useMemo(() => {
     return calculateSchedule(modules, currentPartnerType);
@@ -79,7 +99,11 @@ export const RFPTab: React.FC<RFPTabProps> = ({
     setShowResult(true);
     setCopied(false);
 
-    const projectSummary = `총 ${selectedModules.length}개 모듈, 예상 비용 ${(totalCost / 10000).toLocaleString()}만원, 예상 기간 ${scheduleResult.totalDuration.toFixed(1)}개월`;
+    const costDisplay = currentEstimate 
+      ? `${(currentEstimate.minCost / 10000).toLocaleString()} ~ ${(currentEstimate.maxCost / 10000).toLocaleString()}만원`
+      : `${(totalCost / 10000).toLocaleString()}만원`;
+    const durationDisplay = currentEstimate?.duration || `${scheduleResult.totalDuration.toFixed(1)}개월`;
+    const projectSummary = `총 ${selectedModules.length}개 모듈, 예상 비용 ${costDisplay}, 예상 기간 ${durationDisplay}`;
 
     if (onRfpGenerate) {
       onRfpGenerate(selectedModules, projectSummary);
@@ -118,11 +142,17 @@ export const RFPTab: React.FC<RFPTabProps> = ({
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">예상 비용 ({partnerLabel})</p>
-            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{(totalCost / 10000).toLocaleString()}만원</p>
+            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              {currentEstimate 
+                ? `${(currentEstimate.minCost / 10000).toLocaleString()} ~ ${(currentEstimate.maxCost / 10000).toLocaleString()}만원`
+                : `${(totalCost / 10000).toLocaleString()}만원`}
+            </p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">예상 기간</p>
-            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{scheduleResult.totalDuration.toFixed(1)}개월</p>
+            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              {currentEstimate?.duration || `${scheduleResult.totalDuration.toFixed(1)}개월`}
+            </p>
           </div>
         </div>
 

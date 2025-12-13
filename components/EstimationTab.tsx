@@ -286,12 +286,21 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                   {selectedSubs.map((sub) => (
                     <div 
                       key={sub.id} 
-                      className="flex items-center py-2.5 px-4"
+                      className="flex items-center justify-between py-2.5 px-4"
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                         <span className="text-sm text-slate-600 dark:text-slate-300">
                           {sub.name}
+                        </span>
+                      </div>
+                      {/* Right Side: Price & Duration */}
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                          {sub.price > 0 ? `${(sub.price / 10000).toLocaleString()}만원` : '-'}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {sub.manWeeks > 0 ? `${sub.manWeeks}주` : ''}
                         </span>
                       </div>
                     </div>

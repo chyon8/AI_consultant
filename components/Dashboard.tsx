@@ -354,6 +354,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 isRfpGenerating={isRfpGenerating}
                 onRfpGenerate={onRfpGenerate}
                 onRfpCancel={onRfpCancel}
+                estimates={progressiveState?.estimates}
               />
             )}
             {activeTab === TabView.MEMO && (
