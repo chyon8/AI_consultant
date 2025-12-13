@@ -124,11 +124,10 @@ function extractDisplayText(text: string): string {
   let displayText = text
     .replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '')
     .replace(/<ACTION>[\s\S]*$/g, '')
+    .replace(/<\/ACTION>/g, '')
+    .replace(/<CHAT>/g, '')
+    .replace(/<\/CHAT>/g, '')
     .trim();
-  
-  if (displayText.startsWith('<CHAT>')) {
-    displayText = displayText.replace('<CHAT>', '').trim();
-  }
   
   return displayText;
 }
