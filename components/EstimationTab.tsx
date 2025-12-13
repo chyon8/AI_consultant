@@ -1,7 +1,7 @@
 
 
 import React, { useState } from 'react';
-import { ModuleItem, PartnerType, EstimationStep, ProjectScale, ParsedEstimates } from '../types';
+import { ModuleItem, PartnerType, EstimationStep, ProjectScale, ParsedEstimates, WorkScopeSelection } from '../types';
 import { Icons } from './Icons';
 import { PartnerTypeSelector } from './PartnerTypeSelector';
 
@@ -11,6 +11,12 @@ interface ProjectOverview {
   coreValues: string[];
   techStack: { layer: string; items: string[] }[];
 }
+
+const DEFAULT_WORK_SCOPE: WorkScopeSelection = {
+  planning: true,
+  design: true,
+  development: true
+};
 
 interface EstimationTabProps {
   modules: ModuleItem[];
@@ -25,6 +31,8 @@ interface EstimationTabProps {
   projectOverview?: ProjectOverview | null;
   isLoading?: boolean;
   estimates?: ParsedEstimates;
+  workScope?: WorkScopeSelection;
+  onWorkScopeChange?: (scope: WorkScopeSelection) => void;
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -38,7 +46,9 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   onScaleChange,
   projectOverview,
   isLoading = false,
-  estimates
+  estimates,
+  workScope = DEFAULT_WORK_SCOPE,
+  onWorkScopeChange
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
   
@@ -193,9 +203,43 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
       );
     }
 
-    const minCost = currentEstimate.minCost;
-    const maxCost = currentEstimate.maxCost;
+    const breakdown = currentEstimate.breakdown;
+    
+    const calculateAdjustedCost = () => {
+      if (!breakdown) return { min: currentEstimate.minCost, max: currentEstimate.maxCost };
+      
+      const totalBreakdown = (breakdown.planning || 0) + (breakdown.design || 0) + (breakdown.development || 0);
+      if (totalBreakdown === 0) return { min: currentEstimate.minCost, max: currentEstimate.maxCost };
+      
+      let excludedCost = 0;
+      if (!workScope.planning) excludedCost += breakdown.planning || 0;
+      if (!workScope.design) excludedCost += breakdown.design || 0;
+      if (!workScope.development) excludedCost += breakdown.development || 0;
+      
+      const ratio = excludedCost / totalBreakdown;
+      return {
+        min: Math.round(currentEstimate.minCost * (1 - ratio)),
+        max: Math.round(currentEstimate.maxCost * (1 - ratio))
+      };
+    };
+    
+    const adjustedCost = calculateAdjustedCost();
+    const minCost = adjustedCost.min;
+    const maxCost = adjustedCost.max;
     const duration = currentEstimate.duration;
+    
+    const handleScopeToggle = (scope: keyof WorkScopeSelection) => {
+      if (scope === 'development') return;
+      if (onWorkScopeChange) {
+        onWorkScopeChange({ ...workScope, [scope]: !workScope[scope] });
+      }
+    };
+    
+    const scopeItems = [
+      { key: 'planning' as const, label: '기획', color: 'indigo', hint: '기획서가 있다면 해제' },
+      { key: 'design' as const, label: '디자인', color: 'blue', hint: '디자인 시안이 있다면 해제' },
+      { key: 'development' as const, label: '개발', color: 'emerald', hint: '필수 항목' }
+    ];
 
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 mb-8 border border-slate-200 dark:border-slate-800">
@@ -222,6 +266,64 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Work Scope Breakdown */}
+        {breakdown && (
+          <div className="pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800 mb-4">
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-3">과업 범위</p>
+            <div className="grid grid-cols-3 gap-2">
+              {scopeItems.map(({ key, label, color, hint }) => {
+                const isSelected = workScope[key];
+                const cost = breakdown[key];
+                const isDisabled = key === 'development';
+                
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleScopeToggle(key)}
+                    disabled={isDisabled}
+                    className={`relative p-3 rounded-lg border transition-all duration-200 text-left ${
+                      isSelected
+                        ? `bg-${color}-50 dark:bg-${color}-900/20 border-${color}-200 dark:border-${color}-800`
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60'
+                    } ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-600'}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                        isSelected
+                          ? `bg-${color}-500 border-${color}-500`
+                          : 'border-slate-300 dark:border-slate-600'
+                      }`}>
+                        {isSelected && <Icons.Check size={10} className="text-white" />}
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500 line-through'
+                      }`}>
+                        {label}
+                      </span>
+                    </div>
+                    <p className={`text-xs font-medium tabular-nums ${
+                      isSelected ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500'
+                    }`}>
+                      {(cost / 10000).toLocaleString()}만원
+                    </p>
+                    {isDisabled && (
+                      <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 bg-slate-200 dark:bg-slate-700 px-1 rounded">
+                        필수
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {(!workScope.planning || !workScope.design) && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                <Icons.Alert size={12} />
+                선택 해제한 항목은 직접 준비해야 합니다
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800">
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">

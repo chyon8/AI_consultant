@@ -1,7 +1,7 @@
 
 
 import React, { useState, useRef } from 'react';
-import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale, InputSource, ProgressiveLoadingState } from '../types';
+import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale, InputSource, ProgressiveLoadingState, WorkScopeSelection } from '../types';
 import { Icons } from './Icons';
 import { ProjectSummaryTab } from './ProjectSummaryTab';
 import { EstimationTab } from './EstimationTab';
@@ -50,6 +50,8 @@ interface DashboardProps {
   onRfpCancel?: () => void;
   memoContent?: string;
   onMemoChange?: (content: string) => void;
+  workScope?: WorkScopeSelection;
+  onWorkScopeChange?: (scope: WorkScopeSelection) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -81,7 +83,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onRfpGenerate,
   onRfpCancel,
   memoContent = '',
-  onMemoChange
+  onMemoChange,
+  workScope,
+  onWorkScopeChange
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -330,6 +334,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   projectOverview={projectOverview}
                   isLoading={isAnalyzing && (!progressiveState || !progressiveState.modulesReady)}
                   estimates={progressiveState?.estimates}
+                  workScope={workScope}
+                  onWorkScopeChange={onWorkScopeChange}
                 />
               )
             )}

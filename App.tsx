@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview, WorkScopeSelection } from './types';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -94,6 +94,13 @@ const App: React.FC = () => {
   
   // Memo content (session-scoped)
   const [memoContent, setMemoContent] = useState<string>('');
+  
+  // Work Scope Selection (기획/디자인/개발 범위)
+  const [workScope, setWorkScope] = useState<WorkScopeSelection>({
+    planning: true,
+    design: true,
+    development: true
+  });
   // Per-session AbortController Map for concurrent RFP generation
   const rfpAbortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
@@ -247,11 +254,12 @@ const App: React.FC = () => {
         projectOverview,
         summary: progressiveState?.summary || null,
         rfpContent,
-        memoContent
+        memoContent,
+        workScope
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent, memoContent]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent, memoContent, workScope]);
 
   // Handle visibility change - check job status when tab becomes active
   useEffect(() => {
@@ -348,6 +356,7 @@ const App: React.FC = () => {
     setReferencedFiles([]);
     setRfpContent('');
     setMemoContent('');
+    setWorkScope({ planning: true, design: true, development: true });
   };
 
   // Handle delete session - show confirmation modal
@@ -533,6 +542,7 @@ const App: React.FC = () => {
         unit.dashboard.projectOverview = projectOverview;
         unit.dashboard.rfpContent = rfpContent;
         unit.dashboard.memoContent = memoContent;
+        unit.dashboard.workScope = workScope;
       });
     }
     
@@ -560,6 +570,7 @@ const App: React.FC = () => {
     setProjectOverview(null);
     setRfpContent('');
     setMemoContent('');
+    setWorkScope({ planning: true, design: true, development: true });
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
     setEstimationStep('SCOPE');
@@ -724,6 +735,8 @@ const App: React.FC = () => {
       setRfpContent(atomicUnit.dashboard.rfpContent || '');
       // [MEMO] Restore memoContent from atomic unit
       setMemoContent(atomicUnit.dashboard.memoContent || '');
+      // [WORK SCOPE] Restore workScope from atomic unit
+      setWorkScope(atomicUnit.dashboard.workScope || { planning: true, design: true, development: true });
       
       // [RFP ISOLATION FIX] Restore rfpGenerating state from atomic unit
       // If this session was generating in background, re-add to generating set
@@ -2267,6 +2280,8 @@ const App: React.FC = () => {
                   onRfpCancel={handleRfpCancel}
                   memoContent={memoContent}
                   onMemoChange={setMemoContent}
+                  workScope={workScope}
+                  onWorkScopeChange={setWorkScope}
                 />
               </div>
             )}
