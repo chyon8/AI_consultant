@@ -199,25 +199,25 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-6 mb-8 border border-slate-200 dark:border-slate-800">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-8 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6 mb-5">
           {/* Price Range */}
           <div className="flex-1">
-            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">{partnerLabel}</p>
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-1.5">{partnerLabel}</p>
+            <div className="flex items-baseline gap-0.5 flex-wrap">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                 {(minCost / 10000).toLocaleString()}
               </span>
-              <span className="text-lg sm:text-xl text-slate-400 font-light mx-1">~</span>
-              <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+              <span className="text-base text-slate-400 font-light mx-0.5">~</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                 {(maxCost / 10000).toLocaleString()}
               </span>
-              <span className="text-sm sm:text-base font-medium text-slate-400 ml-1">만원</span>
+              <span className="text-xs sm:text-sm font-medium text-slate-400 ml-1">만원</span>
             </div>
           </div>
           {/* Duration */}
           <div className="sm:text-right">
-            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-2">예상 기간</p>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-1.5">예상 기간</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {duration || '-'}
             </p>
           </div>
