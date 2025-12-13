@@ -2188,6 +2188,7 @@ const App: React.FC = () => {
                   isAnalyzing={isAnalyzing}
                   progressiveState={progressiveState}
                   projectOverview={projectOverview}
+                  originalInput={sessionCoupler.getCurrentUnit()?.boundPrompt || null}
                 />
                 {/* Restore button when chat-only */}
                 {splitMode === 'chat-only' && (

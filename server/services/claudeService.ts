@@ -235,7 +235,8 @@ export async function streamChatResponse(
   onChunk: (text: string) => void,
   modelSettings?: ChatModelSettings,
   fileDataList?: ChatFileData[],
-  projectOverview?: ProjectOverview | null
+  projectOverview?: ProjectOverview | null,
+  originalInput?: string | null
 ): Promise<void> {
   if (!anthropic) {
     onChunk("<CHAT>\nAnthropic API Key가 설정되지 않았습니다.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
@@ -249,7 +250,8 @@ export async function streamChatResponse(
   const fullSystemPrompt = buildFullChatPrompt(
     currentModules[0]?.name || 'IT 프로젝트',
     currentModules as unknown as ChatModuleItem[],
-    projectOverview
+    projectOverview,
+    originalInput
   );
 
   const messages: any[] = history.slice(0, -1).map(h => ({

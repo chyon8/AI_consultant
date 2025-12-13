@@ -164,13 +164,19 @@ export function calculateTotals(modules: ModuleItem[]): { totalCost: number; tot
 export function buildProjectStatePrompt(
   projectTitle: string,
   modules: ModuleItem[],
-  projectOverview?: ProjectOverview | null
+  projectOverview?: ProjectOverview | null,
+  originalInput?: string | null
 ): string {
   const { totalCost, totalWeeks } = calculateTotals(modules);
   const modulesText = formatModulesForPrompt(modules);
   
+  const originalInputSection = originalInput ? `
+=== 원본 요구사항 (사용자 초기 입력) ===
+${originalInput}
+` : '';
+
   const overviewSection = projectOverview ? `
-=== 프로젝트 개요 (유저 초기 입력) ===
+=== 프로젝트 개요 (AI 분석 결과) ===
 프로젝트명: ${projectOverview.projectTitle}
 비즈니스 목표: ${projectOverview.businessGoals}
 핵심 가치: ${projectOverview.coreValues.join(', ')}
@@ -178,6 +184,7 @@ export function buildProjectStatePrompt(
 ` : '';
   
   return `
+${originalInputSection}
 ${overviewSection}
 === 현재 프로젝트 상태 ===
 프로젝트: ${projectTitle}
@@ -192,8 +199,9 @@ ${modulesText}
 export function buildFullChatPrompt(
   projectTitle: string,
   modules: ModuleItem[],
-  projectOverview?: ProjectOverview | null
+  projectOverview?: ProjectOverview | null,
+  originalInput?: string | null
 ): string {
-  const projectState = buildProjectStatePrompt(projectTitle, modules, projectOverview);
+  const projectState = buildProjectStatePrompt(projectTitle, modules, projectOverview, originalInput);
   return CHAT_SYSTEM_PROMPT + projectState;
 }

@@ -145,7 +145,8 @@ export async function streamChatResponse(
   onChunk: (text: string) => void,
   modelSettings?: ChatModelSettings,
   fileDataList?: ChatFileData[],
-  projectOverview?: ProjectOverview | null
+  projectOverview?: ProjectOverview | null,
+  originalInput?: string | null
 ): Promise<void> {
   const streamModel = modelSettings?.streamChatResponse || 'gemini-2.5-flash';
   const provider = getProviderFromModelId(streamModel);
@@ -176,10 +177,10 @@ export async function streamChatResponse(
       return;
     }
     
-    return claudeService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList, projectOverview);
+    return claudeService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList, projectOverview, originalInput);
   }
   
-  return chatService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList, projectOverview);
+  return chatService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList, projectOverview, originalInput);
 }
 
 export function isProviderConfigured(provider: Provider): boolean {

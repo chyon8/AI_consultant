@@ -84,6 +84,7 @@ interface ChatInterfaceProps {
   isAnalyzing?: boolean;
   progressiveState?: ProgressiveLoadingState;
   projectOverview?: { projectTitle: string; businessGoals: string; coreValues: string[]; techStack: { layer: string; items: string[] }[] } | null;
+  originalInput?: string | null;
 }
 
 function parseAIResponse(fullText: string): { chatText: string; action: ChatAction | null } {
@@ -165,7 +166,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   modelSettings,
   isAnalyzing = false,
   progressiveState,
-  projectOverview
+  projectOverview,
+  originalInput
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -483,6 +485,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             attachments: uploadedAttachments,
             urls: urlsToSend.map(u => u.url),
             projectOverview: projectOverview,
+            originalInput: originalInput,
           }));
           resolve();
         };

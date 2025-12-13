@@ -313,14 +313,14 @@ app.post('/api/chat', async (req, res) => {
   }, 100);
 
   try {
-    const { history, currentModules, modelSettings } = req.body;
+    const { history, currentModules, modelSettings, projectOverview, originalInput } = req.body;
     
     console.log('[Chat] Using model settings:', modelSettings || 'default');
     
     await streamChatResponse(history, currentModules, (chunk: string) => {
       const padding = ' '.repeat(2048);
       res.write(`data: ${JSON.stringify({ chunk })}${padding}\n\n`);
-    }, modelSettings);
+    }, modelSettings, undefined, projectOverview, originalInput);
     
     clearInterval(heartbeat);
 
@@ -602,7 +602,7 @@ wss.on('connection', (ws: WebSocket) => {
       console.log('[WebSocket] Received message type:', data.type);
       
       if (data.type === 'chat') {
-        const { history, currentModules, modelSettings, urls, attachments, projectOverview } = data;
+        const { history, currentModules, modelSettings, urls, attachments, projectOverview, originalInput } = data;
         
         console.log('[WebSocket Chat] Using model settings:', modelSettings || 'default');
         console.log('[WebSocket Chat] URLs to fetch:', urls?.length || 0);
@@ -801,7 +801,7 @@ wss.on('connection', (ws: WebSocket) => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'chunk', chunk }));
           }
-        }, modelSettings, fileDataList, projectOverview);
+        }, modelSettings, fileDataList, projectOverview, originalInput);
         
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'done' }));

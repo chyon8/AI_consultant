@@ -289,12 +289,6 @@ export interface ChatFileData {
   filePath?: string;
 }
 
-export interface ProjectOverview {
-  projectTitle: string;
-  businessGoals: string;
-  coreValues: string[];
-  techStack: { layer: string; items: string[] }[];
-}
 
 export async function streamChatResponse(
   history: Message[],
@@ -302,7 +296,8 @@ export async function streamChatResponse(
   onChunk: (text: string) => void,
   modelSettings?: ChatModelSettings,
   fileDataList?: ChatFileData[],
-  projectOverview?: ProjectOverview | null
+  projectOverview?: ProjectOverview | null,
+  originalInput?: string | null
 ): Promise<void> {
   if (!GEMINI_API_KEY) {
     onChunk("<CHAT>\nAPI Key가 설정되지 않았습니다. GEMINI_API_KEY 환경 변수를 설정해주세요.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
@@ -337,7 +332,8 @@ export async function streamChatResponse(
   const fullSystemPrompt = buildFullChatPrompt(
     projectContext.projectTitle,
     currentModules,
-    projectOverview
+    projectOverview,
+    originalInput
   );
 
   const previousHistory = history.slice(0, history.length - 1).map(h => ({
