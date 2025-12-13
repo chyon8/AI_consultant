@@ -437,12 +437,20 @@ export interface ChatFileData {
   filePath?: string;
 }
 
+export interface ProjectOverview {
+  projectTitle: string;
+  businessGoals: string;
+  coreValues: string[];
+  techStack: { layer: string; items: string[] }[];
+}
+
 export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
   onChunk: (text: string) => void,
   modelSettings?: ChatModelSettings,
-  fileDataList?: ChatFileData[]
+  fileDataList?: ChatFileData[],
+  projectOverview?: ProjectOverview | null
 ): Promise<void> {
   if (!GEMINI_API_KEY) {
     onChunk("<CHAT>\nAPI Key가 설정되지 않았습니다. GEMINI_API_KEY 환경 변수를 설정해주세요.\n</CHAT>\n\n<ACTION>\n{\"type\": \"no_action\", \"intent\": \"general\", \"payload\": {}}\n</ACTION>");
@@ -477,7 +485,16 @@ export async function streamChatResponse(
   const { totalCost, totalWeeks } = calculateTotals(currentModules);
   const modulesText = formatModulesForPrompt(currentModules);
   
+  const overviewSection = projectOverview ? `
+=== 프로젝트 개요 (유저 초기 입력) ===
+프로젝트명: ${projectOverview.projectTitle}
+비즈니스 목표: ${projectOverview.businessGoals}
+핵심 가치: ${projectOverview.coreValues.join(', ')}
+기술 스택: ${projectOverview.techStack.map(t => `${t.layer}: ${t.items.join(', ')}`).join(' | ')}
+` : '';
+  
   const projectState = `
+${overviewSection}
 === 현재 프로젝트 상태 ===
 프로젝트: ${projectContext.projectTitle}
 총 예상 비용: ${(totalCost / 10000).toLocaleString()}만원

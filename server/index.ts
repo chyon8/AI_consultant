@@ -602,7 +602,7 @@ wss.on('connection', (ws: WebSocket) => {
       console.log('[WebSocket] Received message type:', data.type);
       
       if (data.type === 'chat') {
-        const { history, currentModules, modelSettings, urls, attachments } = data;
+        const { history, currentModules, modelSettings, urls, attachments, projectOverview } = data;
         
         console.log('[WebSocket Chat] Using model settings:', modelSettings || 'default');
         console.log('[WebSocket Chat] URLs to fetch:', urls?.length || 0);
@@ -801,7 +801,7 @@ wss.on('connection', (ws: WebSocket) => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'chunk', chunk }));
           }
-        }, modelSettings, fileDataList);
+        }, modelSettings, fileDataList, projectOverview);
         
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'done' }));

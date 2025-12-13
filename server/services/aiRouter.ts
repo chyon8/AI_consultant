@@ -132,12 +132,20 @@ export interface ChatFileData {
   filePath?: string;
 }
 
+export interface ProjectOverview {
+  projectTitle: string;
+  businessGoals: string;
+  coreValues: string[];
+  techStack: { layer: string; items: string[] }[];
+}
+
 export async function streamChatResponse(
   history: Message[],
   currentModules: ModuleItem[],
   onChunk: (text: string) => void,
   modelSettings?: ChatModelSettings,
-  fileDataList?: ChatFileData[]
+  fileDataList?: ChatFileData[],
+  projectOverview?: ProjectOverview | null
 ): Promise<void> {
   const streamModel = modelSettings?.streamChatResponse || 'gemini-2.5-flash';
   const provider = getProviderFromModelId(streamModel);
@@ -168,10 +176,10 @@ export async function streamChatResponse(
       return;
     }
     
-    return claudeService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList);
+    return claudeService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList, projectOverview);
   }
   
-  return chatService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList);
+  return chatService.streamChatResponse(history, currentModules, onChunk, modelSettings, fileDataList, projectOverview);
 }
 
 export function isProviderConfigured(provider: Provider): boolean {
