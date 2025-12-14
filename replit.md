@@ -107,7 +107,9 @@ When adding new data fields that must persist across session switches, follow th
 - `modules`, `partnerType`, `projectScale`, `estimationStep`
 - `projectSummaryContent`, `aiInsight`, `referencedFiles`
 - `projectOverview` (project title, business goals, core values, tech stack)
-- `summary` (keyPoints, risks, recommendations)
+- `summary` (projectScope, keyPoints, risks, recommendations)
+- `workScope` (기획/디자인/개발 범위 선택)
+- `requiredScope` (AI가 분석한 필수 범위 - 해제 불가 항목 표시)
 
 ### Critical Rule
 **Session data must NEVER leak between sessions.** When switching sessions, ALL data must be restored from the target session's storage. The auto-save effect must include ALL fields to prevent overwriting with null/undefined values.
