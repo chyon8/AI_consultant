@@ -55,8 +55,10 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     }
 
     sessions.sort((a, b) => {
-      if (sortBy === 'newest') return b.createdAt - a.createdAt;
-      if (sortBy === 'oldest') return a.createdAt - b.createdAt;
+      const aTime = a.updatedAt || a.createdAt;
+      const bTime = b.updatedAt || b.createdAt;
+      if (sortBy === 'newest') return bTime - aTime;
+      if (sortBy === 'oldest') return aTime - bTime;
       if (sortBy === 'name') return (a.customTitle || a.title).localeCompare(b.customTitle || b.title);
       return 0;
     });

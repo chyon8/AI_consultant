@@ -42,6 +42,7 @@ export const updateSessionMessages = (sessionId: string, messages: Message[]): v
   const sessionIndex = sessions.findIndex(s => s.id === sessionId);
   if (sessionIndex !== -1) {
     sessions[sessionIndex].messages = messages;
+    sessions[sessionIndex].updatedAt = Date.now();
     saveChatHistory(sessions);
   }
 };

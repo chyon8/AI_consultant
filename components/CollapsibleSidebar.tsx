@@ -16,7 +16,7 @@ interface CollapsibleSidebarProps {
   onViewAllHistory?: () => void;
 }
 
-const MAX_VISIBLE_SESSIONS = 10;
+const MAX_VISIBLE_SESSIONS = 7;
 
 const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -50,7 +50,9 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
   const sortedSessions = [...(chatSessions || [])].sort((a, b) => {
     if (a.isFavorite && !b.isFavorite) return -1;
     if (!a.isFavorite && b.isFavorite) return 1;
-    return b.createdAt - a.createdAt;
+    const aTime = a.updatedAt || a.createdAt;
+    const bTime = b.updatedAt || b.createdAt;
+    return bTime - aTime;
   });
 
   const visibleSessions = sortedSessions.slice(0, MAX_VISIBLE_SESSIONS);
@@ -205,9 +207,6 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                           ) : (
                             session.customTitle || session.title
                           )}
-                        </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                          {formatDate(session.createdAt)}
                         </span>
                       </button>
                     )}

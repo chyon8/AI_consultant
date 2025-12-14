@@ -202,6 +202,7 @@ export interface ChatSession {
   customTitle?: string;
   isFavorite?: boolean;
   createdAt: number;
+  updatedAt?: number;
   messages: Message[];
   isLoading?: boolean;
   dashboardState?: DashboardState;
