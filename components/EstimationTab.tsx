@@ -34,7 +34,6 @@ interface EstimationTabProps {
   workScope?: WorkScopeSelection;
   onWorkScopeChange?: (scope: WorkScopeSelection) => void;
   requiredScope?: { planning: boolean; design: boolean; development: boolean };
-  estimatesReady?: boolean;
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -51,8 +50,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   estimates,
   workScope = DEFAULT_WORK_SCOPE,
   onWorkScopeChange,
-  requiredScope = { planning: false, design: false, development: true },
-  estimatesReady = false
+  requiredScope = { planning: false, design: false, development: true }
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
   
@@ -196,8 +194,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE C (AI 네이티브)' : 
                          currentPartnerType === 'STUDIO' ? 'TYPE B (스튜디오)' : 'TYPE A (에이전시)';
     
-    // Show skeleton until estimates are fully ready
-    if (!currentEstimate || !estimatesReady) {
+    if (!currentEstimate) {
       return (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
           <div className="animate-pulse space-y-4">
@@ -209,11 +206,6 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     }
 
     const breakdown = currentEstimate.breakdown;
-    
-    // Check if breakdown has valid non-zero values
-    const hasValidBreakdown = breakdown && (
-      (breakdown.planning || 0) + (breakdown.design || 0) + (breakdown.development || 0) > 0
-    );
     
     const calculateAdjustedCost = () => {
       if (!breakdown) return { min: currentEstimate.minCost, max: currentEstimate.maxCost };
@@ -277,8 +269,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
           </div>
         </div>
 
-        {/* Work Scope Breakdown - only render when breakdown has valid values */}
-        {hasValidBreakdown && breakdown && (
+        {/* Work Scope Breakdown */}
+        {breakdown && (
           <div className="pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800 mb-4">
             <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-3">과업 범위</p>
             <div className="grid grid-cols-3 gap-2">
