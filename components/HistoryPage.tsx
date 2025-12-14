@@ -52,9 +52,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      sessions = sessions.filter(s => 
-        (s.customTitle || s.title).toLowerCase().includes(query)
-      );
+      sessions = sessions.filter(s => {
+        const titleMatch = (s.customTitle || s.title).toLowerCase().includes(query);
+        if (titleMatch) return true;
+        const messageMatch = s.messages?.some(m => 
+          m.text?.toLowerCase().includes(query)
+        );
+        return messageMatch;
+      });
     }
 
     sessions.sort((a, b) => {
