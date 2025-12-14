@@ -11,6 +11,7 @@ import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { HistoryPage } from './components/HistoryPage';
+import { SearchModal } from './components/SearchModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AiSettingsModal } from './components/AiSettingsModal';
 import { RenderGuard, useSessionValidation } from './components/RenderGuard';
@@ -159,6 +160,7 @@ const App: React.FC = () => {
 
   // Settings Modal State
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // AI Settings Modal State
   const [aiSettingsModalOpen, setAiSettingsModalOpen] = useState(false);
@@ -2235,6 +2237,12 @@ const App: React.FC = () => {
             }
             setCurrentView('history');
           }}
+          onOpenSearch={() => {
+            if (activeSessionId && messages.length > 0) {
+              updateSessionMessages(activeSessionId, messages);
+            }
+            setSearchModalOpen(true);
+          }}
         />
 
         {/* Conditional View Rendering */}
@@ -2373,6 +2381,13 @@ const App: React.FC = () => {
         sessionTitle={sessionToDelete?.title || ''}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      <SearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        onSelectSession={handleSelectSession}
+        activeSessionId={activeSessionId}
       />
 
       {/* Settings Modal */}

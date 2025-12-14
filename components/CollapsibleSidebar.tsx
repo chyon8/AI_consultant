@@ -14,6 +14,7 @@ interface CollapsibleSidebarProps {
   onRenameSession?: (sessionId: string, newTitle: string) => void;
   onToggleFavorite?: (sessionId: string) => void;
   onViewAllHistory?: () => void;
+  onOpenSearch?: () => void;
 }
 
 const MAX_VISIBLE_SESSIONS = 7;
@@ -38,7 +39,8 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
   onAbortSession,
   onRenameSession,
   onToggleFavorite,
-  onViewAllHistory
+  onViewAllHistory,
+  onOpenSearch
 }) => {
   const [isProjectExpanded, setIsProjectExpanded] = useState(true);
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
@@ -119,6 +121,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
             </button>
 
             <button
+              onClick={onOpenSearch}
               className="w-full flex items-center gap-3 pl-6 pr-3 py-2 text-left text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="프로젝트 검색"
             >
@@ -299,6 +302,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
             <Icons.Plus size={18} />
           </button>
           <button
+            onClick={onOpenSearch}
             className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
             title="검색"
           >
