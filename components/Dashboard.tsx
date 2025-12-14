@@ -322,7 +322,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )
             )}
             {activeTab === TabView.ESTIMATION && (
-              isAnalyzing && progressiveState && !progressiveState.modulesReady ? (
+              isAnalyzing ? (
                 <TabSkeleton type="estimation" />
               ) : (
                 <EstimationTab 
