@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { ModuleItem, PartnerType, ParsedEstimates } from '../types';
 import { Icons } from './Icons';
-import { calculateSchedule, getMonthLabels } from '../services/scheduleEngine';
+import { calculateSchedule, calculateScheduleWithTargetDuration, getMonthLabels } from '../services/scheduleEngine';
 
 interface ExecutionPlanTabProps {
   modules: ModuleItem[];
@@ -16,12 +16,6 @@ export const ExecutionPlanTab: React.FC<ExecutionPlanTabProps> = ({
   currentPartnerType,
   estimates
 }) => {
-  const scheduleResult = useMemo(() => {
-    return calculateSchedule(modules, currentPartnerType);
-  }, [modules, currentPartnerType]);
-
-  const { rawMM, teamSize, productivityCoeff, totalDuration: calculatedDuration, totalMonths: calculatedMonths, phases, coordinationBuffer } = scheduleResult;
-  
   const aiDuration = useMemo(() => {
     if (!estimates) return null;
     const durationStr = currentPartnerType === 'AI_NATIVE' ? estimates.typeA.duration :
@@ -31,13 +25,20 @@ export const ExecutionPlanTab: React.FC<ExecutionPlanTabProps> = ({
     return match ? parseFloat(match[1]) : null;
   }, [estimates, currentPartnerType]);
 
-  const totalDuration = aiDuration ?? calculatedDuration;
-  const totalMonths = Math.max(calculatedMonths, Math.ceil(totalDuration));
-  const monthLabels = getMonthLabels(totalMonths);
   const usingAiDuration = aiDuration !== null;
 
+  const scheduleResult = useMemo(() => {
+    if (usingAiDuration && aiDuration) {
+      return calculateScheduleWithTargetDuration(modules, currentPartnerType, aiDuration);
+    }
+    return calculateSchedule(modules, currentPartnerType);
+  }, [modules, currentPartnerType, usingAiDuration, aiDuration]);
+
+  const { rawMM, teamSize, productivityCoeff, totalDuration, totalMonths, phases, coordinationBuffer } = scheduleResult;
+  const monthLabels = getMonthLabels(totalMonths);
+
   const phaseDurationSum = phases.reduce((sum, p) => sum + p.duration, 0);
-  const isValid = Math.abs(phaseDurationSum - calculatedDuration) < 0.01;
+  const isValid = Math.abs(phaseDurationSum - totalDuration) < 0.01;
 
   const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE A' : 
                        currentPartnerType === 'STUDIO' ? 'TYPE B' : 'TYPE C';

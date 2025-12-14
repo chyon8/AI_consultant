@@ -195,3 +195,35 @@ export function getMonthLabels(totalMonths: number): string[] {
   }
   return labels;
 }
+
+export function calculateScheduleWithTargetDuration(
+  modules: ModuleItem[],
+  partnerType: PartnerType,
+  targetDuration: number
+): ScheduleResult {
+  const config = PARTNER_CONFIGS[partnerType];
+  const rawMM = calculateTotalMM(modules);
+  
+  const safeDuration = Math.max(0.5, targetDuration);
+  const reversedProductivityCoeff = rawMM / (config.teamSize * safeDuration * (1 / (1 + config.coordinationBuffer)));
+  const effectiveProductivityCoeff = Math.max(0.1, Math.min(10, reversedProductivityCoeff));
+  
+  const totalMonths = Math.ceil(safeDuration);
+  const phases = distributePhases(safeDuration, totalMonths, config);
+  
+  const phaseDurationSum = phases.reduce((sum, p) => sum + p.duration, 0);
+  if (Math.abs(phaseDurationSum - safeDuration) > 0.01) {
+    const diff = safeDuration - phaseDurationSum;
+    phases[phases.length - 1].duration += diff;
+  }
+  
+  return {
+    rawMM,
+    teamSize: config.teamSize,
+    productivityCoeff: effectiveProductivityCoeff,
+    coordinationBuffer: config.coordinationBuffer,
+    totalDuration: targetDuration,
+    totalMonths,
+    phases
+  };
+}
