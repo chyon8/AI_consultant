@@ -1,6 +1,6 @@
 
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ModuleItem, TabView, PartnerType, PartnerConfig, EstimationStep, ProjectScale, InputSource, ProgressiveLoadingState, WorkScopeSelection } from '../types';
 import { Icons } from './Icons';
 import { ProjectSummaryTab } from './ProjectSummaryTab';
@@ -53,6 +53,8 @@ interface DashboardProps {
   workScope?: WorkScopeSelection;
   onWorkScopeChange?: (scope: WorkScopeSelection) => void;
   requiredScope?: { planning: boolean; design: boolean; development: boolean };
+  externalActiveTab?: TabView;
+  onActiveTabChange?: (tab: TabView) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -87,9 +89,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onMemoChange,
   workScope,
   onWorkScopeChange,
-  requiredScope
+  requiredScope,
+  externalActiveTab,
+  onActiveTabChange
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
+  
+  useEffect(() => {
+    if (externalActiveTab !== undefined) {
+      setActiveTab(externalActiveTab);
+    }
+  }, [externalActiveTab]);
+  
+  const handleTabChange = (tab: TabView) => {
+    setActiveTab(tab);
+    if (onActiveTabChange) {
+      onActiveTabChange(tab);
+    }
+  };
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isRFPOpen, setIsRFPOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -103,7 +120,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Phase 1 → Phase 2 Navigation: Move to 수행계획 tab
   const handleNextToExecutionPlan = () => {
-    setActiveTab(TabView.EXECUTION_PLAN);
+    handleTabChange(TabView.EXECUTION_PLAN);
     setTimeout(() => {
       contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
@@ -111,7 +128,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Phase 2 Action: Navigate to 공고작성 tab
   const handleNextToRFP = () => {
-    setActiveTab(TabView.RFP);
+    handleTabChange(TabView.RFP);
     setTimeout(() => {
       contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
@@ -120,9 +137,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Navigation: Go back to previous tab
   const handlePreviousTab = () => {
     if (activeTab === TabView.RFP) {
-      setActiveTab(TabView.EXECUTION_PLAN);
+      handleTabChange(TabView.EXECUTION_PLAN);
     } else if (activeTab === TabView.EXECUTION_PLAN) {
-      setActiveTab(TabView.ESTIMATION);
+      handleTabChange(TabView.ESTIMATION);
     }
     setTimeout(() => {
       contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -268,7 +285,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabChange(tab.id)}
                   className={`relative pb-2 text-sm whitespace-nowrap transition-all duration-300 ${
                     isActive
                       ? 'font-bold text-slate-900 dark:text-white' 

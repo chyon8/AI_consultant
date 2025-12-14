@@ -165,6 +165,7 @@ export type ChatActionType =
   | 'add_feature'
   | 'create_module'
   | 'update_scale' 
+  | 'generate_rfp'
   | 'no_action';
 
 export interface NewFeaturePayload {

@@ -167,6 +167,12 @@ export const CHAT_SYSTEM_PROMPT = `# SYSTEM ROLE
    - intent: "general"
    - payload: {}
 
+7. generate_rfp: 공고문(RFP) 생성 요청
+   - intent: "command"
+   - payload: {}
+   - 용도: 사용자가 "공고 작성해줘", "공고문 생성", "RFP 만들어줘" 등 공고문 생성을 요청할 때
+   - 예시 트리거: "공고 작성해줘", "입찰 공고문 만들어줘", "RFP 생성해줘", "공고문 작성"
+
 # RULES
 1. 한국어로 답변하세요.
 2. <CHAT>과 <ACTION> 태그는 반드시 포함해야 합니다.

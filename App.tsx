@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview, WorkScopeSelection, RequiredScope } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview, WorkScopeSelection, RequiredScope, TabView } from './types';
 import { mapProjectScopeToWorkScope } from './utils/workScopeMapper';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
@@ -10,6 +10,7 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { RFPConfirmModal } from './components/RFPConfirmModal';
 import { HistoryPage } from './components/HistoryPage';
 import { SearchModal } from './components/SearchModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -175,6 +176,10 @@ const App: React.FC = () => {
     }
     return getDefaultModelSettings();
   });
+
+  // RFP Confirm Modal State (for chat-triggered RFP generation)
+  const [rfpConfirmModalOpen, setRfpConfirmModalOpen] = useState(false);
+  const [externalActiveTab, setExternalActiveTab] = useState<TabView | undefined>(undefined);
 
   // Referenced files state - tracks source documents used for analysis
   const [referencedFiles, setReferencedFiles] = useState<InputSource[]>([]);
@@ -1184,11 +1189,35 @@ const App: React.FC = () => {
         handleScaleChange(action.payload.scale);
         return { success: true };
       }
+
+      case 'generate_rfp': {
+        console.log('[App] generate_rfp case triggered - showing confirmation modal');
+        setRfpConfirmModalOpen(true);
+        return { success: true };
+      }
         
       case 'no_action':
       default:
         return { success: true };
     }
+  };
+
+  const handleRfpConfirmModalConfirm = () => {
+    console.log('[App] RFP generation confirmed from chat');
+    setRfpConfirmModalOpen(false);
+    setExternalActiveTab(TabView.RFP);
+    setTimeout(() => {
+      const selectedModules = modules.filter(m => m.isSelected);
+      const selectedFeatures = selectedModules.reduce((acc, m) => 
+        acc + m.subFeatures.filter(s => s.isSelected).length, 0);
+      const costDisplay = `예상 비용 포함`;
+      const projectSummary = `총 ${selectedModules.length}개 모듈, ${selectedFeatures}개 기능, ${costDisplay}`;
+      handleRfpGenerate(selectedModules, projectSummary);
+    }, 100);
+  };
+
+  const handleRfpConfirmModalCancel = () => {
+    setRfpConfirmModalOpen(false);
   };
 
   // Ref to store parsed project title for session naming (legacy - now using scoped storage)
@@ -2368,6 +2397,8 @@ const App: React.FC = () => {
                   workScope={workScope}
                   onWorkScopeChange={setWorkScope}
                   requiredScope={requiredScope}
+                  externalActiveTab={externalActiveTab}
+                  onActiveTabChange={(tab) => setExternalActiveTab(undefined)}
                 />
               </div>
             )}
@@ -2403,6 +2434,13 @@ const App: React.FC = () => {
         onClose={() => setAiSettingsModalOpen(false)}
         onSave={handleSaveAiSettings}
         currentSettings={aiModelSettings}
+      />
+
+      {/* RFP Confirm Modal (chat-triggered) */}
+      <RFPConfirmModal
+        isOpen={rfpConfirmModalOpen}
+        onConfirm={handleRfpConfirmModalConfirm}
+        onCancel={handleRfpConfirmModalCancel}
       />
     </div>
   );
