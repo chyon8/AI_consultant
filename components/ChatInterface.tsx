@@ -598,7 +598,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           action.intent = 'command';
         }
         
-        if (action.intent === 'command') {
+        if (action.type === 'generate_rfp') {
+          console.log('[Chat] generate_rfp detected, triggering directly:', action);
+          if (onChatAction) {
+            onChatAction(action);
+          }
+        } else if (action.intent === 'command') {
           console.log('[Chat] Command detected, awaiting confirmation:', action);
           setPendingAction({ action, messageId: aiMsgId });
         } else if (onChatAction) {
