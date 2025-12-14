@@ -25,6 +25,8 @@ const formatDate = (timestamp: number): string => {
   return `${year}.${month}.${day} ${hours}:${minutes}`;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export const HistoryPage: React.FC<HistoryPageProps> = ({
   chatSessions,
   activeSessionId,
@@ -39,6 +41,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredAndSortedSessions = useMemo(() => {
     let sessions = [...chatSessions];
@@ -65,6 +68,31 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
     return sessions;
   }, [chatSessions, searchQuery, sortBy, filterBy]);
+
+  const totalPages = Math.ceil(filteredAndSortedSessions.length / ITEMS_PER_PAGE);
+  const paginatedSessions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAndSortedSessions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredAndSortedSessions, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: SortOption) => {
+    setSortBy(value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (value: FilterOption) => {
+    setFilterBy(value);
+    setCurrentPage(1);
+  };
 
   const handleStartEditing = (session: ChatSession) => {
     setEditingSessionId(session.id);
@@ -118,14 +146,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               type="text"
               placeholder="프로젝트 검색..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
             />
           </div>
 
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            onChange={(e) => handleSortChange(e.target.value as SortOption)}
             className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="newest">최신순</option>
@@ -135,7 +163,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
           <div className="flex rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
             <button
-              onClick={() => setFilterBy('all')}
+              onClick={() => handleFilterChange('all')}
               className={`px-3 py-2 text-sm transition-colors ${
                 filterBy === 'all'
                   ? 'bg-indigo-600 text-white'
@@ -145,7 +173,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               전체
             </button>
             <button
-              onClick={() => setFilterBy('favorites')}
+              onClick={() => handleFilterChange('favorites')}
               className={`px-3 py-2 text-sm transition-colors flex items-center gap-1 ${
                 filterBy === 'favorites'
                   ? 'bg-indigo-600 text-white'
@@ -169,7 +197,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           </div>
         ) : (
           <div className="grid gap-3 max-w-4xl mx-auto">
-            {filteredAndSortedSessions.map((session) => (
+            {paginatedSessions.map((session) => (
               <div
                 key={session.id}
                 className={`group bg-white dark:bg-slate-800 rounded-lg border transition-all hover:shadow-md ${
@@ -253,6 +281,50 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 </div>
               </div>
             ))}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-lg transition-colors ${
+                    currentPage === 1
+                      ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Icons.Left size={18} />
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`p-2 rounded-lg transition-colors ${
+                    currentPage === totalPages
+                      ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Icons.Right size={18} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
