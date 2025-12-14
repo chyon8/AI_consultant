@@ -207,6 +207,11 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
 
     const breakdown = currentEstimate.breakdown;
     
+    // Check if breakdown has valid non-zero values
+    const hasValidBreakdown = breakdown && (
+      (breakdown.planning || 0) + (breakdown.design || 0) + (breakdown.development || 0) > 0
+    );
+    
     const calculateAdjustedCost = () => {
       if (!breakdown) return { min: currentEstimate.minCost, max: currentEstimate.maxCost };
       
@@ -269,8 +274,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
           </div>
         </div>
 
-        {/* Work Scope Breakdown */}
-        {breakdown && (
+        {/* Work Scope Breakdown - only render when breakdown has valid values */}
+        {hasValidBreakdown && breakdown && (
           <div className="pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800 mb-4">
             <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-3">과업 범위</p>
             <div className="grid grid-cols-3 gap-2">
