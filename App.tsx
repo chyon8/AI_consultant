@@ -122,8 +122,23 @@ const App: React.FC = () => {
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
   const [currentScale, setCurrentScale] = useState<ProjectScale>('STANDARD');
 
-  // Dark Mode State
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // Dark Mode State - detect system preference
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Collapsible Sidebar State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
