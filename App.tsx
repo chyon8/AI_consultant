@@ -124,23 +124,21 @@ const App: React.FC = () => {
   const [estimationStep, setEstimationStep] = useState<EstimationStep>('SCOPE');
   const [currentScale, setCurrentScale] = useState<ProjectScale>('STANDARD');
 
-  // Dark Mode State - detect system preference
+  // Dark Mode State - user controlled (persisted in localStorage)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const stored = localStorage.getItem('darkMode');
+      if (stored !== null) {
+        return stored === 'true';
+      }
     }
     return false;
   });
 
-  // Listen for system theme changes
+  // Persist dark mode preference
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches);
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+    localStorage.setItem('darkMode', isDarkMode.toString());
+  }, [isDarkMode]);
 
   // Collapsible Sidebar State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
