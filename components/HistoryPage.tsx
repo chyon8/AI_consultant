@@ -52,9 +52,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
+      console.log('[HistoryPage] Search query:', query);
       sessions = sessions.filter(s => {
         const titleMatch = (s.customTitle || s.title).toLowerCase().includes(query);
         if (titleMatch) return true;
+        const messageTexts = s.messages?.map(m => m.text) || [];
+        console.log(`[HistoryPage] Session ${s.id} messages:`, messageTexts.length, messageTexts.slice(0, 2));
         const messageMatch = s.messages?.some(m => 
           m.text?.toLowerCase().includes(query)
         );
