@@ -34,6 +34,7 @@ interface EstimationTabProps {
   workScope?: WorkScopeSelection;
   onWorkScopeChange?: (scope: WorkScopeSelection) => void;
   requiredScope?: { planning: boolean; design: boolean; development: boolean };
+  estimatesReady?: boolean;
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -50,7 +51,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   estimates,
   workScope = DEFAULT_WORK_SCOPE,
   onWorkScopeChange,
-  requiredScope = { planning: false, design: false, development: true }
+  requiredScope = { planning: false, design: false, development: true },
+  estimatesReady = false
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
   
@@ -194,7 +196,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE C (AI 네이티브)' : 
                          currentPartnerType === 'STUDIO' ? 'TYPE B (스튜디오)' : 'TYPE A (에이전시)';
     
-    if (!currentEstimate) {
+    // Show skeleton until estimates are fully ready
+    if (!currentEstimate || !estimatesReady) {
       return (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-6 mb-8 border border-slate-200 dark:border-slate-800">
           <div className="animate-pulse space-y-4">

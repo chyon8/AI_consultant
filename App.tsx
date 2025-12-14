@@ -2326,6 +2326,7 @@ const App: React.FC = () => {
                   workScope={workScope}
                   onWorkScopeChange={setWorkScope}
                   requiredScope={requiredScope}
+                  estimatesReady={progressiveState.estimatesReady}
                 />
               </div>
             )}
