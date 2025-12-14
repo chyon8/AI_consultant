@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ChatSession } from '../types';
+import { getChatHistory } from '../services/chatHistoryService';
 
 interface HistoryPageProps {
   chatSessions: ChatSession[];
@@ -42,9 +43,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [freshSessions, setFreshSessions] = useState<ChatSession[]>([]);
+
+  useEffect(() => {
+    const latestSessions = getChatHistory();
+    setFreshSessions(latestSessions);
+  }, [chatSessions]);
 
   const filteredAndSortedSessions = useMemo(() => {
-    let sessions = [...chatSessions];
+    const sourceData = freshSessions.length > 0 ? freshSessions : chatSessions;
+    let sessions = [...sourceData];
 
     if (filterBy === 'favorites') {
       sessions = sessions.filter(s => s.isFavorite);
@@ -52,12 +60,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      console.log('[HistoryPage] Search query:', query);
       sessions = sessions.filter(s => {
         const titleMatch = (s.customTitle || s.title).toLowerCase().includes(query);
         if (titleMatch) return true;
-        const messageTexts = s.messages?.map(m => m.text) || [];
-        console.log(`[HistoryPage] Session ${s.id} messages:`, messageTexts.length, messageTexts.slice(0, 2));
         const messageMatch = s.messages?.some(m => 
           m.text?.toLowerCase().includes(query)
         );
@@ -75,7 +80,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     });
 
     return sessions;
-  }, [chatSessions, searchQuery, sortBy, filterBy]);
+  }, [freshSessions, chatSessions, searchQuery, sortBy, filterBy]);
 
   const totalPages = Math.ceil(filteredAndSortedSessions.length / ITEMS_PER_PAGE);
   const paginatedSessions = useMemo(() => {

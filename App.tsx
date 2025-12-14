@@ -2213,7 +2213,13 @@ const App: React.FC = () => {
           onAbortSession={handleAbortAnalysis}
           onRenameSession={handleRenameSession}
           onToggleFavorite={handleToggleFavorite}
-          onViewAllHistory={() => setCurrentView('history')}
+          onViewAllHistory={() => {
+            if (activeSessionId && messages.length > 0) {
+              updateSessionMessages(activeSessionId, messages);
+              setChatSessions(getChatHistory());
+            }
+            setCurrentView('history');
+          }}
         />
 
         {/* Conditional View Rendering */}
