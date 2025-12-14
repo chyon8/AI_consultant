@@ -156,6 +156,7 @@ export interface DashboardState {
   rfpContent?: string; // RFP generation result
   memoContent?: string; // Session memo content
   workScope?: WorkScopeSelection; // 기획/디자인/개발 범위 선택
+  requiredScope?: RequiredScope; // AI가 분석한 필수 범위
 }
 
 export type ChatActionType = 
@@ -221,6 +222,7 @@ export interface ParsedSchedule {
 }
 
 export interface ParsedSummary {
+  projectScope?: string;
   keyPoints: string[];
   risks: string[];
   recommendations: string[];
@@ -241,6 +243,12 @@ export interface EstimateTypeData {
 }
 
 export interface WorkScopeSelection {
+  planning: boolean;
+  design: boolean;
+  development: boolean;
+}
+
+export interface RequiredScope {
   planning: boolean;
   design: boolean;
   development: boolean;

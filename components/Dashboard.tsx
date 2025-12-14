@@ -52,6 +52,7 @@ interface DashboardProps {
   onMemoChange?: (content: string) => void;
   workScope?: WorkScopeSelection;
   onWorkScopeChange?: (scope: WorkScopeSelection) => void;
+  requiredScope?: { planning: boolean; design: boolean; development: boolean };
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -85,7 +86,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   memoContent = '',
   onMemoChange,
   workScope,
-  onWorkScopeChange
+  onWorkScopeChange,
+  requiredScope
 }) => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.ESTIMATION);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -336,6 +338,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   estimates={progressiveState?.estimates}
                   workScope={workScope}
                   onWorkScopeChange={onWorkScopeChange}
+                  requiredScope={requiredScope}
                 />
               )
             )}

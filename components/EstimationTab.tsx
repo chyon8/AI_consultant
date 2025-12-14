@@ -33,6 +33,7 @@ interface EstimationTabProps {
   estimates?: ParsedEstimates;
   workScope?: WorkScopeSelection;
   onWorkScopeChange?: (scope: WorkScopeSelection) => void;
+  requiredScope?: { planning: boolean; design: boolean; development: boolean };
 }
 
 export const EstimationTab: React.FC<EstimationTabProps> = ({ 
@@ -48,7 +49,8 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
   isLoading = false,
   estimates,
   workScope = DEFAULT_WORK_SCOPE,
-  onWorkScopeChange
+  onWorkScopeChange,
+  requiredScope = { planning: false, design: false, development: true }
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(modules.map(m => m.id));
   
@@ -229,16 +231,16 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
     const duration = currentEstimate.duration;
     
     const handleScopeToggle = (scope: keyof WorkScopeSelection) => {
-      if (scope === 'development') return;
+      if (requiredScope[scope]) return;
       if (onWorkScopeChange) {
         onWorkScopeChange({ ...workScope, [scope]: !workScope[scope] });
       }
     };
     
     const scopeItems = [
-      { key: 'planning' as const, label: '기획', color: 'indigo', hint: '기획서가 있다면 해제' },
-      { key: 'design' as const, label: '디자인', color: 'blue', hint: '디자인 시안이 있다면 해제' },
-      { key: 'development' as const, label: '개발', color: 'emerald', hint: '필수 항목' }
+      { key: 'planning' as const, label: '기획', color: 'indigo' },
+      { key: 'design' as const, label: '디자인', color: 'blue' },
+      { key: 'development' as const, label: '개발', color: 'emerald' }
     ];
 
     return (
@@ -272,21 +274,21 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
           <div className="pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800 mb-4">
             <p className="text-[10px] font-medium tracking-[0.15em] text-slate-400 uppercase mb-3">과업 범위</p>
             <div className="grid grid-cols-3 gap-2">
-              {scopeItems.map(({ key, label, color, hint }) => {
+              {scopeItems.map(({ key, label, color }) => {
                 const isSelected = workScope[key];
                 const cost = breakdown[key];
-                const isDisabled = key === 'development';
+                const isRequired = requiredScope[key];
                 
                 return (
                   <button
                     key={key}
                     onClick={() => handleScopeToggle(key)}
-                    disabled={isDisabled}
+                    disabled={isRequired}
                     className={`relative p-3 rounded-lg border transition-all duration-200 text-left ${
                       isSelected
                         ? `bg-${color}-50 dark:bg-${color}-900/20 border-${color}-200 dark:border-${color}-800`
                         : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60'
-                    } ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-600'}`}
+                    } ${isRequired ? 'cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-600'}`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
@@ -307,7 +309,7 @@ export const EstimationTab: React.FC<EstimationTabProps> = ({
                     }`}>
                       {(cost / 10000).toLocaleString()}만원
                     </p>
-                    {isDisabled && (
+                    {isRequired && (
                       <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 bg-slate-200 dark:bg-slate-700 px-1 rounded">
                         필수
                       </span>

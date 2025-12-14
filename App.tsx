@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MESSAGES, INITIAL_MODULES, PARTNER_PRESETS } from './constants';
-import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview, WorkScopeSelection } from './types';
+import { Message, ModuleItem, PartnerType, EstimationStep, ProjectScale, ChatSession, DashboardState, ChatAction, InputSource, ProgressiveLoadingState, ParsedSchedule, ParsedSummary, ProjectOverview, WorkScopeSelection, RequiredScope } from './types';
+import { mapProjectScopeToWorkScope } from './utils/workScopeMapper';
 import { ChatInterface } from './components/ChatInterface';
 import { Dashboard } from './components/Dashboard';
 import { Icons } from './components/Icons';
@@ -99,6 +100,11 @@ const App: React.FC = () => {
   const [workScope, setWorkScope] = useState<WorkScopeSelection>({
     planning: true,
     design: true,
+    development: true
+  });
+  const [requiredScope, setRequiredScope] = useState<RequiredScope>({
+    planning: false,
+    design: false,
     development: true
   });
   // Per-session AbortController Map for concurrent RFP generation
@@ -255,11 +261,12 @@ const App: React.FC = () => {
         summary: progressiveState?.summary || null,
         rfpContent,
         memoContent,
-        workScope
+        workScope,
+        requiredScope
       };
       updateSessionDashboardState(activeSessionId, dashboardState);
     }
-  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent, memoContent, workScope]);
+  }, [activeSessionId, currentView, modules, currentPartnerType, currentScale, estimationStep, projectSummaryContent, aiInsight, referencedFiles, projectOverview, progressiveState?.summary, rfpContent, memoContent, workScope, requiredScope]);
 
   // Handle visibility change - check job status when tab becomes active
   useEffect(() => {
@@ -357,6 +364,7 @@ const App: React.FC = () => {
     setRfpContent('');
     setMemoContent('');
     setWorkScope({ planning: true, design: true, development: true });
+    setRequiredScope({ planning: false, design: false, development: true });
   };
 
   // Handle delete session - show confirmation modal
@@ -543,6 +551,7 @@ const App: React.FC = () => {
         unit.dashboard.rfpContent = rfpContent;
         unit.dashboard.memoContent = memoContent;
         unit.dashboard.workScope = workScope;
+        unit.dashboard.requiredScope = requiredScope;
       });
     }
     
@@ -571,6 +580,7 @@ const App: React.FC = () => {
     setRfpContent('');
     setMemoContent('');
     setWorkScope({ planning: true, design: true, development: true });
+    setRequiredScope({ planning: false, design: false, development: true });
     setCurrentPartnerType('STUDIO');
     setCurrentScale('STANDARD');
     setEstimationStep('SCOPE');
@@ -737,6 +747,8 @@ const App: React.FC = () => {
       setMemoContent(atomicUnit.dashboard.memoContent || '');
       // [WORK SCOPE] Restore workScope from atomic unit
       setWorkScope(atomicUnit.dashboard.workScope || { planning: true, design: true, development: true });
+      // [REQUIRED SCOPE] Restore requiredScope from atomic unit
+      setRequiredScope(atomicUnit.dashboard.requiredScope || { planning: false, design: false, development: true });
       
       // [RFP ISOLATION FIX] Restore rfpGenerating state from atomic unit
       // If this session was generating in background, re-add to generating set
@@ -1431,6 +1443,12 @@ const App: React.FC = () => {
       }
     } : null;
     
+    // Calculate workScope and requiredScope from AI result
+    const projectScope = result.summary?.projectScope;
+    const scopeResult = projectScope 
+      ? mapProjectScopeToWorkScope(projectScope)
+      : { scope: { planning: true, design: true, development: true }, required: { planning: false, design: false, development: true } };
+    
     const dashboardState: DashboardState = {
       modules: convertedModules,
       partnerType: 'STUDIO',
@@ -1445,7 +1463,9 @@ const App: React.FC = () => {
         coreValues: result.coreValues || result.projectOverview?.coreValues || [],
         techStack: parsedTechStack
       },
-      summary: result.summary || null
+      summary: result.summary || null,
+      workScope: scopeResult.scope,
+      requiredScope: scopeResult.required
     };
     
     // Commit to session's scoped storage (localStorage)
@@ -1466,6 +1486,8 @@ const App: React.FC = () => {
       unit.dashboard.summary = dashboardState.summary;
       unit.dashboard.estimates = parsedEstimates;
       unit.dashboard.schedule = result.schedule || null;
+      unit.dashboard.workScope = dashboardState.workScope;
+      unit.dashboard.requiredScope = dashboardState.requiredScope;
     });
     
     if (!updateSuccess) {
@@ -1489,6 +1511,8 @@ const App: React.FC = () => {
           unit.dashboard.summary = dashboardState.summary;
           unit.dashboard.estimates = parsedEstimates;
           unit.dashboard.schedule = result.schedule || null;
+          unit.dashboard.workScope = dashboardState.workScope;
+          unit.dashboard.requiredScope = dashboardState.requiredScope;
         });
         console.log(`[App] Created and populated atomic unit for session ${targetSessionId}`);
       } else {
@@ -1672,11 +1696,21 @@ const App: React.FC = () => {
                 ...prev, 
                 summaryReady: true,
                 summary: {
+                  projectScope: summary.projectScope,
                   keyPoints: summary.keyPoints || [],
                   risks: summary.risks || [],
                   recommendations: summary.recommendations || [],
                 }
               }));
+              
+              // Auto-set workScope based on projectScope from AI
+              if (summary.projectScope) {
+                const scopeResult = mapProjectScopeToWorkScope(summary.projectScope);
+                setWorkScope(scopeResult.scope);
+                setRequiredScope(scopeResult.required);
+                console.log('[App] PROGRESSIVE: WorkScope auto-set from projectScope:', summary.projectScope, scopeResult);
+              }
+              
               console.log('[App] PROGRESSIVE: Summary loaded');
               break;
             }
@@ -2291,6 +2325,7 @@ const App: React.FC = () => {
                   onMemoChange={setMemoContent}
                   workScope={workScope}
                   onWorkScopeChange={setWorkScope}
+                  requiredScope={requiredScope}
                 />
               </div>
             )}

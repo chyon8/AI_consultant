@@ -44,6 +44,7 @@ export interface ParsedSchedule {
 }
 
 export interface ParsedSummary {
+  projectScope?: string;
   keyPoints: string[];
   risks: string[];
   recommendations: string[];
@@ -188,6 +189,7 @@ export function parseScheduleStage(data: any): ParsedSchedule {
 export function parseSummaryStage(data: any): ParsedSummary {
   const summary = data.summary || data;
   return {
+    projectScope: summary.projectScope || undefined,
     keyPoints: summary.keyPoints || [],
     risks: summary.risks || [],
     recommendations: summary.recommendations || []

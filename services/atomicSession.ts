@@ -1,4 +1,4 @@
-import { Message, ModuleItem, PartnerType, ProjectScale, EstimationStep, DashboardState, InputSource, ProjectOverview, ParsedSummary, ParsedEstimates, ParsedSchedule, WorkScopeSelection } from '../types';
+import { Message, ModuleItem, PartnerType, ProjectScale, EstimationStep, DashboardState, InputSource, ProjectOverview, ParsedSummary, ParsedEstimates, ParsedSchedule, WorkScopeSelection, RequiredScope } from '../types';
 import { INITIAL_MESSAGES, INITIAL_MODULES } from '../constants';
 
 export interface AtomicSessionUnit {
@@ -28,6 +28,7 @@ export interface AtomicSessionUnit {
     rfpGenerating?: boolean;
     memoContent?: string;
     workScope?: WorkScopeSelection;
+    requiredScope?: RequiredScope;
   };
   meta: {
     title: string;
