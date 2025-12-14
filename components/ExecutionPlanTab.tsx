@@ -1,28 +1,43 @@
 
 
 import React, { useMemo } from 'react';
-import { ModuleItem, PartnerType } from '../types';
+import { ModuleItem, PartnerType, ParsedEstimates } from '../types';
 import { Icons } from './Icons';
 import { calculateSchedule, getMonthLabels } from '../services/scheduleEngine';
 
 interface ExecutionPlanTabProps {
   modules: ModuleItem[];
   currentPartnerType: PartnerType;
+  estimates?: ParsedEstimates;
 }
 
 export const ExecutionPlanTab: React.FC<ExecutionPlanTabProps> = ({
   modules,
-  currentPartnerType
+  currentPartnerType,
+  estimates
 }) => {
   const scheduleResult = useMemo(() => {
     return calculateSchedule(modules, currentPartnerType);
   }, [modules, currentPartnerType]);
 
-  const { rawMM, teamSize, productivityCoeff, totalDuration, totalMonths, phases, coordinationBuffer } = scheduleResult;
+  const { rawMM, teamSize, productivityCoeff, totalDuration: calculatedDuration, totalMonths: calculatedMonths, phases, coordinationBuffer } = scheduleResult;
+  
+  const aiDuration = useMemo(() => {
+    if (!estimates) return null;
+    const durationStr = currentPartnerType === 'AI_NATIVE' ? estimates.typeA.duration :
+                        currentPartnerType === 'STUDIO' ? estimates.typeB.duration :
+                        estimates.typeC.duration;
+    const match = durationStr?.match(/(\d+(?:\.\d+)?)/);
+    return match ? parseFloat(match[1]) : null;
+  }, [estimates, currentPartnerType]);
+
+  const totalDuration = aiDuration ?? calculatedDuration;
+  const totalMonths = Math.max(calculatedMonths, Math.ceil(totalDuration));
   const monthLabels = getMonthLabels(totalMonths);
+  const usingAiDuration = aiDuration !== null;
 
   const phaseDurationSum = phases.reduce((sum, p) => sum + p.duration, 0);
-  const isValid = Math.abs(phaseDurationSum - totalDuration) < 0.01;
+  const isValid = Math.abs(phaseDurationSum - calculatedDuration) < 0.01;
 
   const partnerLabel = currentPartnerType === 'AI_NATIVE' ? 'TYPE A' : 
                        currentPartnerType === 'STUDIO' ? 'TYPE B' : 'TYPE C';
@@ -51,8 +66,12 @@ export const ExecutionPlanTab: React.FC<ExecutionPlanTabProps> = ({
         </div>
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <p className="text-xs text-slate-400">
-            Duration = {rawMM.toFixed(1)}MM ÷ ({teamSize}명 × {productivityCoeff}) × (1 + {(coordinationBuffer * 100).toFixed(0)}% 버퍼) = <span className="font-semibold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(2)}개월</span>
-            {!isValid && <span className="text-red-500 ml-2">(검증 오류: Phase 합계 불일치)</span>}
+            {usingAiDuration ? (
+              <>AI 분석 기반 예상 기간 = <span className="font-semibold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(1)}개월</span></>
+            ) : (
+              <>Duration = {rawMM.toFixed(1)}MM ÷ ({teamSize}명 × {productivityCoeff}) × (1 + {(coordinationBuffer * 100).toFixed(0)}% 버퍼) = <span className="font-semibold text-indigo-600 dark:text-indigo-400">{totalDuration.toFixed(2)}개월</span></>
+            )}
+            {!isValid && !usingAiDuration && <span className="text-red-500 ml-2">(검증 오류: Phase 합계 불일치)</span>}
           </p>
         </div>
       </div>
@@ -126,8 +145,8 @@ export const ExecutionPlanTab: React.FC<ExecutionPlanTabProps> = ({
           ))}
           <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-sm font-semibold">
             <span className="text-slate-700 dark:text-slate-300">합계</span>
-            <span className={`${isValid ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-              {phaseDurationSum.toFixed(2)}개월 {isValid ? '✓' : '✗'}
+            <span className={`${usingAiDuration ? 'text-slate-700 dark:text-slate-300' : (isValid ? 'text-green-600 dark:text-green-400' : 'text-red-500')}`}>
+              {phaseDurationSum.toFixed(2)}개월 {!usingAiDuration && (isValid ? '✓' : '✗')}
             </span>
           </div>
         </div>

@@ -366,6 +366,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <ExecutionPlanTab
                   modules={modules}
                   currentPartnerType={currentPartnerType}
+                  estimates={progressiveState?.estimates}
                 />
               )
             )}
