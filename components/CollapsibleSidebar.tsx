@@ -13,7 +13,10 @@ interface CollapsibleSidebarProps {
   onAbortSession?: (sessionId: string) => void;
   onRenameSession?: (sessionId: string, newTitle: string) => void;
   onToggleFavorite?: (sessionId: string) => void;
+  onViewAllHistory?: () => void;
 }
+
+const MAX_VISIBLE_SESSIONS = 10;
 
 const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -34,7 +37,8 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
   onDeleteSession,
   onAbortSession,
   onRenameSession,
-  onToggleFavorite
+  onToggleFavorite,
+  onViewAllHistory
 }) => {
   const [isProjectExpanded, setIsProjectExpanded] = useState(true);
   const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
@@ -48,6 +52,9 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
     if (!a.isFavorite && b.isFavorite) return 1;
     return b.createdAt - a.createdAt;
   });
+
+  const visibleSessions = sortedSessions.slice(0, MAX_VISIBLE_SESSIONS);
+  const hiddenCount = sortedSessions.length - MAX_VISIBLE_SESSIONS;
 
   useEffect(() => {
     if (editingSessionId && editInputRef.current) {
@@ -151,13 +158,13 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
 
               <div 
                 className={`overflow-hidden transition-all duration-300 ${
-                  isProjectExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                  isProjectExpanded ? 'max-h-[450px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                {sortedSessions.map((session) => (
+                {visibleSessions.map((session) => (
                   <div
                     key={session.id}
-                    className={`relative group flex items-center pl-10 pr-2 py-2.5 transition-colors ${
+                    className={`relative group flex items-center pl-10 pr-2 py-1.5 transition-colors ${
                       activeSessionId === session.id 
                         ? 'bg-slate-100 dark:bg-slate-800' 
                         : 'hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -166,7 +173,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                     onMouseLeave={() => setHoveredSessionId(null)}
                   >
                     {session.isFavorite && (
-                      <Icons.Star size={12} className="absolute left-6 top-3 text-yellow-500 fill-yellow-500" />
+                      <Icons.Star size={10} className="absolute left-6 top-2.5 text-yellow-500 fill-yellow-500" />
                     )}
                     
                     {editingSessionId === session.id ? (
@@ -177,30 +184,30 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                         onChange={(e) => setEditingTitle(e.target.value)}
                         onBlur={handleFinishEditing}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 text-sm px-2 py-1 rounded border border-indigo-400 dark:border-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 text-xs px-2 py-0.5 rounded border border-indigo-400 dark:border-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
                       <button
                         onClick={() => onSelectSession(session.id)}
-                        className="flex-1 flex flex-col items-start text-left min-w-0"
+                        className="flex-1 flex items-center justify-between text-left min-w-0 gap-1"
                       >
-                        <span className={`text-sm truncate w-full ${
+                        <span className={`text-xs truncate ${
                           activeSessionId === session.id 
                             ? 'text-slate-900 dark:text-white font-medium' 
                             : 'text-slate-600 dark:text-slate-400'
                         }`}>
                           {session.isLoading ? (
-                            <span className="flex items-center gap-2">
-                              <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                               <span>생성 중...</span>
                             </span>
                           ) : (
                             session.customTitle || session.title
                           )}
                         </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                          {formatDate(session.createdAt)}
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">
+                          {formatDate(session.createdAt).split(' ')[0]}
                         </span>
                       </button>
                     )}
@@ -211,7 +218,7 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                           e.stopPropagation();
                           onAbortSession(session.id);
                         }}
-                        className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                        className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                       >
                         중단
                       </button>
@@ -223,14 +230,14 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                               e.stopPropagation();
                               onToggleFavorite(session.id);
                             }}
-                            className={`p-1.5 rounded-lg transition-colors ${
+                            className={`p-1 rounded transition-colors ${
                               session.isFavorite 
                                 ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' 
                                 : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-yellow-500'
                             }`}
                             title={session.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
                           >
-                            <Icons.Star size={14} className={session.isFavorite ? 'fill-yellow-500' : ''} />
+                            <Icons.Star size={12} className={session.isFavorite ? 'fill-yellow-500' : ''} />
                           </button>
                         )}
                         {onRenameSession && (
@@ -239,10 +246,10 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                               e.stopPropagation();
                               handleStartEditing(session);
                             }}
-                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                             title="이름 변경"
                           >
-                            <Icons.Pencil size={14} />
+                            <Icons.Pencil size={12} />
                           </button>
                         )}
                         <button
@@ -250,18 +257,30 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                             e.stopPropagation();
                             onDeleteSession(session.id, session.customTitle || session.title);
                           }}
-                          className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                           title="삭제"
                         >
-                          <Icons.Trash size={14} />
+                          <Icons.Trash size={12} />
                         </button>
                       </div>
                     )}
                   </div>
                 ))}
                 
+                {hiddenCount > 0 && onViewAllHistory && (
+                  <button
+                    onClick={onViewAllHistory}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                  >
+                    <span>더보기</span>
+                    <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 rounded text-[10px] font-medium">
+                      +{hiddenCount}
+                    </span>
+                  </button>
+                )}
+                
                 {(!chatSessions || chatSessions.length === 0) && (
-                  <div className="pl-10 pr-3 py-3 text-xs text-slate-400 dark:text-slate-500">
+                  <div className="pl-10 pr-3 py-2 text-xs text-slate-400 dark:text-slate-500">
                     채팅 기록이 없습니다
                   </div>
                 )}

@@ -10,6 +10,7 @@ import { StepIndicator } from './components/StepIndicator';
 import { CollapsibleSidebar } from './components/CollapsibleSidebar';
 import { LandingView } from './components/LandingView';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { HistoryPage } from './components/HistoryPage';
 import { SettingsModal } from './components/SettingsModal';
 import { AiSettingsModal } from './components/AiSettingsModal';
 import { RenderGuard, useSessionValidation } from './components/RenderGuard';
@@ -61,7 +62,7 @@ import {
   toggleSessionFavorite
 } from './services/chatHistoryService';
 
-type AppView = 'landing' | 'detail';
+type AppView = 'landing' | 'detail' | 'history';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -2212,10 +2213,22 @@ const App: React.FC = () => {
           onAbortSession={handleAbortAnalysis}
           onRenameSession={handleRenameSession}
           onToggleFavorite={handleToggleFavorite}
+          onViewAllHistory={() => setCurrentView('history')}
         />
 
         {/* Conditional View Rendering */}
-        {currentView === 'landing' ? (
+        {currentView === 'history' ? (
+          /* History Page - Full list of all sessions */
+          <HistoryPage
+            chatSessions={chatSessions}
+            activeSessionId={activeSessionId}
+            onSelectSession={handleSelectSession}
+            onDeleteSession={handleDeleteSessionClick}
+            onRenameSession={handleRenameSession}
+            onToggleFavorite={handleToggleFavorite}
+            onBack={() => setCurrentView(activeSessionId ? 'detail' : 'landing')}
+          />
+        ) : currentView === 'landing' ? (
           /* Landing View - Full width (minus sidebar) */
           <LandingView 
             onAnalyze={handleAnalyze}

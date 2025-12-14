@@ -6,7 +6,7 @@ export interface SessionSnapshot {
   pendingJobId: string | null;
   lastChunkSequence: number;
   streamingBuffer: string;
-  viewState: 'landing' | 'detail';
+  viewState: 'landing' | 'detail' | 'history';
   analysisInProgress: boolean;
 }
 
