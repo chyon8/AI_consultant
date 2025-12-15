@@ -201,6 +201,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -894,16 +895,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           >
             <Icons.Link size={20} />
           </button>
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            onChange={(e) => {
+              setInput(e.target.value);
+              const textarea = textareaRef.current;
+              if (textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+                if (textareaRef.current) {
+                  textareaRef.current.style.height = 'auto';
+                }
+              }
+            }}
             placeholder={attachedFiles.length > 0 || attachedUrls.length > 0
               ? "첨부 자료와 함께 보낼 메시지를 입력하세요..." 
               : "예: 결제 모듈 제거해줘, MVP로 줄여줘..."
             }
-            className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors"
+            className="flex-1 py-3 bg-transparent border-b border-slate-200 dark:border-slate-800 focus:border-slate-900 dark:focus:border-slate-500 focus:outline-none text-sm text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 transition-colors resize-none min-h-[44px] max-h-[150px] overflow-y-auto"
+            rows={1}
             disabled={isLoading || !!pendingAction}
           />
           <button
