@@ -33,6 +33,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, onAbort, is
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleGlobalDragOver = (e: DragEvent) => {
@@ -145,6 +146,15 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, onAbort, is
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+    }
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
   };
 
@@ -276,14 +286,15 @@ export const LandingView: React.FC<LandingViewProps> = ({ onAnalyze, onAbort, is
             </button>
 
             <textarea
+              ref={textareaRef}
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={handleTextChange}
               onKeyDown={handleKeyDown}
               placeholder={attachedFiles.length > 0 
                 ? "파일과 함께 프로젝트 설명을 입력하세요..." 
                 : "프로젝트 요구사항을 입력하거나 파일을 드래그해서 첨부해주세요..."
               }
-              className="flex-1 py-3 px-2 bg-transparent resize-none text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none min-h-[52px] max-h-[200px]"
+              className="flex-1 py-3 px-2 bg-transparent resize-none text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none min-h-[52px] max-h-[200px] overflow-y-auto"
               rows={1}
               disabled={isLoading}
             />
