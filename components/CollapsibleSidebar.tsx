@@ -215,15 +215,27 @@ export const CollapsibleSidebar: React.FC<CollapsibleSidebarProps> = ({
                     )}
                     
                     {session.isLoading && onAbortSession ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAbortSession(session.id);
-                        }}
-                        className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                      >
-                        중단
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAbortSession(session.id);
+                          }}
+                          className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                        >
+                          중단
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id, session.customTitle || session.title);
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          title="삭제"
+                        >
+                          <Icons.Trash size={14} />
+                        </button>
+                      </div>
                     ) : hoveredSessionId === session.id && !session.isLoading && editingSessionId !== session.id && (
                       <div className="flex items-center gap-0.5">
                         {onToggleFavorite && (
